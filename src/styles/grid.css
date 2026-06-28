@@ -1,0 +1,171 @@
+.apg {
+  --apg-row-height: 24px;
+  --apg-header-height: 28px;
+  --apg-col-width: 100px;
+  --apg-border: 1px solid #e0e0e0;
+  --apg-cell-padding: 0 8px;
+  --apg-font: 13px/1.4 -apple-system, Segoe UI, Roboto, sans-serif;
+  --apg-header-bg: #f5f5f5;
+  --apg-cell-bg: #fff;
+  --apg-cell-bg-alt: #fafafa;
+  --apg-selected-bg: #cfe3ff;
+  --apg-hover-bg: #eef4ff;
+  --apg-active-border: #2f6fed;
+  --apg-header-selected-bg: #d7e6ff;
+  position: relative;
+  overflow: hidden;
+  font: var(--apg-font);
+  color: #222;
+  box-sizing: border-box;
+}
+
+.apg *,
+.apg *::before,
+.apg *::after {
+  box-sizing: border-box;
+}
+
+.apg-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+}
+
+.apg-canvas {
+  position: relative;
+}
+
+.apg-cells {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.apg-corner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  background: var(--apg-header-bg);
+  border-right: var(--apg-border);
+  border-bottom: var(--apg-border);
+  will-change: transform;
+}
+
+.apg-header-inner {
+  position: absolute;
+  top: 0;
+  z-index: 2;
+  background: var(--apg-header-bg);
+  border-bottom: var(--apg-border);
+  will-change: transform;
+}
+
+.apg-header-cell {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: var(--apg-cell-padding);
+  font-weight: 600;
+  border-right: var(--apg-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apg-rowheader-inner {
+  position: absolute;
+  left: 0;
+  z-index: 2;
+  background: var(--apg-header-bg);
+  border-right: var(--apg-border);
+  will-change: transform;
+}
+
+.apg-rowheader-cell {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: var(--apg-row-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9em;
+  color: #666;
+  border-bottom: var(--apg-border);
+  will-change: transform;
+}
+
+.apg-rowheader-cell.apg-rowheader-cell-selected {
+  background: var(--apg-header-selected-bg);
+  color: #15396b;
+  font-weight: 600;
+}
+
+.apg-row {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: var(--apg-row-height);
+  background: var(--apg-cell-bg);
+  will-change: transform;
+  contain: layout style;
+}
+
+.apg-row.apg-row-alt {
+  background: var(--apg-cell-bg-alt);
+}
+
+.apg-cell {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: var(--apg-cell-padding);
+  border-right: var(--apg-border);
+  border-bottom: var(--apg-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apg-cell.apg-cell-selected {
+  background: var(--apg-selected-bg);
+  color: #15396b;
+}
+
+.apg-cell.apg-cell-active {
+  box-shadow: inset 0 0 0 2px var(--apg-active-border);
+}
+
+.apg-header-cell.apg-header-cell-selected {
+  background: var(--apg-header-selected-bg);
+  color: #15396b;
+}
+
+.apg:focus {
+  outline: none;
+}
+
+.apg:focus-visible {
+  outline: 2px solid var(--apg-selected-bg);
+  outline-offset: -2px;
+}
+
+.apg-editor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  margin: 0;
+  border: 2px solid var(--apg-active-border);
+  padding: var(--apg-cell-padding);
+  font: inherit;
+  outline: none;
+  will-change: transform;
+}

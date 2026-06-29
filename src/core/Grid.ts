@@ -112,6 +112,7 @@ export class Grid {
       this.host,
       (action, extend) => this.onNav(action, extend),
       (action) => (action === 'undo' ? this.undo() : this.redo()),
+      () => this.onActivate(),
     );
     this.resizer = new ColumnResizer(
       this.viewportRenderer.headerInner,
@@ -296,11 +297,22 @@ export class Grid {
 
   private onSelect(cell: CellAddress, extend: boolean, isPress: boolean): void {
     this.applyMove(cell, extend);
-    if (isPress) this.events.emit('cellClick', cell);
+    if (isPress) {
+      this.host.focus(); // mousedown preventDefault blocks the default focus, so do it here
+      this.events.emit('cellClick', cell);
+      this.editor.toggleBoolean(cell); // checkbox cells flip on click
+    }
   }
 
   private onDoubleClick(cell: CellAddress): void {
     this.events.emit('cellDoubleClick', cell);
+    this.editor.begin(cell);
+  }
+
+  private onActivate(): void {
+    const cell = this.selectionModel.getActive();
+    if (!cell) return;
+    if (this.editor.toggleBoolean(cell)) return; // Space toggles checkbox cells
     this.editor.begin(cell);
   }
 

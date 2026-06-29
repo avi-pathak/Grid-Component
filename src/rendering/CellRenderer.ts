@@ -32,8 +32,16 @@ export class CellRenderer {
   ): void {
     el.style.left = `${left}px`;
     el.style.width = `${width}px`;
-    el.classList.toggle('apg-cell-selected', selected);
-    el.classList.toggle('apg-cell-active', active);
-    el.textContent = column.format(item);
+    el.className = `apg-cell apg-align-${column.align}`;
+    if (selected) el.classList.add('apg-cell-selected');
+    if (active) el.classList.add('apg-cell-active');
+
+    if (column.dataType === 'Boolean') {
+      el.classList.add('apg-cell-bool');
+      el.classList.toggle('apg-checked', column.getValue(item) === true);
+      el.textContent = '';
+    } else {
+      el.textContent = column.format(item);
+    }
   }
 }

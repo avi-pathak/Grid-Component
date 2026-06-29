@@ -190,6 +190,52 @@ describe('Grid', () => {
     expect(host.querySelector('.apg-editor')).toBeNull();
   });
 
+  it('toggles a Boolean cell with Space instead of opening an editor', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      {
+        binding: 'active',
+        header: 'Active',
+        width: 80,
+        dataType: 'Boolean' as const,
+        editable: true,
+      },
+    ];
+    const data = [{ id: 0, active: false }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1); // Boolean never opens a text editor
+    expect(host.querySelector('.apg-editor')).toBeNull();
+
+    grid.select(0, 1);
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(data[0].active).toBe(true);
+    expect(grid.canUndo).toBe(true);
+
+    grid.undo();
+    expect(data[0].active).toBe(false);
+  });
+
+  it('parses numeric edits into numbers', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      {
+        binding: 'sales',
+        header: 'Sales',
+        width: 100,
+        dataType: 'Number' as const,
+        editable: true,
+      },
+    ];
+    const data = [{ id: 0, sales: 100 }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-editor') as HTMLInputElement;
+    input.value = '250';
+    input.dispatchEvent(new Event('blur'));
+    expect(data[0].sales).toBe(250);
+  });
+
   it('resizes a column with undo support', () => {
     const grid = new Grid(host, { columns, itemsSource: makeRows(10) });
     grid.resizeColumn(0, 200);

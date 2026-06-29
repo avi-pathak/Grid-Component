@@ -3,6 +3,7 @@ import './styles/grid.css';
 export { Grid } from './core/Grid';
 export { Grid as ApGrid } from './core/Grid';
 export type { ColumnDef } from './models/Column';
+export type { DataType, CellAlign } from './models/Column';
 export type { GridOptions, HeadersVisibility } from './core/GridOptions';
 export type { CellAddress, CellRange } from './models/Cell';
 export type { SelectionMode } from './selection/SelectionModel';

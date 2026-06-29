@@ -35,9 +35,23 @@ export class EditorManager {
     return this.editing != null;
   }
 
+  /** Flip a Boolean cell's value through the undo stack. Returns true if handled. */
+  toggleBoolean(cell: CellAddress): boolean {
+    const column = this.deps.columns[cell.col];
+    if (!column || !column.editable || column.dataType !== 'Boolean') return false;
+    const item = this.deps.data.item(cell.row);
+    const oldValue = column.getValue(item) === true;
+    this.deps.undo.push(
+      new EditAction(this.deps.data, column, cell.row, oldValue, !oldValue, this.deps.onApplied),
+    );
+    column.setValue(item, !oldValue);
+    this.deps.onApplied();
+    return true;
+  }
+
   begin(cell: CellAddress): void {
     const column = this.deps.columns[cell.col];
-    if (!column || !column.editable || this.editing) return;
+    if (!column || !column.editable || column.dataType === 'Boolean' || this.editing) return;
 
     const rect = this.cellRect(cell);
     this.editing = cell;
@@ -54,7 +68,7 @@ export class EditorManager {
     const column = this.deps.columns[cell.col];
     const item = this.deps.data.item(cell.row);
     const oldValue = column.getValue(item);
-    const newValue = typeof oldValue === 'number' ? Number(value) : value;
+    const newValue = column.parse(value);
     if (newValue !== oldValue) {
       this.deps.undo.push(
         new EditAction(this.deps.data, column, cell.row, oldValue, newValue, this.deps.onApplied),

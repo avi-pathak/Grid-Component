@@ -17,6 +17,11 @@ export class KeyboardHandler {
       }
       return;
     }
+    if (e.key === ' ' || e.key === 'F2' || e.key === 'Enter') {
+      e.preventDefault();
+      this.onActivate();
+      return;
+    }
     const action = toAction(e.key);
     if (!action) return;
     e.preventDefault();
@@ -27,6 +32,7 @@ export class KeyboardHandler {
     private host: HTMLElement,
     private onNav: (action: NavAction, extend: boolean) => void,
     private onUndoRedo: (action: 'undo' | 'redo') => void,
+    private onActivate: () => void,
   ) {
     this.host.addEventListener('keydown', this.onKeyDown);
   }

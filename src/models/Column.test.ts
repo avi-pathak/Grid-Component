@@ -28,4 +28,38 @@ describe('Column', () => {
     expect(col.format({ x: null })).toBe('');
     expect(col.format({})).toBe('');
   });
+
+  it('defaults dataType to String and aligns left', () => {
+    const col = new Column({ binding: 'name' });
+    expect(col.dataType).toBe('String');
+    expect(col.align).toBe('left');
+  });
+
+  it('aligns Number and Date right, Boolean center', () => {
+    expect(new Column({ binding: 'n', dataType: 'Number' }).align).toBe('right');
+    expect(new Column({ binding: 'd', dataType: 'Date' }).align).toBe('right');
+    expect(new Column({ binding: 'b', dataType: 'Boolean' }).align).toBe('center');
+  });
+
+  it('lets align override the dataType default', () => {
+    expect(new Column({ binding: 'n', dataType: 'Number', align: 'left' }).align).toBe('left');
+  });
+
+  it('parses text into the column dataType', () => {
+    expect(new Column({ binding: 'n', dataType: 'Number' }).parse('42')).toBe(42);
+    expect(new Column({ binding: 'n', dataType: 'Number' }).parse('')).toBeNull();
+    expect(new Column({ binding: 'b', dataType: 'Boolean' }).parse('true')).toBe(true);
+    expect(new Column({ binding: 'b', dataType: 'Boolean' }).parse('false')).toBe(false);
+    expect(new Column({ binding: 's' }).parse('hello')).toBe('hello');
+    const d = new Column({ binding: 'd', dataType: 'Date' }).parse('2024-03-15') as Date;
+    expect(d).toBeInstanceOf(Date);
+  });
+
+  it('formats Booleans as empty (rendered as a checkbox) and Dates with locale', () => {
+    expect(new Column({ binding: 'b', dataType: 'Boolean' }).format({ b: true })).toBe('');
+    const formatted = new Column({ binding: 'd', dataType: 'Date' }).format({
+      d: new Date(2024, 2, 15),
+    });
+    expect(formatted).not.toBe('');
+  });
 });

@@ -33,9 +33,11 @@ export class HeaderRenderer {
         this.inner.appendChild(el);
         this.active.set(col, el);
       }
+      const column = ctx.columns[col];
+      el.className = `apg-header-cell apg-align-${column.align}`;
       el.style.left = `${ctx.layout.getColLeft(col)}px`;
       el.style.width = `${ctx.layout.getColWidth(col)}px`;
-      el.textContent = ctx.columns[col].header;
+      el.textContent = column.header;
     }
   }
 }

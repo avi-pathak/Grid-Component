@@ -28,16 +28,33 @@ export class TextEditor {
   }
 
   open(parent: HTMLElement, column: Column, item: Record<string, unknown>, rect: DOMRect): void {
-    this.input.value = String(column.getValue(item) ?? '');
+    this.input.type = inputType(column.dataType);
+    this.input.className = `apg-editor apg-align-${column.align}`;
+    this.input.value = editorValue(column, item);
     this.input.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.input.style.width = `${rect.width}px`;
     this.input.style.height = `${rect.height}px`;
     parent.appendChild(this.input);
     this.input.focus();
-    this.input.select();
+    if (this.input.type === 'text') this.input.select();
   }
 
   close(): void {
     this.input.remove();
   }
+}
+
+function inputType(dataType: string): string {
+  if (dataType === 'Number') return 'number';
+  if (dataType === 'Date') return 'date';
+  return 'text';
+}
+
+function editorValue(column: Column, item: Record<string, unknown>): string {
+  const value = column.getValue(item);
+  if (value == null) return '';
+  if (column.dataType === 'Date' && value instanceof Date) {
+    return value.toISOString().slice(0, 10); // yyyy-MM-dd for <input type=date>
+  }
+  return String(value);
 }

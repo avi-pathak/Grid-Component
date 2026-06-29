@@ -214,3 +214,34 @@ body {
   background: rgba(33, 111, 237, 0.1);
   border-radius: 7px;
 }
+
+/* custom cell templates */
+.apg-cell .badge {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 7px;
+  flex: none;
+}
+
+.apg-cell .bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #e7ebf1;
+  overflow: hidden;
+  margin-right: 8px;
+}
+
+.apg-cell .bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+}
+
+.apg-cell .bar-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--site-muted);
+  font-size: 12px;
+}

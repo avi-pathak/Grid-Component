@@ -89,6 +89,7 @@ export class RowRenderer {
         cellEl,
         ctx.columns[col],
         item,
+        row,
         ctx.layout.getColLeft(col),
         ctx.layout.getColWidth(col),
         selected,

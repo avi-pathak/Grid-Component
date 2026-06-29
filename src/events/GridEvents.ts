@@ -8,4 +8,5 @@ export interface GridEvents {
   cellEditStart: CellAddress;
   cellEditEnd: CellAddress;
   undoStackChanged: { canUndo: boolean; canRedo: boolean };
+  columnReordered: { from: number; to: number };
 }

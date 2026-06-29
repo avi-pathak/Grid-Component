@@ -62,4 +62,40 @@ describe('Column', () => {
     });
     expect(formatted).not.toBe('');
   });
+
+  it('treats a valueGetter column as calculated and read-only', () => {
+    const col = new Column<{ a: number; b: number }>({
+      header: 'Sum',
+      valueGetter: (item) => item.a + item.b,
+      editable: true, // ignored for calculated columns
+    });
+    expect(col.isCalculated).toBe(true);
+    expect(col.editable).toBe(false);
+    expect(col.getValue({ a: 2, b: 3 })).toBe(5);
+    expect(col.binding).toBe('');
+  });
+
+  it('maps values to text and back with a dataMap (string list)', () => {
+    const col = new Column({ binding: 'status', dataMap: ['Open', 'Closed'] });
+    expect(col.format({ status: 'Closed' })).toBe('Closed');
+    expect(col.parse('Open')).toBe('Open');
+  });
+
+  it('maps value/text pairs with a dataMap', () => {
+    const col = new Column({
+      binding: 'country',
+      dataMap: [
+        { value: 'us', text: 'United States' },
+        { value: 'uk', text: 'United Kingdom' },
+      ],
+    });
+    expect(col.format({ country: 'uk' })).toBe('United Kingdom');
+    expect(col.parse('us')).toBe('us');
+    expect(col.dataMap?.length).toBe(2);
+  });
+
+  it('keeps a cellTemplate reference', () => {
+    const col = new Column({ binding: 'sales', cellTemplate: (c) => `<b>${c.value}</b>` });
+    expect(col.cellTemplate).toBeTypeOf('function');
+  });
 });

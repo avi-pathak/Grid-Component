@@ -206,3 +206,28 @@
 .apg-editor.apg-align-center {
   text-align: center;
 }
+
+.apg-editor-combo {
+  padding: 0 4px;
+  background: var(--apg-cell-bg);
+  cursor: pointer;
+}
+
+.apg-cell-template {
+  overflow: hidden;
+}
+
+.apg-col-drop-marker {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  margin-left: -1px;
+  background: var(--apg-active-border);
+  pointer-events: none;
+  z-index: 5;
+}
+
+.apg-header-cell {
+  cursor: default;
+}

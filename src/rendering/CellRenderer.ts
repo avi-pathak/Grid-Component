@@ -25,6 +25,7 @@ export class CellRenderer {
     el: HTMLElement,
     column: Column,
     item: Record<string, unknown>,
+    row: number,
     left: number,
     width: number,
     selected: boolean,
@@ -36,7 +37,10 @@ export class CellRenderer {
     if (selected) el.classList.add('apg-cell-selected');
     if (active) el.classList.add('apg-cell-active');
 
-    if (column.dataType === 'Boolean') {
+    if (column.cellTemplate) {
+      el.classList.add('apg-cell-template');
+      el.innerHTML = column.cellTemplate({ value: column.getValue(item), item, row, column });
+    } else if (column.dataType === 'Boolean') {
       el.classList.add('apg-cell-bool');
       el.classList.toggle('apg-checked', column.getValue(item) === true);
       el.textContent = '';

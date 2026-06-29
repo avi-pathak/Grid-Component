@@ -252,4 +252,107 @@ describe('Grid', () => {
     grid.resizeColumn(0, 200); // id column was 80 -> 200
     expect(parseInt(canvas.style.width, 10)).toBe(before + 120);
   });
+
+  it('reorders a column with undo and emits columnReordered', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 80 },
+      { binding: 'b', header: 'B', width: 80 },
+      { binding: 'c', header: 'C', width: 80 },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(5) });
+    const events: Array<{ from: number; to: number }> = [];
+    grid.on('columnReordered', (e) => events.push(e));
+
+    grid.moveColumn(0, 2); // A -> end
+    expect(events).toEqual([{ from: 0, to: 2 }]);
+    expect(grid.canUndo).toBe(true);
+
+    grid.undo();
+    expect(grid.canUndo).toBe(false);
+    expect(grid.canRedo).toBe(true);
+  });
+
+  it('ignores out-of-range or no-op column moves', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.moveColumn(0, 0);
+    grid.moveColumn(0, 5);
+    expect(grid.canUndo).toBe(false);
+  });
+
+  it('edits a dataMap (combo) cell via a select', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      {
+        binding: 'status',
+        header: 'Status',
+        width: 120,
+        editable: true,
+        dataMap: ['Open', 'Closed'],
+      },
+    ];
+    const data = [{ id: 0, status: 'Open' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1);
+    const select = host.querySelector('select.apg-editor') as HTMLSelectElement;
+    expect(select).not.toBeNull();
+    expect(select.options.length).toBe(2);
+    select.value = 'Closed';
+    select.dispatchEvent(new Event('change'));
+    expect(data[0].status).toBe('Closed');
+    expect(grid.canUndo).toBe(true);
+  });
+
+  it('does not edit a calculated column', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 80, dataType: 'Number' as const },
+      {
+        header: 'Sum',
+        width: 80,
+        valueGetter: (r: Record<string, unknown>) => Number(r.a) + 1,
+        editable: true,
+      },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: [{ a: 5 }] });
+    grid.editCell(0, 1);
+    expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+
+  it('places the editor in the scrolling cells panel at the cell position', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      { binding: 'name', header: 'Name', width: 120, editable: true },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(100), rowHeight: 24 });
+
+    grid.editCell(10, 1);
+    const editor = host.querySelector('.apg-editor') as HTMLElement;
+    // The editor must be a child of .apg-cells so it scrolls with the row; if it
+    // lived in .apg-viewport it would drift from the cell once scrolled.
+    expect(editor.parentElement?.classList.contains('apg-cells')).toBe(true);
+    // Content coordinates: col 1 starts after the 80px id column, row 10 at 10*24.
+    expect(editor.style.transform).toBe('translate3d(80px, 240px, 0)');
+  });
+
+  it('keeps the editor aligned with its cell after scrolling', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      { binding: 'name', header: 'Name', width: 120, editable: true },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(100), rowHeight: 24 });
+
+    grid.editCell(40, 1);
+    const before = (host.querySelector('.apg-editor') as HTMLElement).style.transform;
+    (host.querySelector('.apg-editor') as HTMLElement).dispatchEvent(new Event('blur'));
+
+    // Scroll so the same row sits at a non-zero scrollTop, then re-edit. The
+    // transform must be unchanged — the old code subtracted scrollTop here and
+    // the editor crept upward away from the cell.
+    grid.scrollTo(40);
+    grid.editCell(40, 1);
+    const after = (host.querySelector('.apg-editor') as HTMLElement).style.transform;
+
+    expect(after).toBe(before);
+    expect(after).toBe('translate3d(80px, 960px, 0)'); // 40 * 24
+  });
 });

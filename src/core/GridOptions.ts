@@ -15,6 +15,8 @@ export interface GridOptions<T = Record<string, unknown>> {
   headersVisibility?: HeadersVisibility;
   /** Regular rows between alternating-colored rows. 0 disables. Default 1 (FlexGrid). */
   alternatingRowStep?: number;
+  /** Allow users to drag column headers to reorder them. Default true (FlexGrid). */
+  allowColumnReorder?: boolean;
 }
 
 export interface ResolvedOptions<T> {
@@ -26,6 +28,7 @@ export interface ResolvedOptions<T> {
   selectionMode: SelectionMode;
   headersVisibility: HeadersVisibility;
   alternatingRowStep: number;
+  allowColumnReorder: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -42,5 +45,6 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     selectionMode: options.selectionMode ?? 'Cell',
     headersVisibility: options.headersVisibility ?? 'All',
     alternatingRowStep: options.alternatingRowStep ?? 1,
+    allowColumnReorder: options.allowColumnReorder ?? true,
   };
 }

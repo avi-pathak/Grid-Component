@@ -1,4 +1,5 @@
 import { TextEditor } from './TextEditor';
+import { ComboEditor } from './ComboEditor';
 import { Column } from '../models/Column';
 import { DataView } from '../data/DataView';
 import { LayoutEngine } from '../virtualization/LayoutEngine';
@@ -7,13 +8,12 @@ import { UndoStack } from '../commands/UndoStack';
 import { EditAction } from '../commands/EditAction';
 
 export interface EditorDeps {
-  viewport: HTMLElement;
+  /** The scrolling cells panel. The editor lives here so it tracks the cell while scrolling. */
+  cells: HTMLElement;
   layout: LayoutEngine;
   data: DataView;
   columns: Column[];
   undo: UndoStack;
-  gutterLeft: number;
-  gutterTop: number;
   onApplied: () => void;
   onStart: (cell: CellAddress) => void;
   onEnd: (cell: CellAddress) => void;
@@ -21,11 +21,17 @@ export interface EditorDeps {
 
 /** Begins, commits, and cancels cell edits; commits run through the undo stack. */
 export class EditorManager {
-  private editor: TextEditor;
+  private text: TextEditor;
+  private combo: ComboEditor;
+  private active: TextEditor | ComboEditor | null = null;
   private editing: CellAddress | null = null;
 
   constructor(private deps: EditorDeps) {
-    this.editor = new TextEditor(
+    this.text = new TextEditor(
+      (value) => this.commit(value),
+      () => this.cancel(),
+    );
+    this.combo = new ComboEditor(
       (value) => this.commit(value),
       () => this.cancel(),
     );
@@ -55,7 +61,8 @@ export class EditorManager {
 
     const rect = this.cellRect(cell);
     this.editing = cell;
-    this.editor.open(this.deps.viewport, column, this.deps.data.item(cell.row), rect);
+    this.active = column.dataMap ? this.combo : this.text;
+    this.active.open(this.deps.cells, column, this.deps.data.item(cell.row), rect);
     this.deps.onStart(cell);
   }
 
@@ -63,7 +70,8 @@ export class EditorManager {
     const cell = this.editing;
     if (!cell) return;
     this.editing = null;
-    this.editor.close();
+    this.active?.close();
+    this.active = null;
 
     const column = this.deps.columns[cell.col];
     const item = this.deps.data.item(cell.row);
@@ -83,17 +91,18 @@ export class EditorManager {
     const cell = this.editing;
     if (!cell) return;
     this.editing = null;
-    this.editor.close();
+    this.active?.close();
+    this.active = null;
     this.deps.onEnd(cell);
   }
 
+  // Position in cells-panel (content) coordinates. The editor is a child of that
+  // panel, so it scrolls with the row — no scroll offset to subtract, no gutter
+  // to add. The browser flips the native dropdown/calendar up or down on its own.
   private cellRect(cell: CellAddress): DOMRect {
-    const vp = this.deps.viewport;
-    const x = this.deps.gutterLeft + this.deps.layout.getColLeft(cell.col) - vp.scrollLeft;
-    const y = this.deps.gutterTop + this.deps.layout.getRowTop(cell.row) - vp.scrollTop;
     return new DOMRect(
-      x,
-      y,
+      this.deps.layout.getColLeft(cell.col),
+      this.deps.layout.getRowTop(cell.row),
       this.deps.layout.getColWidth(cell.col),
       this.deps.layout.getRowHeight(cell.row),
     );

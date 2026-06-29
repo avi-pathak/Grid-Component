@@ -19,8 +19,10 @@ import { GridEvents } from '../events/GridEvents';
 import { MouseHandler } from '../events/MouseHandler';
 import { KeyboardHandler, NavAction } from '../events/KeyboardHandler';
 import { ColumnResizer } from '../events/ColumnResizer';
+import { ColumnDragger } from '../events/ColumnDragger';
 import { UndoStack } from '../commands/UndoStack';
 import { ResizeColumnAction } from '../commands/ResizeColumnAction';
+import { MoveColumnAction, moveColumn } from '../commands/MoveColumnAction';
 import { EditorManager } from '../editing/EditorManager';
 import { clamp } from '../utils/Math';
 
@@ -54,6 +56,7 @@ export class Grid {
   private mouse: MouseHandler;
   private keyboard: KeyboardHandler;
   private resizer: ColumnResizer;
+  private dragger?: ColumnDragger;
   private undoStack = new UndoStack();
   private editor: EditorManager;
 
@@ -121,15 +124,21 @@ export class Grid {
       () => this.refresh(),
       (col, width) => this.resizeColumn(col, width),
     );
+    if (resolved.allowColumnReorder) {
+      this.dragger = new ColumnDragger(
+        this.viewportRenderer.headerInner,
+        this.layout,
+        () => this.columns,
+        (from, to) => this.moveColumn(from, to),
+      );
+    }
 
     this.editor = new EditorManager({
-      viewport: this.viewportRenderer.viewport,
+      cells: this.viewportRenderer.cells,
       layout: this.layout,
       data: this.data,
       columns: this.columns,
       undo: this.undoStack,
-      gutterLeft: this.viewportRenderer.gutterLeft,
-      gutterTop: this.viewportRenderer.gutterTop,
       onApplied: () => this.draw(),
       onStart: (cell) => this.events.emit('cellEditStart', cell),
       onEnd: (cell) => this.events.emit('cellEditEnd', cell),
@@ -249,11 +258,22 @@ export class Grid {
     this.refresh();
   }
 
+  /** Move a column to a new index. Recorded on the undo stack. */
+  moveColumn(from: number, to: number): void {
+    const last = this.columns.length - 1;
+    if (from === to || from < 0 || from > last || to < 0 || to > last) return;
+    this.undoStack.push(new MoveColumnAction(this.columns, from, to, () => this.refresh()));
+    moveColumn(this.columns, from, to);
+    this.refresh();
+    this.events.emit('columnReordered', { from, to });
+  }
+
   dispose(): void {
     this.scroll.dispose();
     this.mouse.dispose();
     this.keyboard.dispose();
     this.resizer.dispose();
+    this.dragger?.dispose();
     this.events.clear();
     this.undoStack.clear();
     this.resizeObserver?.disconnect();

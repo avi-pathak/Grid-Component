@@ -3,44 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>apgrid demo</title>
-    <style>
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        font-family: -apple-system, Segoe UI, Roboto, sans-serif;
-      }
-      body {
-        padding: 16px;
-      }
-      #theGrid {
-        height: 480px;
-        width: 720px;
-        border: 1px solid #ccc;
-        margin-top: 8px;
-      }
-    </style>
+    <title>apgrid — virtualized data grid demos</title>
   </head>
   <body>
-    <h1>apgrid demo</h1>
-    <label>
-      Selection mode:
-      <select id="mode">
-        <option value="None">None</option>
-        <option value="Cell">Cell (single)</option>
-        <option value="CellRange" selected>CellRange (multiple)</option>
-        <option value="Row">Row</option>
-        <option value="RowRange">RowRange</option>
-        <option value="Column">Column</option>
-        <option value="ColumnRange">ColumnRange</option>
-      </select>
-    </label>
-    <button id="undo" disabled>Undo</button>
-    <button id="redo" disabled>Redo</button>
-    <p style="margin: 4px 0; color: #666; font-size: 13px">
-      Double-click a cell to edit. Ctrl+Z / Ctrl+Y to undo / redo.
-    </p>
-    <div id="theGrid"></div>
+    <aside class="sidebar">
+      <div class="brand">
+        <h1>apgrid</h1>
+        <span class="tag">Virtualized data grid for the web</span>
+        <span class="ver" id="version"></span>
+      </div>
+      <nav class="nav" id="nav">
+        <div class="nav-head">Feature demos</div>
+      </nav>
+      <div class="sidebar-foot">Built with TypeScript · zero runtime deps</div>
+    </aside>
+
+    <main class="main">
+      <header class="demo-head">
+        <h2 id="demo-title"></h2>
+        <p id="demo-tagline"></p>
+      </header>
+      <section class="stage" id="stage"></section>
+    </main>
   </body>
 </html>

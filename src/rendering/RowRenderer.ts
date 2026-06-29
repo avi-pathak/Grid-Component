@@ -55,7 +55,8 @@ export class RowRenderer {
 
   private acquireRow(row: number, ctx: RenderContext): RowView {
     const el = this.rowPool.acquire();
-    el.classList.toggle('apg-row-alt', row % 2 === 1);
+    const step = ctx.state.alternatingRowStep;
+    el.classList.toggle('apg-row-alt', step > 0 && Math.floor(row / step) % 2 === 1);
     el.style.height = `${ctx.layout.getRowHeight(row)}px`;
     setTransform(el, 0, ctx.layout.getRowTop(row));
     this.canvas.appendChild(el);

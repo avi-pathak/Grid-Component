@@ -11,8 +11,11 @@ export class MouseHandler {
 
   private readonly onMouseDown = (e: MouseEvent): void => {
     if (e.button !== 0) return;
+    // Let clicks inside an open editor select text normally.
+    if ((e.target as HTMLElement).closest('.apg-editor')) return;
     const cell = this.hitTest(e);
     if (!cell) return;
+    e.preventDefault(); // keep the browser from starting a text selection
     this.dragging = true;
     this.onSelect(cell, e.shiftKey, true);
   };
@@ -28,6 +31,7 @@ export class MouseHandler {
   };
 
   private readonly onDoubleClick = (e: MouseEvent): void => {
+    if ((e.target as HTMLElement).closest('.apg-editor')) return;
     const cell = this.hitTest(e);
     if (cell) this.onDouble(cell);
   };

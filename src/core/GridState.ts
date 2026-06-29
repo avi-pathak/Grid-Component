@@ -18,8 +18,7 @@ export class GridState {
 
   selection: CellRange | null = null;
   activeCell: CellAddress | null = null;
-  /** Columns to highlight in the header, derived from the mode + selection. */
-  selectedCols: { left: number; right: number } | null = null;
+  alternatingRowStep = 1;
 
   private listeners = new Set<StateListener>();
 

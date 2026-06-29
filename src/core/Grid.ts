@@ -68,6 +68,7 @@ export class Grid {
     this.rowHeight = resolved.rowHeight;
     this.headerHeight = resolved.headerHeight;
     this.selectionModel = new SelectionModel(resolved.selectionMode);
+    this.state.alternatingRowStep = resolved.alternatingRowStep;
 
     const showColumnHeader =
       resolved.headersVisibility === 'All' || resolved.headersVisibility === 'Column';
@@ -315,11 +316,8 @@ export class Grid {
   }
 
   private syncSelectionState(): void {
-    const range = this.selectionModel.getRange(this.bounds());
-    const active = this.selectionModel.getActive();
-    this.state.selection = range;
-    this.state.activeCell = active;
-    this.state.selectedCols = headerCols(this.selectionModel.getMode(), range, active);
+    this.state.selection = this.selectionModel.getRange(this.bounds());
+    this.state.activeCell = this.selectionModel.getActive();
   }
 
   private onNav(action: NavAction, extend: boolean): void {
@@ -378,18 +376,4 @@ export class Grid {
 
     this.onScroll();
   }
-}
-
-// Header highlight follows the column span for column/cell-range modes, but only
-// marks the current column for row and single-cell modes.
-function headerCols(
-  mode: SelectionMode,
-  range: CellRange | null,
-  active: CellAddress | null,
-): { left: number; right: number } | null {
-  if (!range || !active) return null;
-  if (mode === 'CellRange' || mode === 'Column' || mode === 'ColumnRange') {
-    return { left: range.leftCol, right: range.rightCol };
-  }
-  return { left: active.col, right: active.col };
 }

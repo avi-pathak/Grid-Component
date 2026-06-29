@@ -16,7 +16,7 @@ export class RowHeaderRenderer {
   constructor(private inner: HTMLElement) {}
 
   render(ctx: RenderContext): void {
-    const { firstRow, lastRow, selection } = ctx.state;
+    const { firstRow, lastRow } = ctx.state;
 
     for (const [row, el] of this.active) {
       if (row < firstRow || row > lastRow) {
@@ -33,8 +33,6 @@ export class RowHeaderRenderer {
         this.inner.appendChild(el);
         this.active.set(row, el);
       }
-      const selected = selection != null && row >= selection.topRow && row <= selection.bottomRow;
-      el.classList.toggle('apg-rowheader-cell-selected', selected);
       el.style.height = `${ctx.layout.getRowHeight(row)}px`;
       setTransform(el, 0, ctx.layout.getRowTop(row));
       el.textContent = String(row + 1);

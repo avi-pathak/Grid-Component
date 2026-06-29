@@ -13,6 +13,8 @@ export interface GridOptions<T = Record<string, unknown>> {
   rowHeaderWidth?: number;
   selectionMode?: SelectionMode;
   headersVisibility?: HeadersVisibility;
+  /** Regular rows between alternating-colored rows. 0 disables. Default 1 (FlexGrid). */
+  alternatingRowStep?: number;
 }
 
 export interface ResolvedOptions<T> {
@@ -23,6 +25,7 @@ export interface ResolvedOptions<T> {
   rowHeaderWidth: number;
   selectionMode: SelectionMode;
   headersVisibility: HeadersVisibility;
+  alternatingRowStep: number;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -38,5 +41,6 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     rowHeaderWidth: options.rowHeaderWidth ?? DEFAULT_ROW_HEADER_WIDTH,
     selectionMode: options.selectionMode ?? 'Cell',
     headersVisibility: options.headersVisibility ?? 'All',
+    alternatingRowStep: options.alternatingRowStep ?? 1,
   };
 }

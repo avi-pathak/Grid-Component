@@ -16,7 +16,7 @@ export class HeaderRenderer {
   constructor(private inner: HTMLElement) {}
 
   render(ctx: RenderContext): void {
-    const { firstCol, lastCol, selectedCols } = ctx.state;
+    const { firstCol, lastCol } = ctx.state;
 
     for (const [col, el] of this.active) {
       if (col < firstCol || col > lastCol) {
@@ -33,9 +33,6 @@ export class HeaderRenderer {
         this.inner.appendChild(el);
         this.active.set(col, el);
       }
-      const selected =
-        selectedCols != null && col >= selectedCols.left && col <= selectedCols.right;
-      el.classList.toggle('apg-header-cell-selected', selected);
       el.style.left = `${ctx.layout.getColLeft(col)}px`;
       el.style.width = `${ctx.layout.getColWidth(col)}px`;
       el.textContent = ctx.columns[col].header;

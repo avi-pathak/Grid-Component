@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Grid } from './Grid';
+import { DataMapEditor } from '../models/DataMapEditor';
+import { DataMap } from '../models/DataMap';
 
 function makeRows(n: number) {
   const rows = [];
@@ -294,11 +296,12 @@ describe('Grid', () => {
     const grid = new Grid(host, { columns: cols, itemsSource: data });
 
     grid.editCell(0, 1);
-    const select = host.querySelector('select.apg-editor') as HTMLSelectElement;
-    expect(select).not.toBeNull();
-    expect(select.options.length).toBe(2);
-    select.value = 'Closed';
-    select.dispatchEvent(new Event('change'));
+    const input = host.querySelector('.apg-editor-dropdown .apg-dd-input') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    const options = host.querySelectorAll('.apg-editor-dropdown .apg-dropdown-option');
+    expect(options.length).toBe(2);
+    input.value = 'Closed';
+    input.dispatchEvent(new Event('blur'));
     expect(data[0].status).toBe('Closed');
     expect(grid.canUndo).toBe(true);
   });
@@ -354,5 +357,164 @@ describe('Grid', () => {
 
     expect(after).toBe(before);
     expect(after).toBe('translate3d(80px, 960px, 0)'); // 40 * 24
+  });
+
+  it('opens a radio editor for a RadioButtons data-mapped column', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      {
+        binding: 'priority',
+        header: 'Priority',
+        width: 120,
+        editable: true,
+        dataMap: [
+          { value: 1, text: 'High' },
+          { value: 2, text: 'Low' },
+        ],
+        dataMapEditor: DataMapEditor.RadioButtons,
+      },
+    ];
+    const data = [{ id: 0, priority: 1 }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1);
+    const radios = host.querySelectorAll('.apg-editor-radio input[type=radio]');
+    expect(radios.length).toBe(2);
+
+    const low = [...radios].find(
+      (r) => (r as HTMLInputElement).value === 'Low',
+    ) as HTMLInputElement;
+    low.checked = true;
+    low.dispatchEvent(new Event('change'));
+    expect(data[0].priority).toBe(2);
+    expect(grid.canUndo).toBe(true);
+  });
+
+  it('opens an autocomplete editor for an AutoComplete data-mapped column', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      {
+        binding: 'owner',
+        header: 'Owner',
+        width: 120,
+        editable: true,
+        dataMap: ['Alice', 'Bob'],
+        dataMapEditor: DataMapEditor.AutoComplete,
+      },
+    ];
+    const data = [{ id: 0, owner: 'Alice' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-editor-dropdown .apg-dd-input') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    // The popup list renders the map's display values as options.
+    const options = host.querySelectorAll('.apg-editor-dropdown .apg-dropdown-option');
+    expect(options.length).toBe(2);
+    input.value = 'Bob';
+    input.dispatchEvent(new Event('blur'));
+    expect(data[0].owner).toBe('Bob');
+  });
+
+  it('filters a dynamic data-mapped column by the row item', () => {
+    const cityItems = [
+      { country: 'US', city: 'Seattle' },
+      { country: 'US', city: 'Miami' },
+      { country: 'UK', city: 'London' },
+    ];
+    const cityMap = new DataMap(cityItems, 'city', 'city');
+    cityMap.itemsFilter = (row) => {
+      const country = (row as { country?: string }).country;
+      return country ? cityItems.filter((c) => c.country === country) : cityItems;
+    };
+    const cols = [
+      { binding: 'country', header: 'Country', width: 100, editable: true, dataMap: ['US', 'UK'] },
+      { binding: 'city', header: 'City', width: 120, editable: true, dataMap: cityMap },
+    ];
+    const data = [{ country: 'US', city: 'Seattle' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1); // open the City dropdown for a US row
+    const texts = [...host.querySelectorAll('.apg-editor-dropdown .apg-dropdown-option')].map(
+      (o) => o.textContent,
+    );
+    expect(texts).toEqual(['Miami', 'Seattle']); // only US cities, sorted by display
+  });
+
+  it('tracks edited rows when trackChanges is enabled', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      { binding: 'name', header: 'Name', width: 120, editable: true },
+    ];
+    const data = makeRows(10);
+    const grid = new Grid(host, { columns: cols, itemsSource: data, trackChanges: true });
+
+    grid.editCell(2, 1);
+    const input = host.querySelector('.apg-editor') as HTMLInputElement;
+    input.value = 'renamed';
+    input.dispatchEvent(new Event('blur'));
+
+    expect(grid.collectionView.itemsEdited).toContain(data[2]);
+  });
+
+  it('grows the grid when a row is added through the collection view', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(10), rowHeight: 24 });
+    grid.collectionView.addNew({ id: 99, name: 'new' }, true);
+    const canvas = host.querySelector('.apg-canvas') as HTMLElement;
+    expect(canvas.style.height).toBe('292px'); // 28 gutter + 11 * 24
+  });
+
+  it('sets a cell value programmatically with undo support', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      { binding: 'name', header: 'Name', width: 120, editable: true },
+    ];
+    const data = makeRows(5);
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.setCellValue(2, 1, 'patched');
+    expect(data[2].name).toBe('patched');
+    expect(grid.canUndo).toBe(true);
+    grid.undo();
+    expect(data[2].name).toBe('r2');
+  });
+
+  it('ignores setCellValue on a non-editable column', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.setCellValue(0, 0, 999);
+    expect(grid.canUndo).toBe(false);
+  });
+
+  it('updates a dependent column from cellEditEnd', () => {
+    const citiesByCountry: Record<string, string[]> = {
+      US: ['Seattle', 'Miami'],
+      UK: ['London', 'Bristol'],
+    };
+    const cols = [
+      { binding: 'country', header: 'Country', width: 100, editable: true, dataMap: ['US', 'UK'] },
+      {
+        binding: 'city',
+        header: 'City',
+        width: 120,
+        editable: true,
+        dataMap: ['Seattle', 'Miami', 'London', 'Bristol'],
+      },
+    ];
+    const data = [{ country: 'US', city: 'Seattle' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+    grid.on('cellEditEnd', ({ row, col }) => {
+      if (col !== 0) return;
+      const item = grid.collectionView.items[row] as { country: string; city: string };
+      const cities = citiesByCountry[item.country] ?? [];
+      if (!cities.includes(item.city)) grid.setCellValue(row, 1, cities[0]);
+    });
+
+    grid.editCell(0, 0);
+    const input = host.querySelector('.apg-editor-dropdown .apg-dd-input') as HTMLInputElement;
+    input.value = 'UK';
+    input.dispatchEvent(new Event('blur'));
+
+    expect(data[0].country).toBe('UK');
+    expect(data[0].city).toBe('London'); // city reset to a valid UK city
   });
 });

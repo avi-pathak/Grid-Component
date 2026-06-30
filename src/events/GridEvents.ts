@@ -1,4 +1,5 @@
 import { CellAddress } from '../models/Cell';
+import { ChangeAction } from '../data/CollectionView';
 
 export interface GridEvents {
   cellClick: CellAddress;
@@ -9,4 +10,5 @@ export interface GridEvents {
   cellEditEnd: CellAddress;
   undoStackChanged: { canUndo: boolean; canRedo: boolean };
   columnReordered: { from: number; to: number };
+  collectionChanged: { action: ChangeAction };
 }

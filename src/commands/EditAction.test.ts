@@ -5,7 +5,7 @@ import { Column } from '../models/Column';
 
 describe('EditAction', () => {
   it('swaps old and new values on undo and redo', () => {
-    const data = new DataView([{ sales: 100 }]);
+    const data = new DataView<Record<string, unknown>>([{ sales: 100 }]);
     const col = new Column({ binding: 'sales', editable: true });
     let applied = 0;
     const a = new EditAction(data, col, 0, 100, 250, () => applied++);

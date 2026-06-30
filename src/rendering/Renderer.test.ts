@@ -21,7 +21,7 @@ const columns = [
 function makeData(n: number) {
   const rows = [];
   for (let i = 0; i < n; i++) rows.push({ id: i, country: 'UK', sales: i * 2 });
-  return new DataView(rows);
+  return new DataView<Record<string, unknown>>(rows);
 }
 
 function setup(rowCount: number) {

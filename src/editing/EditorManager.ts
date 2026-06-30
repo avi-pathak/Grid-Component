@@ -1,6 +1,8 @@
 import { TextEditor } from './TextEditor';
-import { ComboEditor } from './ComboEditor';
+import { DropDownEditor } from './DropDownEditor';
+import { RadioEditor } from './RadioEditor';
 import { Column } from '../models/Column';
+import { DataMapEditor } from '../models/DataMapEditor';
 import { DataView } from '../data/DataView';
 import { LayoutEngine } from '../virtualization/LayoutEngine';
 import { CellAddress } from '../models/Cell';
@@ -19,22 +21,26 @@ export interface EditorDeps {
   onEnd: (cell: CellAddress) => void;
 }
 
+/** The common shape every cell editor implements so the manager can swap them. */
+interface CellEditor {
+  open(parent: HTMLElement, column: Column, item: Record<string, unknown>, rect: DOMRect): void;
+  close(): void;
+}
+
 /** Begins, commits, and cancels cell edits; commits run through the undo stack. */
 export class EditorManager {
   private text: TextEditor;
-  private combo: ComboEditor;
-  private active: TextEditor | ComboEditor | null = null;
+  private dropdown: DropDownEditor;
+  private radio: RadioEditor;
+  private active: CellEditor | null = null;
   private editing: CellAddress | null = null;
 
   constructor(private deps: EditorDeps) {
-    this.text = new TextEditor(
-      (value) => this.commit(value),
-      () => this.cancel(),
-    );
-    this.combo = new ComboEditor(
-      (value) => this.commit(value),
-      () => this.cancel(),
-    );
+    const commit = (value: string) => this.commit(value);
+    const cancel = () => this.cancel();
+    this.text = new TextEditor(commit, cancel);
+    this.dropdown = new DropDownEditor(commit, cancel);
+    this.radio = new RadioEditor(commit, cancel);
   }
 
   get isEditing(): boolean {
@@ -50,7 +56,7 @@ export class EditorManager {
     this.deps.undo.push(
       new EditAction(this.deps.data, column, cell.row, oldValue, !oldValue, this.deps.onApplied),
     );
-    column.setValue(item, !oldValue);
+    this.deps.data.applyEdit(item, () => column.setValue(item, !oldValue));
     this.deps.onApplied();
     return true;
   }
@@ -61,7 +67,7 @@ export class EditorManager {
 
     const rect = this.cellRect(cell);
     this.editing = cell;
-    this.active = column.dataMap ? this.combo : this.text;
+    this.active = this.editorFor(column);
     this.active.open(this.deps.cells, column, this.deps.data.item(cell.row), rect);
     this.deps.onStart(cell);
   }
@@ -81,7 +87,7 @@ export class EditorManager {
       this.deps.undo.push(
         new EditAction(this.deps.data, column, cell.row, oldValue, newValue, this.deps.onApplied),
       );
-      column.setValue(item, newValue);
+      this.deps.data.applyEdit(item, () => column.setValue(item, newValue));
       this.deps.onApplied();
     }
     this.deps.onEnd(cell);
@@ -94,6 +100,12 @@ export class EditorManager {
     this.active?.close();
     this.active = null;
     this.deps.onEnd(cell);
+  }
+
+  private editorFor(column: Column): CellEditor {
+    if (!column.dataMap) return this.text;
+    if (column.dataMapEditor === DataMapEditor.RadioButtons) return this.radio;
+    return this.dropdown; // DropDownList, AutoComplete, and Menu share the in-cell dropdown
   }
 
   // Position in cells-panel (content) coordinates. The editor is a child of that

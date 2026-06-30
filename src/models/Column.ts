@@ -1,3 +1,6 @@
+import { DataMap } from './DataMap';
+import { DataMapEditor } from './DataMapEditor';
+
 export type DataType = 'String' | 'Number' | 'Boolean' | 'Date';
 export type CellAlign = 'left' | 'center' | 'right';
 
@@ -22,16 +25,12 @@ export interface ColumnDef<T = Record<string, unknown>> {
   /** Compute the value from the row. Makes the column calculated (read-only). */
   valueGetter?: (item: T) => unknown;
   valueFormatter?: (value: unknown, item: T) => string;
-  /** Choices for a combo-box cell. The cell shows the mapped text and edits via a dropdown. */
-  dataMap?: DataMapEntry[];
+  /** Choices for a combo-box cell. Accepts a simple list, value/text pairs, or a DataMap. */
+  dataMap?: DataMapEntry[] | DataMap;
+  /** Which editor a data-mapped cell uses. Default DropDownList. */
+  dataMapEditor?: DataMapEditor;
   /** Return custom cell HTML. Overrides the default text/checkbox rendering. */
   cellTemplate?: (ctx: CellTemplateContext<T>) => string;
-}
-
-interface MapOption {
-  value: unknown;
-  text: string;
-  key: string;
 }
 
 const DEFAULT_WIDTH = 100;
@@ -42,12 +41,12 @@ function defaultAlign(dataType: DataType): CellAlign {
   return 'left';
 }
 
-function normalizeMap(entries: DataMapEntry[]): MapOption[] {
-  return entries.map((e) => {
-    const value = typeof e === 'string' ? e : e.value;
-    const text = typeof e === 'string' ? e : e.text;
-    return { value, text, key: String(value) };
-  });
+function toDataMap(map: DataMapEntry[] | DataMap): DataMap {
+  if (map instanceof DataMap) return map;
+  if (map.length > 0 && typeof map[0] === 'object') {
+    return new DataMap(map as { value: unknown; text: string }[], 'value', 'text');
+  }
+  return new DataMap(map as string[]);
 }
 
 export class Column<T = Record<string, unknown>> {
@@ -57,11 +56,12 @@ export class Column<T = Record<string, unknown>> {
   editable: boolean;
   readonly dataType: DataType;
   readonly align: CellAlign;
+  readonly dataMapEditor: DataMapEditor;
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
 
   private readonly valueGetter?: (item: T) => unknown;
   private readonly valueFormatter?: (value: unknown, item: T) => string;
-  private readonly mapOptions?: MapOption[];
+  private readonly map?: DataMap;
 
   constructor(def: ColumnDef<T>) {
     this.binding = def.binding ?? '';
@@ -72,7 +72,8 @@ export class Column<T = Record<string, unknown>> {
     this.valueGetter = def.valueGetter;
     this.valueFormatter = def.valueFormatter;
     this.cellTemplate = def.cellTemplate;
-    this.mapOptions = def.dataMap ? normalizeMap(def.dataMap) : undefined;
+    this.map = def.dataMap ? toDataMap(def.dataMap) : undefined;
+    this.dataMapEditor = def.dataMapEditor ?? DataMapEditor.DropDownList;
     // Calculated columns are read-only; combo cells stay editable.
     this.editable = (def.editable ?? false) && !this.isCalculated;
   }
@@ -82,8 +83,8 @@ export class Column<T = Record<string, unknown>> {
     return this.valueGetter != null;
   }
 
-  get dataMap(): MapOption[] | undefined {
-    return this.mapOptions;
+  get dataMap(): DataMap | undefined {
+    return this.map;
   }
 
   getValue(item: T): unknown {
@@ -97,9 +98,9 @@ export class Column<T = Record<string, unknown>> {
 
   /** Turn editor text into a typed value matching the column's dataType or dataMap. */
   parse(text: string): unknown {
-    if (this.mapOptions) {
-      const opt = this.mapOptions.find((o) => o.key === text);
-      return opt ? opt.value : text;
+    if (this.map) {
+      const key = this.map.getKeyValue(text);
+      return key != null ? key : text;
     }
     switch (this.dataType) {
       case 'Number': {
@@ -121,9 +122,9 @@ export class Column<T = Record<string, unknown>> {
   format(item: T): string {
     const value = this.getValue(item);
     if (this.valueFormatter) return this.valueFormatter(value, item);
-    if (this.mapOptions) {
-      const opt = this.mapOptions.find((o) => o.value === value);
-      return opt ? opt.text : value == null ? '' : String(value);
+    if (this.map) {
+      const text = this.map.getDisplayValue(value);
+      return text !== '' ? text : value == null ? '' : String(value);
     }
     if (value == null) return '';
     if (this.dataType === 'Boolean') return ''; // rendered as a checkbox

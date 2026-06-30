@@ -36,7 +36,7 @@ module.exports = [
     output: {
       path: dist,
       filename: 'umd/apgrid.umd.js',
-      library: { name: 'ApGrid', type: 'umd' },
+      library: { name: 'ap', type: 'umd' },
       globalObject: 'this',
     },
     module: {

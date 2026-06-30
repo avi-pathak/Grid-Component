@@ -90,8 +90,8 @@ describe('Column', () => {
       ],
     });
     expect(col.format({ country: 'uk' })).toBe('United Kingdom');
-    expect(col.parse('us')).toBe('us');
-    expect(col.dataMap?.length).toBe(2);
+    expect(col.parse('United States')).toBe('us');
+    expect(col.dataMap?.getKeyValues().length).toBe(2);
   });
 
   it('keeps a cellTemplate reference', () => {

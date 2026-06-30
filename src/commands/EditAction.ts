@@ -14,7 +14,8 @@ export class EditAction implements UndoableAction {
   ) {}
 
   private apply(value: unknown): void {
-    this.column.setValue(this.data.item(this.row), value);
+    const item = this.data.item(this.row);
+    this.data.applyEdit(item, () => this.column.setValue(item, value));
     this.onApplied();
   }
 

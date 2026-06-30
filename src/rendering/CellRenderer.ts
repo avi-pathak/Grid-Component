@@ -45,6 +45,8 @@ export class CellRenderer {
       el.classList.toggle('apg-checked', column.getValue(item) === true);
       el.textContent = '';
     } else {
+      // Mapped, editable cells get a chevron so they read as dropdowns at rest.
+      if (column.dataMap && column.editable) el.classList.add('apg-cell-dropdown');
       el.textContent = column.format(item);
     }
   }

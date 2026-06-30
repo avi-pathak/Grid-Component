@@ -4,6 +4,7 @@ import { GridViewport } from './GridViewport';
 import { Column, ColumnDef } from '../models/Column';
 import { CellAddress, CellRange } from '../models/Cell';
 import { DataView } from '../data/DataView';
+import { CollectionView } from '../data/CollectionView';
 import { LayoutEngine } from '../virtualization/LayoutEngine';
 import { ViewportRenderer } from '../rendering/ViewportRenderer';
 import { RowRenderer } from '../rendering/RowRenderer';
@@ -22,6 +23,7 @@ import { ColumnResizer } from '../events/ColumnResizer';
 import { ColumnDragger } from '../events/ColumnDragger';
 import { UndoStack } from '../commands/UndoStack';
 import { ResizeColumnAction } from '../commands/ResizeColumnAction';
+import { EditAction } from '../commands/EditAction';
 import { MoveColumnAction, moveColumn } from '../commands/MoveColumnAction';
 import { EditorManager } from '../editing/EditorManager';
 import { clamp } from '../utils/Math';
@@ -59,6 +61,7 @@ export class Grid {
   private dragger?: ColumnDragger;
   private undoStack = new UndoStack();
   private editor: EditorManager;
+  private unsubscribeData: () => void = () => {};
 
   constructor(host: string | HTMLElement, options: GridOptions) {
     const el = typeof host === 'string' ? document.querySelector<HTMLElement>(host) : host;
@@ -67,7 +70,7 @@ export class Grid {
 
     const resolved = resolveOptions(options);
     this.columns = resolved.columns;
-    this.data = new DataView(resolved.items);
+    this.data = new DataView(resolved.view);
     this.rowHeight = resolved.rowHeight;
     this.headerHeight = resolved.headerHeight;
     this.selectionModel = new SelectionModel(resolved.selectionMode);
@@ -146,6 +149,13 @@ export class Grid {
     this.undoStack.onStateChanged = () =>
       this.events.emit('undoStackChanged', { canUndo: this.canUndo, canRedo: this.canRedo });
 
+    this.unsubscribeData = this.data.collectionView.on('collectionChanged', (e) => {
+      // Edits keep the same rows, so only redraw; add/remove/reset change totals.
+      if (e.action === 'change') this.draw();
+      else this.refresh();
+      this.events.emit('collectionChanged', { action: e.action });
+    });
+
     if (typeof ResizeObserver !== 'undefined') {
       this.resizeObserver = new ResizeObserver(() => this.measure());
       this.resizeObserver.observe(this.host);
@@ -158,6 +168,11 @@ export class Grid {
   /** Subscribe to a grid event. Returns a function that removes the handler. */
   on<K extends keyof GridEvents>(type: K, handler: EventHandler<GridEvents[K]>): () => void {
     return this.events.on(type, handler);
+  }
+
+  /** The collection view behind the grid. Use it to read tracked changes or add/remove rows. */
+  get collectionView(): CollectionView {
+    return this.data.collectionView;
   }
 
   /** The active (current) cell, or null when nothing is selected. */
@@ -249,6 +264,19 @@ export class Grid {
     this.editor.begin({ row, col });
   }
 
+  /** Set a cell's value programmatically. Recorded on the undo stack. */
+  setCellValue(row: number, col: number, value: unknown): void {
+    const column = this.columns[col];
+    if (!column || !column.editable) return;
+    const item = this.data.item(row);
+    if (item == null) return;
+    const oldValue = column.getValue(item);
+    if (value === oldValue) return;
+    this.undoStack.push(new EditAction(this.data, column, row, oldValue, value, () => this.draw()));
+    this.data.applyEdit(item, () => column.setValue(item, value));
+    this.draw();
+  }
+
   /** Resize a column. Recorded on the undo stack. */
   resizeColumn(index: number, width: number): void {
     const column = this.columns[index];
@@ -269,6 +297,7 @@ export class Grid {
   }
 
   dispose(): void {
+    this.unsubscribeData();
     this.scroll.dispose();
     this.mouse.dispose();
     this.keyboard.dispose();

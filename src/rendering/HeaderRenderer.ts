@@ -35,9 +35,16 @@ export class HeaderRenderer {
       }
       const column = ctx.columns[col];
       el.className = `apg-header-cell apg-align-${column.align}`;
+      if (column.binding && !column.isCalculated) el.classList.add('apg-sortable');
       el.style.left = `${ctx.layout.getColLeft(col)}px`;
       el.style.width = `${ctx.layout.getColWidth(col)}px`;
       el.textContent = column.header;
+      const sort = ctx.state.sort;
+      if (sort && sort.col === col) {
+        const arrow = createEl('span', 'apg-sort-arrow');
+        arrow.textContent = sort.ascending ? '▲' : '▼';
+        el.appendChild(arrow);
+      }
     }
   }
 }

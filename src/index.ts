@@ -7,6 +7,9 @@ export { controls };
 
 // Core data
 export { CollectionView } from './data/CollectionView';
+export { ODataCollectionView } from './data/ODataCollectionView';
+export { ODataVirtualCollectionView } from './data/ODataVirtualCollectionView';
+export { SortDescription } from './models/SortDescription';
 
 // Grid module, also reachable through `controls`
 export { Grid } from './core/Grid';
@@ -23,5 +26,6 @@ export type { SelectionMode } from './selection/SelectionModel';
 export type { GridEvents } from './events/GridEvents';
 export type { UndoableAction } from './commands/UndoableAction';
 export type { CollectionViewOptions, CollectionChange, ChangeAction } from './data/CollectionView';
+export type { ODataOptions } from './data/ODataCollectionView';
 
 export const VERSION = '0.1.0';

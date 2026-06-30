@@ -5,6 +5,7 @@ import { Column, ColumnDef } from '../models/Column';
 import { CellAddress, CellRange } from '../models/Cell';
 import { DataView } from '../data/DataView';
 import { CollectionView } from '../data/CollectionView';
+import { SortDescription } from '../models/SortDescription';
 import { LayoutEngine } from '../virtualization/LayoutEngine';
 import { ViewportRenderer } from '../rendering/ViewportRenderer';
 import { RowRenderer } from '../rendering/RowRenderer';
@@ -59,6 +60,8 @@ export class Grid {
   private keyboard: KeyboardHandler;
   private resizer: ColumnResizer;
   private dragger?: ColumnDragger;
+  private allowSorting: boolean;
+  private headerDownX = -1;
   private undoStack = new UndoStack();
   private editor: EditorManager;
   private unsubscribeData: () => void = () => {};
@@ -135,6 +138,10 @@ export class Grid {
         (from, to) => this.moveColumn(from, to),
       );
     }
+    this.allowSorting = resolved.allowSorting;
+    const header = this.viewportRenderer.headerInner;
+    header.addEventListener('mousedown', this.onHeaderMouseDown);
+    header.addEventListener('click', this.onHeaderClick);
 
     this.editor = new EditorManager({
       cells: this.viewportRenderer.cells,
@@ -296,8 +303,55 @@ export class Grid {
     this.events.emit('columnReordered', { from, to });
   }
 
+  /** Sort by a column's binding. Omit `ascending` to toggle, or pass null to clear. */
+  sort(binding: string, ascending?: boolean | null): void {
+    const col = this.columns.findIndex((c) => c.binding === binding);
+    if (col >= 0) this.sortByColumn(col, ascending);
+  }
+
+  // Cycle a column's sort: unsorted -> ascending -> descending -> unsorted.
+  private sortByColumn(col: number, ascending?: boolean | null): void {
+    const column = this.columns[col];
+    if (!column || !column.binding || column.isCalculated) return;
+    if (ascending === null) {
+      this.clearSort();
+      return;
+    }
+    let dir = ascending;
+    if (dir == null) {
+      const cur = this.state.sort;
+      if (cur && cur.col === col) {
+        if (!cur.ascending) {
+          this.clearSort();
+          return;
+        }
+        dir = false;
+      } else {
+        dir = true;
+      }
+    }
+    this.state.sort = { col, ascending: dir };
+    this.data.collectionView.sortConverter = this.sortConverter;
+    this.data.collectionView.sortDescriptions = [new SortDescription(column.binding, dir)];
+  }
+
+  private clearSort(): void {
+    this.state.sort = null;
+    this.data.collectionView.sortDescriptions = [];
+  }
+
+  // Sort data-mapped columns by their display text (FlexGrid sortByDisplayValues).
+  private readonly sortConverter = (sd: SortDescription, _item: Row, value: unknown): unknown => {
+    const column = this.columns.find((c) => c.binding === sd.property);
+    if (column?.dataMap?.sortByDisplayValues) return column.dataMap.getDisplayValue(value);
+    return value;
+  };
+
   dispose(): void {
     this.unsubscribeData();
+    const header = this.viewportRenderer.headerInner;
+    header.removeEventListener('mousedown', this.onHeaderMouseDown);
+    header.removeEventListener('click', this.onHeaderClick);
     this.scroll.dispose();
     this.mouse.dispose();
     this.keyboard.dispose();
@@ -353,6 +407,21 @@ export class Grid {
     }
   }
 
+  // A header click sorts, unless it was really a resize or a reorder drag.
+  private readonly onHeaderMouseDown = (e: MouseEvent): void => {
+    this.headerDownX = e.clientX;
+  };
+
+  private readonly onHeaderClick = (e: MouseEvent): void => {
+    if (!this.allowSorting || Math.abs(e.clientX - this.headerDownX) > 4) return;
+    const header = this.viewportRenderer.headerInner;
+    const x = e.clientX - header.getBoundingClientRect().left;
+    const col = this.layout.colAtX(x);
+    const right = this.layout.getColLeft(col) + this.layout.getColWidth(col);
+    if (Math.abs(x - right) <= 5) return; // resize edge belongs to the resizer
+    this.sortByColumn(col);
+  };
+
   private onDoubleClick(cell: CellAddress): void {
     this.events.emit('cellDoubleClick', cell);
     this.editor.begin(cell);
@@ -371,6 +440,7 @@ export class Grid {
 
   private applyMove(cell: CellAddress, extend: boolean): void {
     if (!this.selectionModel.moveTo(cell, extend)) return;
+    this.data.collectionView.moveCurrentToPosition(cell.row); // currency follows selection
     this.syncSelectionState();
     this.draw();
     this.events.emit('selectionChanged', this.selectionModel.getActive());

@@ -81,6 +81,16 @@
   text-overflow: ellipsis;
 }
 
+.apg-header-cell.apg-sortable {
+  cursor: pointer;
+}
+
+.apg-sort-arrow {
+  margin-left: 4px;
+  font-size: 0.7em;
+  color: var(--apg-active-border);
+}
+
 .apg-rowheader-inner {
   position: absolute;
   left: 0;

@@ -18,6 +18,8 @@ export interface GridOptions<T = Record<string, unknown>> {
   alternatingRowStep?: number;
   /** Allow users to drag column headers to reorder them. Default true (FlexGrid). */
   allowColumnReorder?: boolean;
+  /** Allow clicking a column header to sort by it. Default true (FlexGrid). */
+  allowSorting?: boolean;
   /** Track added/removed/edited rows on the collection view. Default false. */
   trackChanges?: boolean;
 }
@@ -32,6 +34,7 @@ export interface ResolvedOptions<T> {
   headersVisibility: HeadersVisibility;
   alternatingRowStep: number;
   allowColumnReorder: boolean;
+  allowSorting: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -52,5 +55,6 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     headersVisibility: options.headersVisibility ?? 'All',
     alternatingRowStep: options.alternatingRowStep ?? 1,
     allowColumnReorder: options.allowColumnReorder ?? true,
+    allowSorting: options.allowSorting ?? true,
   };
 }

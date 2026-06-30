@@ -517,4 +517,71 @@ describe('Grid', () => {
     expect(data[0].country).toBe('UK');
     expect(data[0].city).toBe('London'); // city reset to a valid UK city
   });
+
+  it('sorts the view when sort() is called, cycling asc/desc/none', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    const cv = grid.collectionView;
+
+    grid.sort('id');
+    expect(cv.sortDescriptions[0]).toMatchObject({ property: 'id', ascending: true });
+    expect(cv.items.map((r) => (r as { id: number }).id)).toEqual([0, 1, 2, 3, 4]);
+
+    grid.sort('id'); // toggle to descending
+    expect(cv.sortDescriptions[0]).toMatchObject({ property: 'id', ascending: false });
+    expect(cv.items.map((r) => (r as { id: number }).id)).toEqual([4, 3, 2, 1, 0]);
+
+    grid.sort('id'); // third call clears the sort
+    expect(cv.sortDescriptions).toHaveLength(0);
+  });
+
+  it('shows a sort arrow on the sorted column header', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.sort('id', true);
+    const arrows = [...host.querySelectorAll('.apg-sort-arrow')].map((a) => a.textContent);
+    expect(arrows).toContain('▲');
+  });
+
+  it('does not sort a calculated column', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 80, dataType: 'Number' as const },
+      { header: 'Sum', width: 80, valueGetter: (r: Record<string, unknown>) => Number(r.a) + 1 },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: [{ a: 2 }, { a: 1 }] });
+    grid.sort('Sum'); // no binding match -> ignored
+    expect(grid.collectionView.sortDescriptions).toHaveLength(0);
+  });
+
+  it('moves the collection view current item to the selected row', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(10) });
+    grid.select(4, 1);
+    expect(grid.collectionView.currentPosition).toBe(4);
+    expect((grid.collectionView.currentItem as { id: number }).id).toBe(4);
+  });
+
+  it('sorts a data-mapped column by its display text', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 60, dataType: 'Number' as const },
+      {
+        binding: 'status',
+        header: 'Status',
+        width: 120,
+        editable: true,
+        // keys sort 1,2,3 but display sorts Closed, Open, Pending
+        dataMap: [
+          { value: 1, text: 'Open' },
+          { value: 2, text: 'Closed' },
+          { value: 3, text: 'Pending' },
+        ],
+      },
+    ];
+    const data = [
+      { id: 1, status: 1 },
+      { id: 2, status: 2 },
+      { id: 3, status: 3 },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+    grid.sort('status');
+    // by display: Closed(2), Open(1), Pending(3)
+    expect(grid.collectionView.items.map((r) => (r as { id: number }).id)).toEqual([2, 1, 3]);
+  });
 });

@@ -19,6 +19,8 @@ export class GridState {
   selection: CellRange | null = null;
   activeCell: CellAddress | null = null;
   alternatingRowStep = 1;
+  /** Which column the view is sorted by, and the direction. Null when unsorted. */
+  sort: { col: number; ascending: boolean } | null = null;
 
   private listeners = new Set<StateListener>();
 

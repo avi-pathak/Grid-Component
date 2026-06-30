@@ -1,5 +1,9 @@
 import { Demo } from './types';
 import { virtualization } from './virtualization';
+import { collectionViewBasics } from './collectionViewBasics';
+import { paging } from './paging';
+import { odata } from './odata';
+import { infiniteScroll } from './infiniteScroll';
 import { selection } from './selection';
 import { cellTypes } from './cellTypes';
 import { calculated } from './calculated';
@@ -16,6 +20,10 @@ export type { Demo };
 
 export const demos: Demo[] = [
   virtualization,
+  collectionViewBasics,
+  paging,
+  odata,
+  infiniteScroll,
   selection,
   cellTypes,
   calculated,

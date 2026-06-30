@@ -1,10 +1,9 @@
 import { UndoableAction } from './UndoableAction';
 
 /**
- * Tracks undoable actions, mirroring FlexGrid's `UndoStack`. Pushing an action
- * past the redo point discards the redo branch. Capped at `maxActions` (default
- * 1000) so long sessions don't grow without bound. `onStateChanged` lets the UI
- * enable/disable undo/redo controls.
+ * Tracks undoable actions. Pushing an action past the redo point discards the
+ * redo branch. Capped at `maxActions` (default 1000) so long sessions don't grow
+ * without bound. `onStateChanged` lets the UI enable/disable undo/redo controls.
  */
 export class UndoStack {
   private actions: UndoableAction[] = [];

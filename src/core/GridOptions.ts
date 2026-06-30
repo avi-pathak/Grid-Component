@@ -14,11 +14,11 @@ export interface GridOptions<T = Record<string, unknown>> {
   rowHeaderWidth?: number;
   selectionMode?: SelectionMode;
   headersVisibility?: HeadersVisibility;
-  /** Regular rows between alternating-colored rows. 0 disables. Default 1 (FlexGrid). */
+  /** Regular rows between alternating-colored rows. 0 disables. Default 1. */
   alternatingRowStep?: number;
-  /** Allow users to drag column headers to reorder them. Default true (FlexGrid). */
+  /** Allow users to drag column headers to reorder them. Default true. */
   allowColumnReorder?: boolean;
-  /** Allow clicking a column header to sort by it. Default true (FlexGrid). */
+  /** Allow clicking a column header to sort by it. Default true. */
   allowSorting?: boolean;
   /** Track added/removed/edited rows on the collection view. Default false. */
   trackChanges?: boolean;

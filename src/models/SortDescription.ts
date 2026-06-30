@@ -1,4 +1,4 @@
-/** Describes how a CollectionView sorts on one property. Mirrors Wijmo's SortDescription. */
+/** Describes how a CollectionView sorts on one property. */
 export class SortDescription {
   constructor(
     public readonly property: string,

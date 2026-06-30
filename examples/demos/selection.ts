@@ -15,7 +15,7 @@ const modes: SelectionMode[] = [
 export const selection: Demo = {
   id: 'selection',
   title: 'Selection modes',
-  tagline: 'Seven FlexGrid-style modes. Drag or shift-click to extend a range.',
+  tagline: 'Seven selection modes. Drag or shift-click to extend a range.',
   mount(host) {
     const toolbar = document.createElement('div');
     toolbar.className = 'apg-demo-toolbar';

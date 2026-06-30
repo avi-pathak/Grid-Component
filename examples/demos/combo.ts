@@ -7,7 +7,7 @@ const countries = 'US,Germany,UK,Japan,Italy,Greece,France,Spain,Brazil,India'.s
 export const combo: Demo = {
   id: 'combo',
   title: 'ComboBox cells',
-  tagline: 'A column with a dataMap edits through a dropdown (FlexGrid dataMap).',
+  tagline: 'A column with a dataMap edits through a dropdown.',
   mount(host) {
     const gridHost = document.createElement('div');
     gridHost.className = 'apg-demo-grid';

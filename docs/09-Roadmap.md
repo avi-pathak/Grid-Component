@@ -1,6 +1,6 @@
 # 09 — Roadmap
 
-Status of the build vs. FlexGrid's feature set. Done items are implemented, tested,
+Status of the build against the planned feature set. Done items are implemented, tested,
 and verified in the browser.
 
 ## Done

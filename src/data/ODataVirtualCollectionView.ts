@@ -3,8 +3,7 @@ import { ODataCollectionView } from './ODataCollectionView';
 /**
  * An {@link ODataCollectionView} that loads data incrementally for infinite
  * scrolling. The first load fetches one chunk; {@link loadMore} appends the next
- * chunk until every row has been retrieved. Modeled on Wijmo's
- * ODataVirtualCollectionView (scoped to append-on-scroll).
+ * chunk until every row has been retrieved.
  */
 export class ODataVirtualCollectionView<
   T = Record<string, unknown>,

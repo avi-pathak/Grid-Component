@@ -6,9 +6,9 @@ const EDGE = 5; // resize zone — leave it to the ColumnResizer
 const THRESHOLD = 4; // pixels before a press becomes a drag
 
 /**
- * Drag a column header to reorder columns (FlexGrid `allowDragging`). A press
- * that moves past the threshold starts a drag, shows a drop marker at the
- * nearest column boundary, and commits the move on release.
+ * Drag a column header to reorder columns. A press that moves past the threshold
+ * starts a drag, shows a drop marker at the nearest column boundary, and commits
+ * the move on release.
  */
 export class ColumnDragger {
   private srcCol = -1;

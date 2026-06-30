@@ -340,7 +340,7 @@ export class Grid {
     this.data.collectionView.sortDescriptions = [];
   }
 
-  // Sort data-mapped columns by their display text (FlexGrid sortByDisplayValues).
+  // Sort data-mapped columns by their display text rather than the raw key.
   private readonly sortConverter = (sd: SortDescription, _item: Row, value: unknown): unknown => {
     const column = this.columns.find((c) => c.binding === sd.property);
     if (column?.dataMap?.sortByDisplayValues) return column.dataMap.getDisplayValue(value);

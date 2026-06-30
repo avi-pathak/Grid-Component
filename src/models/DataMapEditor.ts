@@ -1,7 +1,6 @@
 /**
- * Editor types for a data-mapped column, matching Wijmo's DataMapEditor values.
- * The grid picks the matching editor when a column with a {@link DataMap} enters
- * edit mode.
+ * Editor types for a data-mapped column. The grid picks the matching editor when
+ * a column with a {@link DataMap} enters edit mode.
  */
 export enum DataMapEditor {
   /** Input with an autocomplete list; accepts typed values when the map is editable. */

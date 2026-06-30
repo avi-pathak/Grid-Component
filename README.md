@@ -1,7 +1,7 @@
 # @avi-pathak/apgrid
 
 A fast, framework-free **virtualized data grid** for the web. Renders 1,000,000+ rows
-with a recycled DOM, modeled on the architecture of commercial grids like FlexGrid.
+with a recycled DOM, modeled on the architecture of commercial data grids.
 
 ## Features
 

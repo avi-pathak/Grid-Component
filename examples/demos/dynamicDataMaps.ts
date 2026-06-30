@@ -39,8 +39,7 @@ function makeRows(n: number) {
 export const dynamicDataMaps: Demo = {
   id: 'dynamic-data-maps',
   title: 'Dynamic data maps',
-  tagline:
-    'The City choices depend on the row’s Country — change one and the other follows (Wijmo dynamic data maps).',
+  tagline: 'The City choices depend on the row’s Country — change one and the other follows.',
   mount(host) {
     const gridHost = document.createElement('div');
     gridHost.className = 'apg-demo-grid';

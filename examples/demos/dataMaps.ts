@@ -31,8 +31,7 @@ const owners = 'Alice,Bob,Carmen,Dmitri,Elena,Farid'.split(',');
 export const dataMaps: Demo = {
   id: 'data-maps',
   title: 'Data maps & editors',
-  tagline:
-    'One DataMap, three editors: dropdown, radio buttons, and autocomplete (Wijmo DataMapEditor).',
+  tagline: 'One DataMap, three editors: dropdown, radio buttons, and autocomplete.',
   mount(host) {
     const gridHost = document.createElement('div');
     gridHost.className = 'apg-demo-grid';

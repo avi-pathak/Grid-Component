@@ -29,8 +29,7 @@ pooled from.
 
 ### Selection modes
 
-Modeled after Wijmo FlexGrid's `SelectionMode`. Set it with the `selectionMode`
-option or the `grid.selectionMode` property:
+Set it with the `selectionMode` option or the `grid.selectionMode` property:
 
 | Mode | Behavior |
 | --- | --- |
@@ -50,9 +49,8 @@ grid.selectedCell;          // the active cell address, or null
 ```
 
 `Cell`/`Row`/`Column` are single-item modes; the `*Range` variants extend to a
-contiguous block. Non-contiguous selection (FlexGrid's `ListBox`/`MultiRange`,
-ctrl+click) is intentionally **not** in v1 — the anchor/active model leaves room for
-it later.
+contiguous block. Non-contiguous selection (a list of ranges via ctrl+click) is
+intentionally **not** in v1 — the anchor/active model leaves room for it later.
 
 ### Mouse
 
@@ -117,7 +115,7 @@ off();
 
 ## Deferred
 
-- **Non-contiguous selection** (FlexGrid `ListBox`/`MultiRange`, ctrl+click): would
+- **Non-contiguous selection** (a list of ranges via ctrl+click): would
   store a list of ranges instead of one. The anchor/active model is ready for it.
 - **FocusManager**: focus currently tracks selection on the host element; a dedicated
   manager arrives if focus and selection need to diverge (e.g. during editing).

@@ -5,7 +5,7 @@ import { Demo } from './types';
 export const changeTracking: Demo = {
   id: 'change-tracking',
   title: 'Change tracking',
-  tagline: 'trackChanges records edited, added, and removed rows like Wijmo CollectionView.',
+  tagline: 'trackChanges records edited, added, and removed rows on the collection view.',
   mount(host) {
     const toolbar = document.createElement('div');
     toolbar.className = 'apg-demo-toolbar';

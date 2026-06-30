@@ -8,7 +8,7 @@ export interface ScaffoldConfig {
 }
 
 /**
- * Builds and owns the static DOM scaffold using FlexGrid's single-scroller model:
+ * Builds and owns the static DOM scaffold using a single-scroller model:
  * one scroll container holds everything, so the native scrollbars span the whole
  * grid. The data cells scroll normally; the column header, row header, and
  * top-left corner are panels inside the canvas that are counter-translated on

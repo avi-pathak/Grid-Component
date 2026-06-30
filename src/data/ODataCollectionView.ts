@@ -30,7 +30,7 @@ const ISO_DATE = /^\d{4}-\d{2}-\d{2}T/;
 /**
  * A {@link CollectionView} backed by an OData service. Sorting, filtering, and
  * paging run on the server through $orderby/$filter/$top/$skip; the view holds
- * the current server page. Modeled on Wijmo's ODataCollectionView.
+ * the current server page.
  */
 export class ODataCollectionView<T = Record<string, unknown>> extends CollectionView<T> {
   readonly url: string;

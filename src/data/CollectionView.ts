@@ -24,9 +24,8 @@ export interface CollectionViewOptions<T> {
 /**
  * Exposes a plain array as an editable view and, when {@link trackChanges} is on,
  * records which items were added, removed, or edited so callers can sync a server.
- * Modeled on Wijmo's CollectionView: supports sorting, filtering, current-item
- * navigation, and change tracking. The view mirrors the source order until a
- * filter or sort is applied.
+ * Supports sorting, filtering, current-item navigation, and change tracking. The
+ * view mirrors the source order until a filter or sort is applied.
  */
 export class CollectionView<T = Record<string, unknown>> {
   /** Items added since tracking was enabled (via addNew/commitNew). */
@@ -39,8 +38,8 @@ export class CollectionView<T = Record<string, unknown>> {
   newItemCreator?: () => T;
 
   /**
-   * Converts a value before sorting (Wijmo parity). The grid uses it to sort
-   * data-mapped columns by their display text instead of the raw key.
+   * Converts a value before sorting. The grid uses it to sort data-mapped
+   * columns by their display text instead of the raw key.
    */
   sortConverter?: (sd: SortDescription, item: T, value: unknown) => unknown;
 

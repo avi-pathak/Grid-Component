@@ -7,7 +7,7 @@ const options: HeadersVisibility[] = ['All', 'Column', 'Row', 'None'];
 export const layout: Demo = {
   id: 'layout',
   title: 'Headers & layout',
-  tagline: 'Toggle row and column headers, just like FlexGrid headersVisibility.',
+  tagline: 'Toggle row and column headers via the headersVisibility option.',
   mount(host) {
     const toolbar = document.createElement('div');
     toolbar.className = 'apg-demo-toolbar';

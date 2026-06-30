@@ -1,9 +1,8 @@
 import { CellAddress, CellRange, cellEquals, makeRange } from '../models/Cell';
 
 /**
- * Selection behavior, modeled after Wijmo FlexGrid's `SelectionMode`. `None`
- * disables selection; `Cell`/`Row`/`Column` select a single item; the `*Range`
- * variants extend to a contiguous block.
+ * Selection behavior. `None` disables selection; `Cell`/`Row`/`Column` select a
+ * single item; the `*Range` variants extend to a contiguous block.
  */
 export type SelectionMode =
   'None' | 'Cell' | 'CellRange' | 'Row' | 'RowRange' | 'Column' | 'ColumnRange';

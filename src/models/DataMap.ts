@@ -5,7 +5,7 @@ interface DataMapEvents {
   mapChanged: void;
 }
 
-/** Compare keys by string form, matching Wijmo's default serializeKeys behavior. */
+/** Compare keys by string form, so 123 (number) and '123' (string) match. */
 function sameKey(a: unknown, b: unknown): boolean {
   return String(a) === String(b);
 }
@@ -13,8 +13,8 @@ function sameKey(a: unknown, b: unknown): boolean {
 /**
  * Maps stored key values to display values for a column, so the grid can show a
  * friendly label (a country name) while the cell holds a raw value (a code).
- * Modeled on Wijmo's DataMap: build it from a plain array of strings, an array of
- * objects plus value/display paths, or a {@link CollectionView}.
+ * Build it from a plain array of strings, an array of objects plus value/display
+ * paths, or a {@link CollectionView}.
  */
 export class DataMap {
   readonly collectionView: CollectionView;

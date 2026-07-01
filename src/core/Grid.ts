@@ -22,9 +22,11 @@ import { MouseHandler } from '../events/MouseHandler';
 import { KeyboardHandler, NavAction } from '../events/KeyboardHandler';
 import { ColumnResizer } from '../events/ColumnResizer';
 import { ColumnDragger } from '../events/ColumnDragger';
+import { ClipboardHandler } from '../events/ClipboardHandler';
 import { UndoStack } from '../commands/UndoStack';
 import { ResizeColumnAction } from '../commands/ResizeColumnAction';
 import { EditAction } from '../commands/EditAction';
+import { BatchAction } from '../commands/BatchAction';
 import { MoveColumnAction, moveColumn } from '../commands/MoveColumnAction';
 import { EditorManager } from '../editing/EditorManager';
 import { clamp } from '../utils/Math';
@@ -60,6 +62,7 @@ export class Grid {
   private keyboard: KeyboardHandler;
   private resizer: ColumnResizer;
   private dragger?: ColumnDragger;
+  private clipboard?: ClipboardHandler;
   private allowSorting: boolean;
   private headerDownX = -1;
   private undoStack = new UndoStack();
@@ -155,6 +158,14 @@ export class Grid {
     });
     this.undoStack.onStateChanged = () =>
       this.events.emit('undoStackChanged', { canUndo: this.canUndo, canRedo: this.canRedo });
+
+    if (resolved.allowClipboard) {
+      this.clipboard = new ClipboardHandler(this.host, {
+        isEditing: () => this.editor.isEditing,
+        getClip: () => this.copyForClipboard(),
+        applyClip: (text) => this.setClipString(text),
+      });
+    }
 
     this.unsubscribeData = this.data.collectionView.on('collectionChanged', (e) => {
       // Edits keep the same rows, so only redraw; add/remove/reset change totals.
@@ -284,6 +295,98 @@ export class Grid {
     this.draw();
   }
 
+  /**
+   * Get a range of cells as tab-delimited text (rows separated by newlines),
+   * suitable for the clipboard or a spreadsheet. Defaults to the current selection.
+   */
+  getClipString(range?: CellRange): string {
+    const rng = range ?? this.selection;
+    if (!rng) return '';
+    const lines: string[] = [];
+    for (let row = rng.topRow; row <= rng.bottomRow; row++) {
+      const item = this.data.item(row) as Row;
+      const cells: string[] = [];
+      for (let col = rng.leftCol; col <= rng.rightCol; col++) {
+        cells.push(item ? this.columns[col].format(item) : '');
+      }
+      lines.push(cells.join('\t'));
+    }
+    return lines.join('\n');
+  }
+
+  /**
+   * Parse tab-delimited text and write it into the grid starting at the top-left
+   * of `range` (defaults to the active cell). Read-only and calculated cells are
+   * skipped. The whole paste is a single undo step.
+   */
+  setClipString(text: string, range?: CellRange): void {
+    const anchor = range ?? this.selection;
+    if (!anchor) return;
+
+    const pasting = { text, cancel: false };
+    this.events.emit('pasting', pasting);
+    if (pasting.cancel) return;
+
+    const grid = this.parseClip(text);
+    const startRow = anchor.topRow;
+    const startCol = anchor.leftCol;
+    const edits: EditAction[] = [];
+    let lastRow = startRow;
+    let lastCol = startCol;
+
+    for (let r = 0; r < grid.length; r++) {
+      const row = startRow + r;
+      if (row >= this.layout.rowCount) break;
+      const item = this.data.item(row) as Row;
+      if (item == null) continue;
+      for (let c = 0; c < grid[r].length; c++) {
+        const col = startCol + c;
+        if (col >= this.layout.colCount) break;
+        const column = this.columns[col];
+        if (!column.editable || column.isCalculated) continue;
+        const newValue = column.parse(grid[r][c]);
+        const oldValue = column.getValue(item);
+        if (newValue === oldValue) continue;
+        edits.push(new EditAction(this.data, column, row, oldValue, newValue, () => {}));
+        lastRow = Math.max(lastRow, row);
+        lastCol = Math.max(lastCol, col);
+      }
+    }
+
+    if (!edits.length) return;
+    const batch = new BatchAction(edits, () => this.draw());
+    this.undoStack.push(batch);
+    batch.redo(); // apply all edits and redraw once
+
+    const range2: CellRange = {
+      topRow: startRow,
+      leftCol: startCol,
+      bottomRow: lastRow,
+      rightCol: lastCol,
+    };
+    this.events.emit('pasted', { range: range2 });
+  }
+
+  // Build the clipboard string for the current selection, honoring the cancelable
+  // copying/copied events. Returns null when there is nothing to copy.
+  private copyForClipboard(): string | null {
+    const range = this.selection;
+    if (!range) return null;
+    const copying = { range, cancel: false };
+    this.events.emit('copying', copying);
+    if (copying.cancel) return null;
+    const text = this.getClipString(range);
+    this.events.emit('copied', { range });
+    return text;
+  }
+
+  // Split pasted text into a grid of cells. Handles CRLF and a single trailing
+  // newline (spreadsheets usually add one).
+  private parseClip(text: string): string[][] {
+    const trimmed = text.replace(/\r\n/g, '\n').replace(/\n$/, '');
+    return trimmed.split('\n').map((line) => line.split('\t'));
+  }
+
   /** Resize a column. Recorded on the undo stack. */
   resizeColumn(index: number, width: number): void {
     const column = this.columns[index];
@@ -357,6 +460,7 @@ export class Grid {
     this.keyboard.dispose();
     this.resizer.dispose();
     this.dragger?.dispose();
+    this.clipboard?.dispose();
     this.events.clear();
     this.undoStack.clear();
     this.resizeObserver?.disconnect();

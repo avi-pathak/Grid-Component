@@ -20,6 +20,8 @@ export interface GridOptions<T = Record<string, unknown>> {
   allowColumnReorder?: boolean;
   /** Allow clicking a column header to sort by it. Default true. */
   allowSorting?: boolean;
+  /** Enable copy/paste shortcuts (Ctrl+C / Ctrl+V). Default false. */
+  allowClipboard?: boolean;
   /** Track added/removed/edited rows on the collection view. Default false. */
   trackChanges?: boolean;
 }
@@ -35,6 +37,7 @@ export interface ResolvedOptions<T> {
   alternatingRowStep: number;
   allowColumnReorder: boolean;
   allowSorting: boolean;
+  allowClipboard: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -56,5 +59,6 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     alternatingRowStep: options.alternatingRowStep ?? 1,
     allowColumnReorder: options.allowColumnReorder ?? true,
     allowSorting: options.allowSorting ?? true,
+    allowClipboard: options.allowClipboard ?? false,
   };
 }

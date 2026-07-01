@@ -1,4 +1,4 @@
-import { CellAddress } from '../models/Cell';
+import { CellAddress, CellRange } from '../models/Cell';
 import { ChangeAction } from '../data/CollectionView';
 
 export interface GridEvents {
@@ -11,4 +11,12 @@ export interface GridEvents {
   undoStackChanged: { canUndo: boolean; canRedo: boolean };
   columnReordered: { from: number; to: number };
   collectionChanged: { action: ChangeAction };
+  /** Before copying the selection. Set `cancel` to true to block the copy. */
+  copying: { range: CellRange; cancel: boolean };
+  /** After the selection was written to the clipboard. */
+  copied: { range: CellRange };
+  /** Before applying pasted text. Set `cancel` to true to block the paste. */
+  pasting: { text: string; cancel: boolean };
+  /** After pasted text was applied to the given range. */
+  pasted: { range: CellRange };
 }

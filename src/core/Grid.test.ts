@@ -584,4 +584,115 @@ describe('Grid', () => {
     // by display: Closed(2), Open(1), Pending(3)
     expect(grid.collectionView.items.map((r) => (r as { id: number }).id)).toEqual([2, 1, 3]);
   });
+
+  it('exports a cell range as tab-delimited text', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 60, dataType: 'Number' as const },
+      { binding: 'name', header: 'Name', width: 100, editable: true },
+    ];
+    const data = [
+      { id: 1, name: 'a' },
+      { id: 2, name: 'b' },
+      { id: 3, name: 'c' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowClipboard: true });
+    const text = grid.getClipString({ topRow: 0, leftCol: 0, bottomRow: 1, rightCol: 1 });
+    expect(text).toBe('1\ta\n2\tb');
+  });
+
+  it('pastes tab-delimited text down a column from the anchor', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 60, dataType: 'Number' as const },
+      { binding: 'name', header: 'Name', width: 100, editable: true },
+    ];
+    const data = [
+      { id: 1, name: 'a' },
+      { id: 2, name: 'b' },
+      { id: 3, name: 'c' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowClipboard: true });
+    grid.setClipString('x\ny\nz', { topRow: 0, leftCol: 1, bottomRow: 0, rightCol: 1 });
+    expect(data.map((r) => r.name)).toEqual(['x', 'y', 'z']);
+  });
+
+  it('pastes a 2D block across rows and columns', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 60, dataType: 'Number' as const, editable: true },
+      { binding: 'b', header: 'B', width: 60, editable: true },
+    ];
+    const data = [
+      { a: 0, b: '' },
+      { a: 0, b: '' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowClipboard: true });
+    grid.setClipString('10\tx\n20\ty', { topRow: 0, leftCol: 0, bottomRow: 0, rightCol: 0 });
+    expect(data).toEqual([
+      { a: 10, b: 'x' },
+      { a: 20, b: 'y' },
+    ]);
+  });
+
+  it('skips read-only and calculated columns when pasting', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 60, dataType: 'Number' as const }, // read-only
+      { binding: 'name', header: 'Name', width: 100, editable: true },
+      {
+        header: 'Sum',
+        width: 60,
+        valueGetter: (r: Record<string, unknown>) => Number(r.id) + 1,
+        editable: true, // calculated -> forced read-only
+      },
+    ];
+    const data = [{ id: 1, name: 'a' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowClipboard: true });
+    grid.setClipString('99\tZ\t100', { topRow: 0, leftCol: 0, bottomRow: 0, rightCol: 0 });
+    expect(data[0].id).toBe(1); // read-only, unchanged
+    expect(data[0].name).toBe('Z'); // editable, pasted
+  });
+
+  it('treats a paste as a single undo step', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 60 },
+      { binding: 'name', header: 'Name', width: 100, editable: true },
+    ];
+    const data = [
+      { id: 1, name: 'a' },
+      { id: 2, name: 'b' },
+      { id: 3, name: 'c' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowClipboard: true });
+    grid.setClipString('x\ny\nz', { topRow: 0, leftCol: 1, bottomRow: 0, rightCol: 1 });
+    expect(grid.canUndo).toBe(true);
+    grid.undo();
+    expect(data.map((r) => r.name)).toEqual(['a', 'b', 'c']); // all restored at once
+    expect(grid.canUndo).toBe(false);
+    grid.redo();
+    expect(data.map((r) => r.name)).toEqual(['x', 'y', 'z']);
+  });
+
+  it('cancels a paste when the pasting event is canceled', () => {
+    const cols = [{ binding: 'name', header: 'Name', width: 100, editable: true }];
+    const data = [{ name: 'a' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowClipboard: true });
+    grid.on('pasting', (e) => (e.cancel = true));
+    grid.setClipString('z', { topRow: 0, leftCol: 0, bottomRow: 0, rightCol: 0 });
+    expect(data[0].name).toBe('a');
+    expect(grid.canUndo).toBe(false);
+  });
+
+  it('emits pasted with the affected range', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 60, editable: true },
+      { binding: 'b', header: 'B', width: 60, editable: true },
+    ];
+    const data = [
+      { a: '', b: '' },
+      { a: '', b: '' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowClipboard: true });
+    let pastedRange: unknown = null;
+    grid.on('pasted', (e) => (pastedRange = e.range));
+    grid.setClipString('1\t2\n3\t4', { topRow: 0, leftCol: 0, bottomRow: 0, rightCol: 0 });
+    expect(pastedRange).toEqual({ topRow: 0, leftCol: 0, bottomRow: 1, rightCol: 1 });
+  });
 });

@@ -13,6 +13,7 @@ import { dynamicDataMaps } from './dynamicDataMaps';
 import { customCell } from './customCell';
 import { reorder } from './reorder';
 import { editing } from './editing';
+import { clipboard } from './clipboard';
 import { changeTracking } from './changeTracking';
 import { layout } from './layout';
 
@@ -33,6 +34,7 @@ export const demos: Demo[] = [
   customCell,
   reorder,
   editing,
+  clipboard,
   changeTracking,
   layout,
 ];

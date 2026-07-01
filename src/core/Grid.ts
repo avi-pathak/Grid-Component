@@ -497,7 +497,6 @@ export class Grid {
   private onScroll(): void {
     const vp = this.viewportRenderer.viewport;
     const changed = this.viewport.update(vp.scrollTop, vp.scrollLeft);
-    this.viewportRenderer.syncPanels(vp.scrollLeft, vp.scrollTop);
     if (changed) this.renderer.render(this.context());
     this.events.emit('scrollChanged', { scrollTop: vp.scrollTop, scrollLeft: vp.scrollLeft });
   }

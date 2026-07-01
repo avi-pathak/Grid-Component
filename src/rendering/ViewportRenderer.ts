@@ -1,4 +1,4 @@
-import { createEl, setTransform } from '../utils/DOM';
+import { createEl } from '../utils/DOM';
 
 export interface ScaffoldConfig {
   showColumnHeader: boolean;
@@ -11,10 +11,11 @@ export interface ScaffoldConfig {
  * Builds and owns the static DOM scaffold using a single-scroller model:
  * one scroll container holds everything, so the native scrollbars span the whole
  * grid. The data cells scroll normally; the column header, row header, and
- * top-left corner are panels inside the canvas that are counter-translated on
- * each scroll to stay pinned (header pins vertically, row header horizontally,
- * corner both). A gutter (rowHeaderWidth × headerHeight) is reserved at the
- * top-left so the cells start past the headers.
+ * top-left corner are `position: sticky` panels that the browser keeps pinned on
+ * the compositor as the canvas scrolls (header pins vertically, row header
+ * horizontally, corner both) — no per-frame JS, so they never flicker. A gutter
+ * (rowHeaderWidth × headerHeight) is reserved at the top-left so the cells start
+ * past the headers.
  */
 export class ViewportRenderer {
   readonly viewport: HTMLElement;
@@ -43,12 +44,12 @@ export class ViewportRenderer {
     this.cells.style.top = `${this.gutterTop}px`;
 
     this.headerInner = createEl('div', 'apg-header-inner');
-    this.headerInner.style.left = `${this.gutterLeft}px`;
+    this.headerInner.style.marginLeft = `${this.gutterLeft}px`;
     this.headerInner.style.height = `${this.gutterTop}px`;
     this.headerInner.style.display = config.showColumnHeader ? '' : 'none';
 
     this.rowHeaderInner = createEl('div', 'apg-rowheader-inner');
-    this.rowHeaderInner.style.top = `${this.gutterTop}px`;
+    this.rowHeaderInner.style.marginTop = `${this.gutterTop}px`;
     this.rowHeaderInner.style.width = `${this.gutterLeft}px`;
     this.rowHeaderInner.style.display = config.showRowHeader ? '' : 'none';
 
@@ -67,13 +68,6 @@ export class ViewportRenderer {
     this.canvas.style.height = `${this.gutterTop + totalHeight}px`;
     this.headerInner.style.width = `${totalWidth}px`;
     this.rowHeaderInner.style.height = `${totalHeight}px`;
-  }
-
-  /** Counter-translate the pinned panels so they stay in place as the canvas scrolls. */
-  syncPanels(scrollLeft: number, scrollTop: number): void {
-    setTransform(this.headerInner, 0, scrollTop);
-    setTransform(this.rowHeaderInner, scrollLeft, 0);
-    setTransform(this.corner, scrollLeft, scrollTop);
   }
 
   dispose(): void {

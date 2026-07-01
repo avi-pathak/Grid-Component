@@ -38,6 +38,7 @@
 
 .apg-canvas {
   position: relative;
+  display: grid;
 }
 
 .apg-cells {
@@ -47,23 +48,27 @@
 }
 
 .apg-corner {
-  position: absolute;
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
   top: 0;
   left: 0;
   z-index: 3;
   background: var(--apg-header-bg);
   border-right: var(--apg-border);
   border-bottom: var(--apg-border);
-  will-change: transform;
 }
 
 .apg-header-inner {
-  position: absolute;
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
   top: 0;
   z-index: 2;
   background: var(--apg-header-bg);
   border-bottom: var(--apg-border);
-  will-change: transform;
 }
 
 .apg-header-cell {
@@ -92,12 +97,14 @@
 }
 
 .apg-rowheader-inner {
-  position: absolute;
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
   left: 0;
   z-index: 2;
   background: var(--apg-header-bg);
   border-right: var(--apg-border);
-  will-change: transform;
 }
 
 .apg-rowheader-cell {

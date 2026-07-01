@@ -62,9 +62,9 @@ describe('Renderer', () => {
     viewport.update(24 * 1000, 0); // scroll to row 1000
     renderer.render(ctx);
 
-    // The pinned corner counter-translates by the scroll so it stays in place.
+    // The corner is pinned with CSS position:sticky, so it carries no transform.
     const corner = host.querySelector('.apg-corner') as HTMLElement;
-    expect(corner.style.transform).toBe('translate3d(0px, 24000px, 0)');
+    expect(corner.style.transform).toBe('');
 
     const nums = [...host.querySelectorAll('.apg-rowheader-cell')].map((c) =>
       Number(c.textContent),

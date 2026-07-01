@@ -4,7 +4,7 @@ import { RowRenderer } from './RowRenderer';
 import { HeaderRenderer } from './HeaderRenderer';
 import { RowHeaderRenderer } from './RowHeaderRenderer';
 
-/** Runs one render pass: headers, body rows, then sync the panels to the scroll. */
+/** Runs one render pass: headers, then body rows. */
 export class Renderer {
   constructor(
     private viewport: ViewportRenderer,
@@ -25,6 +25,5 @@ export class Renderer {
     if (this.showRowHeader) {
       this.rowHeader.render(ctx);
     }
-    this.viewport.syncPanels(ctx.state.scrollLeft, ctx.state.scrollTop);
   }
 }

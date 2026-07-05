@@ -3,6 +3,7 @@ import { DataMapEditor } from './DataMapEditor';
 
 export type DataType = 'String' | 'Number' | 'Boolean' | 'Date';
 export type CellAlign = 'left' | 'center' | 'right';
+export type AggregateType = 'sum' | 'avg' | 'min' | 'max' | 'count';
 
 /** An entry in a column's dataMap (combo box choices). */
 export type DataMapEntry = string | { value: unknown; text: string };
@@ -29,6 +30,8 @@ export interface ColumnDef<T = Record<string, unknown>> {
   dataMap?: DataMapEntry[] | DataMap;
   /** Which editor a data-mapped cell uses. Default DropDownList. */
   dataMapEditor?: DataMapEditor;
+  /** Aggregate shown for this column on group-header rows. */
+  aggregate?: AggregateType;
   /** Return custom cell HTML. Overrides the default text/checkbox rendering. */
   cellTemplate?: (ctx: CellTemplateContext<T>) => string;
 }
@@ -57,6 +60,7 @@ export class Column<T = Record<string, unknown>> {
   readonly dataType: DataType;
   readonly align: CellAlign;
   readonly dataMapEditor: DataMapEditor;
+  readonly aggregate?: AggregateType;
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
 
   private readonly valueGetter?: (item: T) => unknown;
@@ -74,6 +78,7 @@ export class Column<T = Record<string, unknown>> {
     this.cellTemplate = def.cellTemplate;
     this.map = def.dataMap ? toDataMap(def.dataMap) : undefined;
     this.dataMapEditor = def.dataMapEditor ?? DataMapEditor.DropDownList;
+    this.aggregate = def.aggregate;
     // Calculated columns are read-only; combo cells stay editable.
     this.editable = (def.editable ?? false) && !this.isCalculated;
   }
@@ -120,8 +125,12 @@ export class Column<T = Record<string, unknown>> {
   }
 
   format(item: T): string {
-    const value = this.getValue(item);
-    if (this.valueFormatter) return this.valueFormatter(value, item);
+    return this.formatValue(this.getValue(item), item);
+  }
+
+  /** Format a raw value the way this column formats cells. Also used for aggregates. */
+  formatValue(value: unknown, item?: T): string {
+    if (this.valueFormatter) return this.valueFormatter(value, item as T);
     if (this.map) {
       const text = this.map.getDisplayValue(value);
       return text !== '' ? text : value == null ? '' : String(value);

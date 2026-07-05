@@ -5,6 +5,8 @@ export interface ScaffoldConfig {
   showRowHeader: boolean;
   headerHeight: number;
   rowHeaderWidth: number;
+  showGroupPanel: boolean;
+  groupPanelHeight: number;
 }
 
 /**
@@ -25,6 +27,8 @@ export class ViewportRenderer {
   readonly rowHeaderInner: HTMLElement;
   readonly gutterLeft: number;
   readonly gutterTop: number;
+  /** Host bar for the grouping panel, present only when it is enabled. */
+  readonly groupPanel?: HTMLElement;
 
   private corner: HTMLElement;
 
@@ -60,6 +64,16 @@ export class ViewportRenderer {
 
     this.canvas.append(this.cells, this.headerInner, this.rowHeaderInner, this.corner);
     this.viewport.appendChild(this.canvas);
+
+    if (config.showGroupPanel) {
+      // A bar above the scroll area; the viewport starts below it.
+      const panel = createEl('div', 'apg-grouppanel');
+      panel.style.height = `${config.groupPanelHeight}px`;
+      this.viewport.style.top = `${config.groupPanelHeight}px`;
+      host.appendChild(panel);
+      this.groupPanel = panel;
+    }
+
     host.appendChild(this.viewport);
   }
 
@@ -71,6 +85,7 @@ export class ViewportRenderer {
   }
 
   dispose(): void {
+    this.groupPanel?.remove();
     this.viewport.remove();
     this.host.classList.remove('apg');
   }

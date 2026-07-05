@@ -17,9 +17,21 @@ export { Grid as ApGrid } from './core/Grid';
 export { Column } from './models/Column';
 export { DataMap } from './models/DataMap';
 export { DataMapEditor } from './models/DataMapEditor';
+export { PropertyGroupDescription } from './models/GroupDescription';
+export { CollectionViewGroup } from './data/CollectionViewGroup';
+export { icons, iconEl } from './utils/icons';
 
 export type { ColumnDef } from './models/Column';
-export type { DataType, CellAlign, DataMapEntry, CellTemplateContext } from './models/Column';
+export type {
+  DataType,
+  CellAlign,
+  DataMapEntry,
+  CellTemplateContext,
+  AggregateType,
+} from './models/Column';
+export type { GroupHeaderContext, GroupHeaderTemplate } from './rendering/GroupHeader';
+export type { GroupPanelOptions } from './rendering/GroupPanel';
+export type { IconName } from './utils/icons';
 export type { GridOptions, HeadersVisibility } from './core/GridOptions';
 export type { CellAddress, CellRange } from './models/Cell';
 export type { SelectionMode } from './selection/SelectionModel';

@@ -1,6 +1,8 @@
 import { Column, ColumnDef } from '../models/Column';
 import { SelectionMode } from '../selection/SelectionModel';
 import { CollectionView } from '../data/CollectionView';
+import { GroupHeaderTemplate } from '../rendering/GroupHeader';
+import { GroupPanelOptions, ResolvedGroupPanel } from '../rendering/GroupPanel';
 
 export type HeadersVisibility = 'None' | 'Column' | 'Row' | 'All';
 
@@ -22,6 +24,18 @@ export interface GridOptions<T = Record<string, unknown>> {
   allowSorting?: boolean;
   /** Enable copy/paste shortcuts (Ctrl+C / Ctrl+V). Default false. */
   allowClipboard?: boolean;
+  /**
+   * Show the grouping bar; drag column headers into it to group. `true` enables
+   * everything, `false` (default) hides it, or pass an options object to switch
+   * individual capabilities on and off.
+   */
+  groupPanel?: boolean | GroupPanelOptions;
+  /** Text shown in the empty grouping bar. Also settable via `groupPanel.placeholder`. */
+  groupPanelPlaceholder?: string;
+  /** Maximum number of grouping levels. Default 6. Also settable via `groupPanel.maxGroups`. */
+  maxGroups?: number;
+  /** Custom renderer for the label on group-header rows (after the chevron). */
+  groupHeaderTemplate?: GroupHeaderTemplate<T>;
   /** Track added/removed/edited rows on the collection view. Default false. */
   trackChanges?: boolean;
 }
@@ -38,16 +52,27 @@ export interface ResolvedOptions<T> {
   allowColumnReorder: boolean;
   allowSorting: boolean;
   allowClipboard: boolean;
+  groupPanel: boolean;
+  groupPanelOptions: ResolvedGroupPanel;
+  maxGroups: number;
+  groupHeaderTemplate?: GroupHeaderTemplate<T>;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
 const DEFAULT_HEADER_HEIGHT = 28;
 const DEFAULT_ROW_HEADER_WIDTH = 48;
+const DEFAULT_MAX_GROUPS = 6;
+const DEFAULT_GROUP_PLACEHOLDER = 'Drag a column header here to group by that column';
 
 export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
   const source = options.itemsSource ?? options.dataSource ?? [];
   const view = source instanceof CollectionView ? source : new CollectionView<T>(source);
   if (options.trackChanges != null) view.trackChanges = options.trackChanges;
+  const groupPanelOptions = resolveGroupPanel(
+    options.groupPanel,
+    options.groupPanelPlaceholder ?? DEFAULT_GROUP_PLACEHOLDER,
+    options.maxGroups ?? DEFAULT_MAX_GROUPS,
+  );
   return {
     columns: options.columns.map((def) => new Column<T>(def)),
     view,
@@ -60,5 +85,28 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     allowColumnReorder: options.allowColumnReorder ?? true,
     allowSorting: options.allowSorting ?? true,
     allowClipboard: options.allowClipboard ?? false,
+    groupPanel: !!options.groupPanel,
+    groupPanelOptions,
+    maxGroups: groupPanelOptions.maxGroups,
+    groupHeaderTemplate: options.groupHeaderTemplate,
+  };
+}
+
+// Grouping bar toggles: an options object overrides these, `true`/`false`/absent
+// fall back to defaults. Everything is on by default.
+function resolveGroupPanel(
+  opt: boolean | GroupPanelOptions | undefined,
+  placeholder: string,
+  maxGroups: number,
+): ResolvedGroupPanel {
+  const o: GroupPanelOptions = typeof opt === 'object' && opt != null ? opt : {};
+  return {
+    placeholder: o.placeholder ?? placeholder,
+    maxGroups: o.maxGroups ?? maxGroups,
+    allowDragToGroup: o.allowDragToGroup ?? true,
+    allowReorder: o.allowReorder ?? true,
+    allowSort: o.allowSort ?? true,
+    allowRemove: o.allowRemove ?? true,
+    contextMenu: o.contextMenu ?? true,
   };
 }

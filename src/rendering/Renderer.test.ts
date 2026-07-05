@@ -37,6 +37,8 @@ function setup(rowCount: number) {
     showRowHeader: true,
     headerHeight: 28,
     rowHeaderWidth: 48,
+    showGroupPanel: false,
+    groupPanelHeight: 0,
   });
   const rows = new RowRenderer(vr.cells, new CellRenderer());
   const header = new HeaderRenderer(vr.headerInner);

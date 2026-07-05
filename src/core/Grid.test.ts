@@ -695,4 +695,385 @@ describe('Grid', () => {
     grid.setClipString('1\t2\n3\t4', { topRow: 0, leftCol: 0, bottomRow: 0, rightCol: 0 });
     expect(pastedRange).toEqual({ topRow: 0, leftCol: 0, bottomRow: 1, rightCol: 1 });
   });
+
+  it('shows the grouping bar only when groupPanel is enabled', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(10) });
+    expect(host.querySelector('.apg-grouppanel')).toBeNull();
+    grid.dispose();
+    new Grid(host, { columns, itemsSource: makeRows(10), groupPanel: true });
+    expect(host.querySelector('.apg-grouppanel')).not.toBeNull();
+  });
+
+  it('groups rows and inserts group-header rows with counts', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 60, dataType: 'Number' as const },
+      { binding: 'kind', header: 'Kind', width: 100 },
+    ];
+    const data = [
+      { id: 1, kind: 'A' },
+      { id: 2, kind: 'B' },
+      { id: 3, kind: 'A' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, groupPanel: true });
+    grid.groupBy('kind');
+
+    const events: string[][] = [];
+    grid.on('groupsChanged', (e) => events.push(e.bindings));
+    grid.groupBy('kind');
+    expect(events).toEqual([['kind']]);
+
+    const canvas = host.querySelector('.apg-canvas') as HTMLElement;
+    // 2 group headers (A, B) + 3 data rows = 5 rows; height = 28 gutter + 5*24
+    expect(canvas.style.height).toBe(`${28 + 5 * 24}px`);
+    const labels = [...host.querySelectorAll('.apg-group-name')].map((n) => n.textContent);
+    expect(labels).toEqual(['A', 'B']);
+    const counts = [...host.querySelectorAll('.apg-group-count')].map((n) => n.textContent);
+    expect(counts).toEqual(['2', '1']);
+  });
+
+  it('renders an expand/collapse chevron icon on group rows', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'A' }, { kind: 'B' }],
+      groupPanel: true,
+    });
+    grid.groupBy('kind');
+    const toggles = host.querySelectorAll('.apg-group-toggle');
+    expect(toggles.length).toBe(2);
+    expect(toggles[0].querySelector('svg')).not.toBeNull(); // SVG icon, not a glyph char
+    expect(toggles[0].classList.contains('apg-group-toggle-open')).toBe(true); // expanded
+
+    grid.collapseAllGroups();
+    const collapsed = host.querySelector('.apg-group-toggle') as HTMLElement;
+    expect(collapsed.classList.contains('apg-group-toggle-open')).toBe(false);
+  });
+
+  it('renders a custom group-header template', () => {
+    const cols = [
+      { binding: 'kind', header: 'Kind', width: 100 },
+      { binding: 'n', header: 'N', width: 80, dataType: 'Number' as const },
+    ];
+    const data = [
+      { kind: 'A', n: 1 },
+      { kind: 'A', n: 2 },
+      { kind: 'B', n: 3 },
+    ];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: data,
+      groupPanel: true,
+      groupHeaderTemplate: ({ group, itemCount }) =>
+        `<span class="custom-label">${group.name}: ${itemCount}</span>`,
+    });
+    grid.groupBy('kind');
+    const labels = [...host.querySelectorAll('.custom-label')].map((n) => n.textContent);
+    expect(labels).toEqual(['A: 2', 'B: 1']);
+    // The chevron is still added by the grid alongside the custom content.
+    expect(host.querySelector('.apg-group-toggle')).not.toBeNull();
+  });
+
+  it('renders a chip per grouping level and removes one on ✕', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 80 },
+      { binding: 'b', header: 'B', width: 80 },
+    ];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [
+        { a: '1', b: '1' },
+        { a: '1', b: '2' },
+      ],
+      groupPanel: true,
+    });
+    grid.groupBy('a', 'b');
+    expect(host.querySelectorAll('.apg-group-chip').length).toBe(2);
+
+    grid.removeGroup('a');
+    const remaining = [...host.querySelectorAll('.apg-group-chip')].map(
+      (c) => (c as HTMLElement).dataset.binding,
+    );
+    expect(remaining).toEqual(['b']);
+  });
+
+  it('caps grouping at maxGroups', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 80 },
+      { binding: 'b', header: 'B', width: 80 },
+      { binding: 'c', header: 'C', width: 80 },
+    ];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ a: '1', b: '1', c: '1' }],
+      groupPanel: true,
+      maxGroups: 2,
+    });
+    grid.groupBy('a', 'b', 'c');
+    expect(grid.groupDescriptions.map((g) => g.property)).toEqual(['a', 'b']);
+  });
+
+  it('collapses a group so its data rows disappear', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 60, dataType: 'Number' as const },
+      { binding: 'kind', header: 'Kind', width: 100 },
+    ];
+    const data = [
+      { id: 1, kind: 'A' },
+      { id: 2, kind: 'A' },
+      { id: 3, kind: 'B' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, groupPanel: true });
+    grid.groupBy('kind');
+    const canvas = host.querySelector('.apg-canvas') as HTMLElement;
+    const before = canvas.style.height;
+
+    grid.collapseAllGroups();
+    // Only the 2 group headers remain: height = 28 + 2*24
+    expect(canvas.style.height).toBe(`${28 + 2 * 24}px`);
+
+    grid.expandAllGroups();
+    expect(canvas.style.height).toBe(before);
+  });
+
+  it('shows a column aggregate on group-header rows', () => {
+    const cols = [
+      { binding: 'kind', header: 'Kind', width: 100 },
+      {
+        binding: 'sales',
+        header: 'Sales',
+        width: 100,
+        dataType: 'Number' as const,
+        aggregate: 'sum' as const,
+      },
+    ];
+    const data = [
+      { kind: 'A', sales: 10 },
+      { kind: 'A', sales: 15 },
+      { kind: 'B', sales: 100 },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, groupPanel: true });
+    grid.groupBy('kind');
+    const aggs = [...host.querySelectorAll('.apg-group-agg')].map((a) => a.textContent);
+    expect(aggs).toEqual(['25', '100']);
+  });
+
+  it('clears grouping and returns to a flat list', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'B' }],
+      groupPanel: true,
+    });
+    grid.groupBy('kind');
+    expect(host.querySelector('.apg-group-row')).not.toBeNull();
+    grid.clearGroups();
+    expect(host.querySelector('.apg-group-row')).toBeNull();
+    expect(grid.groupDescriptions).toHaveLength(0);
+  });
+
+  it('reverses group order when a grouped column is sorted descending', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'C' }, { kind: 'B' }],
+      groupPanel: true,
+    });
+    grid.groupBy('kind');
+    const names = () => grid.collectionView.groups.map((g) => g.name);
+    expect(names()).toEqual(['A', 'B', 'C']);
+
+    grid.sort('kind', false); // descending
+    expect(names()).toEqual(['C', 'B', 'A']);
+
+    grid.sort('kind', true); // ascending
+    expect(names()).toEqual(['A', 'B', 'C']);
+  });
+
+  it('opens a context menu on right-clicking a group chip', () => {
+    const cols = [
+      { binding: 'kind', header: 'Kind', width: 100 },
+      { binding: 'n', header: 'N', width: 80, dataType: 'Number' as const },
+    ];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [
+        { kind: 'A', n: 1 },
+        { kind: 'B', n: 2 },
+      ],
+      groupPanel: true,
+    });
+    grid.groupBy('kind');
+
+    const chip = host.querySelector('.apg-group-chip[data-binding="kind"]') as HTMLElement;
+    chip.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+
+    const menu = document.querySelector('.apg-context-menu');
+    expect(menu).not.toBeNull();
+    const labels = [...menu!.querySelectorAll('.apg-context-menu-label')].map((l) => l.textContent);
+    expect(labels).toEqual([
+      'Expand All',
+      'Collapse All',
+      'Sort Ascending',
+      'Sort Descending',
+      'Remove Sort',
+      'Remove Group',
+    ]);
+    // "Remove Sort" is disabled until the group is sorted.
+    const removeSort = [...menu!.querySelectorAll('.apg-context-menu-item')].find(
+      (b) => b.textContent === 'Remove Sort',
+    ) as HTMLButtonElement;
+    expect(removeSort.disabled).toBe(true);
+  });
+
+  it('sorts descending from the chip context menu', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'B' }, { kind: 'C' }],
+      groupPanel: true,
+    });
+    grid.groupBy('kind');
+    const chip = host.querySelector('.apg-group-chip[data-binding="kind"]') as HTMLElement;
+    chip.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+
+    const menu = document.querySelector('.apg-context-menu')!;
+    const sortDesc = [...menu.querySelectorAll('.apg-context-menu-item')].find(
+      (b) => b.textContent === 'Sort Descending',
+    ) as HTMLButtonElement;
+    sortDesc.click();
+
+    const names = grid.collectionView.groups.map((g) => g.name);
+    expect(names).toEqual(['C', 'B', 'A']);
+    expect(document.querySelector('.apg-context-menu')).toBeNull(); // closed after action
+  });
+
+  it('removes a group from the chip context menu', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 80 },
+      { binding: 'b', header: 'B', width: 80 },
+    ];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [
+        { a: '1', b: '1' },
+        { a: '1', b: '2' },
+      ],
+      groupPanel: true,
+    });
+    grid.groupBy('a', 'b');
+    const chip = host.querySelector('.apg-group-chip[data-binding="a"]') as HTMLElement;
+    chip.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+
+    const menu = document.querySelector('.apg-context-menu')!;
+    const removeGroup = [...menu.querySelectorAll('.apg-context-menu-item')].find(
+      (b) => b.textContent === 'Remove Group',
+    ) as HTMLButtonElement;
+    removeGroup.click();
+
+    expect(grid.groupDescriptions.map((g) => g.property)).toEqual(['b']);
+  });
+
+  it('enables every grouping-bar capability by default', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'B' }],
+      groupPanel: true,
+    });
+    grid.groupBy('kind');
+    expect(host.querySelector('.apg-grouppanel-icon')).not.toBeNull();
+    expect(host.querySelector('.apg-group-chip-grip')).not.toBeNull();
+    expect(host.querySelector('.apg-group-chip-remove')).not.toBeNull();
+    const chip = host.querySelector('.apg-group-chip') as HTMLElement;
+    chip.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+    expect(document.querySelector('.apg-context-menu')).not.toBeNull();
+  });
+
+  it('always renders the group icon and chip grip so CSS can hide them', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'B' }],
+      groupPanel: { allowReorder: false }, // even with reorder off, the grip stays for CSS
+    });
+    grid.groupBy('kind');
+    // These are visual-only; there's no flag to remove them — style them out in CSS.
+    expect(host.querySelector('.apg-grouppanel-icon')).not.toBeNull();
+    expect(host.querySelector('.apg-group-chip-grip')).not.toBeNull();
+  });
+
+  it('omits remove buttons when allowRemove is false', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'B' }],
+      groupPanel: { allowRemove: false },
+    });
+    grid.groupBy('kind');
+    expect(host.querySelector('.apg-group-chip-remove')).toBeNull();
+
+    const chip = host.querySelector('.apg-group-chip') as HTMLElement;
+    chip.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+    const labels = [...document.querySelectorAll('.apg-context-menu-label')].map(
+      (l) => l.textContent,
+    );
+    expect(labels).not.toContain('Remove Group');
+  });
+
+  it('does not sort from the chip or menu when allowSort is false', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'C' }, { kind: 'B' }],
+      groupPanel: { allowSort: false },
+    });
+    grid.groupBy('kind');
+
+    const chip = host.querySelector('.apg-group-chip[data-binding="kind"]') as HTMLElement;
+    chip.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 0, clientY: 0 }),
+    );
+    chip.dispatchEvent(
+      new MouseEvent('mouseup', { bubbles: true, button: 0, clientX: 0, clientY: 0 }),
+    );
+    chip.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, button: 0, clientX: 0, clientY: 0 }),
+    );
+    expect(grid.collectionView.sortDescriptions).toHaveLength(0); // click did nothing
+
+    chip.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+    const labels = [...document.querySelectorAll('.apg-context-menu-label')].map(
+      (l) => l.textContent,
+    );
+    // No sort entries; Remove Group stays (allowRemove still on).
+    expect(labels).toEqual(['Expand All', 'Collapse All', 'Remove Group']);
+  });
+
+  it('does not open a context menu when contextMenu is false', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 100 }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'B' }],
+      groupPanel: { contextMenu: false },
+    });
+    grid.groupBy('kind');
+    const chip = host.querySelector('.apg-group-chip') as HTMLElement;
+    chip.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, clientX: 20, clientY: 20 }));
+    expect(document.querySelector('.apg-context-menu')).toBeNull();
+  });
+
+  it('honors maxGroups from the groupPanel options object', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 80 },
+      { binding: 'b', header: 'B', width: 80 },
+      { binding: 'c', header: 'C', width: 80 },
+    ];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ a: '1', b: '1', c: '1' }],
+      groupPanel: { maxGroups: 2 },
+    });
+    grid.groupBy('a', 'b', 'c');
+    expect(grid.groupDescriptions.map((g) => g.property)).toEqual(['a', 'b']);
+  });
 });

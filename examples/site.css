@@ -204,6 +204,12 @@ body {
   color: var(--site-muted);
 }
 
+/* Extra text shown in the grouping demo's custom group-header template. */
+.demo-group-total {
+  color: var(--site-muted);
+  font-size: 0.85em;
+}
+
 .apg-demo-badge {
   margin-top: 12px;
   display: inline-block;

@@ -6,6 +6,7 @@ import { CellAddress, CellRange } from '../models/Cell';
 import { DataView } from '../data/DataView';
 import { CollectionView } from '../data/CollectionView';
 import { SortDescription } from '../models/SortDescription';
+import { PropertyGroupDescription } from '../models/GroupDescription';
 import { LayoutEngine } from '../virtualization/LayoutEngine';
 import { ViewportRenderer } from '../rendering/ViewportRenderer';
 import { RowRenderer } from '../rendering/RowRenderer';
@@ -23,6 +24,8 @@ import { KeyboardHandler, NavAction } from '../events/KeyboardHandler';
 import { ColumnResizer } from '../events/ColumnResizer';
 import { ColumnDragger } from '../events/ColumnDragger';
 import { ClipboardHandler } from '../events/ClipboardHandler';
+import { GroupPanel, GroupChip } from '../rendering/GroupPanel';
+import { GroupHeaderTemplate } from '../rendering/GroupHeader';
 import { UndoStack } from '../commands/UndoStack';
 import { ResizeColumnAction } from '../commands/ResizeColumnAction';
 import { EditAction } from '../commands/EditAction';
@@ -32,6 +35,8 @@ import { EditorManager } from '../editing/EditorManager';
 import { clamp } from '../utils/Math';
 
 type Row = Record<string, unknown>;
+
+const GROUP_PANEL_HEIGHT = 40;
 
 /**
  * The grid facade. Constructs and owns every subsystem, drives the
@@ -63,6 +68,9 @@ export class Grid {
   private resizer: ColumnResizer;
   private dragger?: ColumnDragger;
   private clipboard?: ClipboardHandler;
+  private groupPanel?: GroupPanel;
+  private groupHeaderTemplate?: GroupHeaderTemplate;
+  private maxGroups: number;
   private allowSorting: boolean;
   private headerDownX = -1;
   private undoStack = new UndoStack();
@@ -79,6 +87,8 @@ export class Grid {
     this.data = new DataView(resolved.view);
     this.rowHeight = resolved.rowHeight;
     this.headerHeight = resolved.headerHeight;
+    this.maxGroups = resolved.maxGroups;
+    this.groupHeaderTemplate = resolved.groupHeaderTemplate;
     this.selectionModel = new SelectionModel(resolved.selectionMode);
     this.state.alternatingRowStep = resolved.alternatingRowStep;
 
@@ -99,6 +109,8 @@ export class Grid {
       showRowHeader: this.showRowHeader,
       headerHeight: this.headerHeight,
       rowHeaderWidth: resolved.rowHeaderWidth,
+      showGroupPanel: resolved.groupPanel,
+      groupPanelHeight: GROUP_PANEL_HEIGHT,
     });
     this.rowRenderer = new RowRenderer(this.viewportRenderer.cells, new CellRenderer());
     this.headerRenderer = new HeaderRenderer(this.viewportRenderer.headerInner);
@@ -133,12 +145,35 @@ export class Grid {
       () => this.refresh(),
       (col, width) => this.resizeColumn(col, width),
     );
-    if (resolved.allowColumnReorder) {
+    if (this.viewportRenderer.groupPanel) {
+      this.groupPanel = new GroupPanel(
+        this.viewportRenderer.groupPanel,
+        {
+          chips: () => this.groupChips(),
+          onRemove: (b) => this.removeGroup(b),
+          onReorder: (from, to) => this.moveGroup(from, to),
+          onToggleSort: (b) => this.sort(b),
+          onSort: (b, dir) => this.sort(b, dir),
+          onExpandAll: () => this.expandAllGroups(),
+          onCollapseAll: () => this.collapseAllGroups(),
+        },
+        resolved.groupPanelOptions,
+      );
+    }
+    // The header dragger also handles dropping a column onto the group bar, so
+    // build it when either column reordering or drag-to-group is enabled, and
+    // gate each behavior on its own flag.
+    const dragToGroup = this.groupPanel != null && resolved.groupPanelOptions.allowDragToGroup;
+    if (resolved.allowColumnReorder || dragToGroup) {
+      const panel = this.groupPanel;
       this.dragger = new ColumnDragger(
         this.viewportRenderer.headerInner,
         this.layout,
         () => this.columns,
-        (from, to) => this.moveColumn(from, to),
+        resolved.allowColumnReorder ? (from, to) => this.moveColumn(from, to) : () => {},
+        dragToGroup ? () => panel!.hostElement.getBoundingClientRect() : undefined,
+        dragToGroup ? (col) => this.addGroup(this.columns[col]?.binding ?? '') : undefined,
+        dragToGroup ? (active) => panel!.highlight(active) : undefined,
       );
     }
     this.allowSorting = resolved.allowSorting;
@@ -226,8 +261,9 @@ export class Grid {
 
   /** Recompute totals and redraw. Call after the data or columns change. */
   refresh(): void {
-    this.layout.setRowCount(this.data.length);
+    this.data.refreshGroups();
     this.layout.setColumns(this.columns);
+    this.layout.setRowCount(this.data.length);
     this.renderer.resize(this.context());
     this.draw();
   }
@@ -277,8 +313,9 @@ export class Grid {
     this.undoStack.redo();
   }
 
-  /** Begin editing a cell (no-op if the column isn't editable). */
+  /** Begin editing a cell (no-op if the column isn't editable or the row is a group). */
   editCell(row: number, col: number): void {
+    if (this.data.rowType(row) === 'group') return;
     this.editor.begin({ row, col });
   }
 
@@ -304,6 +341,7 @@ export class Grid {
     if (!rng) return '';
     const lines: string[] = [];
     for (let row = rng.topRow; row <= rng.bottomRow; row++) {
+      if (this.data.rowType(row) === 'group') continue;
       const item = this.data.item(row) as Row;
       const cells: string[] = [];
       for (let col = rng.leftCol; col <= rng.rightCol; col++) {
@@ -436,11 +474,13 @@ export class Grid {
     this.state.sort = { col, ascending: dir };
     this.data.collectionView.sortConverter = this.sortConverter;
     this.data.collectionView.sortDescriptions = [new SortDescription(column.binding, dir)];
+    this.groupPanel?.render();
   }
 
   private clearSort(): void {
     this.state.sort = null;
     this.data.collectionView.sortDescriptions = [];
+    this.groupPanel?.render();
   }
 
   // Sort data-mapped columns by their display text rather than the raw key.
@@ -449,6 +489,110 @@ export class Grid {
     if (column?.dataMap?.sortByDisplayValues) return column.dataMap.getDisplayValue(value);
     return value;
   };
+
+  /** The current group-by column bindings, outermost first. */
+  get groupDescriptions(): PropertyGroupDescription[] {
+    return this.data.collectionView.groupDescriptions;
+  }
+
+  /** Replace the grouping with the given column bindings (outermost first). */
+  groupBy(...bindings: string[]): void {
+    const descs = bindings
+      .filter((b) => this.canGroupBy(b))
+      .slice(0, this.maxGroups)
+      .map((b) => new PropertyGroupDescription(b));
+    this.data.collectionView.groupDescriptions = descs;
+    this.afterGroupsChanged();
+  }
+
+  /** Add one more grouping level. Ignores duplicates, calculated columns, and the max. */
+  addGroup(binding: string): void {
+    const cv = this.data.collectionView;
+    if (!this.canGroupBy(binding)) return;
+    if (cv.groupDescriptions.some((g) => g.property === binding)) return;
+    if (cv.groupDescriptions.length >= this.maxGroups) return;
+    cv.groupDescriptions = [...cv.groupDescriptions, new PropertyGroupDescription(binding)];
+    this.afterGroupsChanged();
+  }
+
+  /** Remove the grouping level for a column. */
+  removeGroup(binding: string): void {
+    const cv = this.data.collectionView;
+    const next = cv.groupDescriptions.filter((g) => g.property !== binding);
+    if (next.length === cv.groupDescriptions.length) return;
+    cv.groupDescriptions = next;
+    this.afterGroupsChanged();
+  }
+
+  /** Remove all grouping. */
+  clearGroups(): void {
+    const cv = this.data.collectionView;
+    if (cv.groupDescriptions.length === 0) return;
+    cv.groupDescriptions = [];
+    this.afterGroupsChanged();
+  }
+
+  collapseAllGroups(): void {
+    this.data.collapseAllGroups();
+    this.refreshRows();
+  }
+
+  expandAllGroups(): void {
+    this.data.expandAllGroups();
+    this.refreshRows();
+  }
+
+  private canGroupBy(binding: string): boolean {
+    const col = this.columns.find((c) => c.binding === binding);
+    return !!binding && !!col && !col.isCalculated;
+  }
+
+  private moveGroup(from: number, to: number): void {
+    const cv = this.data.collectionView;
+    const arr = [...cv.groupDescriptions];
+    if (from < 0 || from >= arr.length || to < 0 || to >= arr.length) return;
+    const [moved] = arr.splice(from, 1);
+    arr.splice(to, 0, moved);
+    cv.groupDescriptions = arr;
+    this.afterGroupsChanged();
+  }
+
+  private afterGroupsChanged(): void {
+    this.groupPanel?.render();
+    this.events.emit('groupsChanged', {
+      bindings: this.data.collectionView.groupDescriptions.map((g) => g.property),
+    });
+  }
+
+  private groupChips(): GroupChip[] {
+    const sort = this.state.sort;
+    const sortedBinding = sort ? this.columns[sort.col]?.binding : undefined;
+    return this.data.collectionView.groupDescriptions.map((g) => {
+      const col = this.columns.find((c) => c.binding === g.property);
+      return {
+        binding: g.property,
+        header: col?.header ?? g.property,
+        sort: sortedBinding === g.property ? (sort!.ascending ? 'asc' : 'desc') : null,
+      };
+    });
+  }
+
+  private toggleGroupAt(row: number): void {
+    const gr = this.data.groupRow(row);
+    if (!gr) return;
+    this.host.focus();
+    this.data.toggleGroup(gr.pathKey);
+    this.refreshRows();
+    this.events.emit('groupCollapsedChanged', { pathKey: gr.pathKey, collapsed: !gr.collapsed });
+  }
+
+  // Rebuild the row totals and redraw after the display rows change (collapse or
+  // expand) without re-arranging the collection view.
+  private refreshRows(): void {
+    this.layout.setRowCount(this.data.length);
+    this.renderer.resize(this.context());
+    this.draw();
+  }
 
   dispose(): void {
     this.unsubscribeData();
@@ -461,6 +605,7 @@ export class Grid {
     this.resizer.dispose();
     this.dragger?.dispose();
     this.clipboard?.dispose();
+    this.groupPanel?.dispose();
     this.events.clear();
     this.undoStack.clear();
     this.resizeObserver?.disconnect();
@@ -473,7 +618,13 @@ export class Grid {
   }
 
   private context(): RenderContext {
-    return { layout: this.layout, columns: this.columns, data: this.data, state: this.state };
+    return {
+      layout: this.layout,
+      columns: this.columns,
+      data: this.data,
+      state: this.state,
+      groupHeaderTemplate: this.groupHeaderTemplate,
+    };
   }
 
   private syncViewportSize(): void {
@@ -502,6 +653,10 @@ export class Grid {
   }
 
   private onSelect(cell: CellAddress, extend: boolean, isPress: boolean): void {
+    if (this.data.rowType(cell.row) === 'group') {
+      if (isPress) this.toggleGroupAt(cell.row);
+      return;
+    }
     this.applyMove(cell, extend);
     if (isPress) {
       this.host.focus(); // mousedown preventDefault blocks the default focus, so do it here
@@ -526,6 +681,7 @@ export class Grid {
   };
 
   private onDoubleClick(cell: CellAddress): void {
+    if (this.data.rowType(cell.row) === 'group') return;
     this.events.emit('cellDoubleClick', cell);
     this.editor.begin(cell);
   }
@@ -542,8 +698,9 @@ export class Grid {
   }
 
   private applyMove(cell: CellAddress, extend: boolean): void {
+    if (this.data.rowType(cell.row) === 'group') return;
     if (!this.selectionModel.moveTo(cell, extend)) return;
-    this.data.collectionView.moveCurrentToPosition(cell.row); // currency follows selection
+    this.data.collectionView.moveCurrentToPosition(this.data.dataIndexAt(cell.row)); // currency follows selection
     this.syncSelectionState();
     this.draw();
     this.events.emit('selectionChanged', this.selectionModel.getActive());
@@ -590,7 +747,16 @@ export class Grid {
     }
     next.row = clamp(next.row, 0, this.layout.rowCount - 1);
     next.col = clamp(next.col, 0, this.layout.colCount - 1);
+    if (action === 'up' || action === 'pageup') next.row = this.nextDataRow(next.row, -1);
+    else if (action === 'down' || action === 'pagedown') next.row = this.nextDataRow(next.row, 1);
     this.select(next.row, next.col, extend);
+  }
+
+  // Group-header rows aren't selectable, so vertical navigation steps over them.
+  private nextDataRow(row: number, dir: 1 | -1): number {
+    let r = row;
+    while (r >= 0 && r < this.layout.rowCount && this.data.rowType(r) === 'group') r += dir;
+    return clamp(r, 0, this.layout.rowCount - 1);
   }
 
   private scrollIntoView(cell: CellAddress): void {

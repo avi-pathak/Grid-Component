@@ -11,6 +11,10 @@ export interface GridEvents {
   undoStackChanged: { canUndo: boolean; canRedo: boolean };
   columnReordered: { from: number; to: number };
   collectionChanged: { action: ChangeAction };
+  /** After the group-by columns change (added, removed, reordered, or cleared). */
+  groupsChanged: { bindings: string[] };
+  /** After a group-header row is expanded or collapsed. */
+  groupCollapsedChanged: { pathKey: string; collapsed: boolean };
   /** Before copying the selection. Set `cancel` to true to block the copy. */
   copying: { range: CellRange; cancel: boolean };
   /** After the selection was written to the clipboard. */

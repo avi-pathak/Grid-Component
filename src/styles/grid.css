@@ -14,6 +14,9 @@
   --apg-selected-bg: rgba(33, 111, 237, 0.12);
   --apg-hover-bg: rgba(33, 111, 237, 0.05);
   --apg-active-border: #216fed;
+  --apg-group-bg: #f4f6fb;
+  --apg-group-bg-hover: #eaeef7;
+  --apg-panel-bg: #eef1f6;
   position: relative;
   overflow: hidden;
   font: var(--apg-font);
@@ -356,4 +359,348 @@
 
 .apg-header-cell {
   cursor: default;
+}
+
+/* Inline SVG icon wrapper. Size/color come from the element it's placed on. */
+.apg-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  line-height: 0;
+}
+
+.apg-icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Grouping bar: a strip above the grid showing one chip per grouping level. */
+.apg-grouppanel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--apg-panel-bg);
+  border-bottom: var(--apg-border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+}
+
+.apg-grouppanel::-webkit-scrollbar {
+  height: 6px;
+}
+
+.apg-grouppanel::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 3px;
+}
+
+.apg-grouppanel-icon {
+  color: var(--apg-header-fg);
+  opacity: 0.5;
+}
+
+.apg-grouppanel.apg-grouppanel-over {
+  background: var(--apg-hover-bg);
+  box-shadow: inset 0 0 0 2px var(--apg-active-border);
+}
+
+.apg-group-placeholder {
+  color: var(--apg-header-fg);
+  opacity: 0.75;
+  font-style: italic;
+  font-size: 0.92em;
+}
+
+.apg-group-chips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Chevron between chips reads as a hierarchy: A › B › C */
+.apg-group-sep {
+  width: 12px;
+  height: 12px;
+  color: var(--apg-header-fg);
+  opacity: 0.4;
+}
+
+.apg-group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 4px 0 6px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: 6px;
+  color: var(--apg-cell-fg);
+  cursor: grab;
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.apg-group-chip:hover {
+  border-color: var(--apg-active-border);
+  box-shadow: 0 2px 6px rgba(33, 111, 237, 0.16);
+}
+
+.apg-group-chip:active {
+  cursor: grabbing;
+}
+
+.apg-group-chip-grip {
+  width: 12px;
+  height: 14px;
+  color: var(--apg-header-fg);
+  opacity: 0.4;
+}
+
+.apg-group-chip-label {
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+.apg-group-chip-sort {
+  width: 12px;
+  height: 12px;
+  color: var(--apg-active-border);
+}
+
+.apg-group-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--apg-header-fg);
+  opacity: 0.55;
+  cursor: pointer;
+}
+
+.apg-group-chip-remove .apg-icon {
+  width: 12px;
+  height: 12px;
+}
+
+.apg-group-chip-remove:hover {
+  background: rgba(0, 0, 0, 0.08);
+  opacity: 1;
+}
+
+.apg-group-chip-marker {
+  width: 2px;
+  height: 20px;
+  align-self: center;
+  border-radius: 1px;
+  background: var(--apg-active-border);
+}
+
+/* These overlays are appended to <body>, outside the .apg scope, so the theme
+   variables they use aren't in scope. Re-declare the tokens they need on the
+   overlay roots so they render correctly wherever they're mounted. */
+.apg-drag-ghost,
+.apg-context-menu {
+  --apg-border-color: #dde1e6;
+  --apg-cell-bg: #fff;
+  --apg-cell-fg: #1f2937;
+  --apg-header-fg: #4b5563;
+  --apg-hover-bg: rgba(33, 111, 237, 0.05);
+  --apg-active-border: #216fed;
+  --apg-font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Floating label that follows the cursor while a header is being dragged. */
+.apg-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: 6px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  color: var(--apg-cell-fg);
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0.96;
+}
+
+.apg-drag-ghost-icon {
+  color: var(--apg-header-fg);
+  opacity: 0.7;
+}
+
+.apg-drag-ghost-active {
+  border-color: var(--apg-active-border);
+  background: var(--apg-hover-bg);
+}
+
+.apg-drag-ghost-active .apg-drag-ghost-icon {
+  color: var(--apg-active-border);
+  opacity: 1;
+}
+
+/* Right-click menu (grouping bar actions). */
+.apg-context-menu {
+  position: fixed;
+  z-index: 2000;
+  min-width: 184px;
+  padding: 5px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  font: var(--apg-font);
+  color: var(--apg-cell-fg);
+}
+
+.apg-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.apg-context-menu-item:hover:not(:disabled) {
+  background: var(--apg-hover-bg);
+}
+
+.apg-context-menu-item:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.apg-context-menu-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--apg-header-fg);
+}
+
+.apg-context-menu-label {
+  flex: 1;
+}
+
+.apg-context-menu-sep {
+  height: 1px;
+  margin: 5px 8px;
+  background: var(--apg-border-color);
+}
+
+/* Group-header rows: a sticky label at the left plus per-column aggregates. */
+.apg-group-row {
+  background: var(--apg-group-bg);
+  border-bottom: var(--apg-border);
+  contain: none;
+}
+
+.apg-group-row:hover {
+  background: var(--apg-group-bg-hover);
+}
+
+.apg-group-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding-right: 16px;
+  background: inherit;
+  white-space: nowrap;
+}
+
+.apg-group-toggle {
+  width: 16px;
+  height: 16px;
+  color: var(--apg-header-fg);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.apg-group-toggle:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--apg-cell-fg);
+}
+
+.apg-group-toggle-open {
+  transform: rotate(90deg);
+}
+
+.apg-group-inner {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.apg-group-name {
+  font-weight: 600;
+  color: var(--apg-cell-fg);
+}
+
+.apg-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--apg-header-fg);
+  font-size: 0.78em;
+  font-weight: 600;
+}
+
+.apg-group-agg {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: var(--apg-cell-padding);
+  font-weight: 600;
+  color: var(--apg-cell-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apg-rowheader-group {
+  background: var(--apg-group-bg);
 }

@@ -1,5 +1,9 @@
 import { EventBus, EventHandler } from '../events/EventBus';
 import { SortDescription } from '../models/SortDescription';
+import { PropertyGroupDescription } from '../models/GroupDescription';
+import { CollectionViewGroup } from './CollectionViewGroup';
+import { buildGroups } from './buildGroups';
+import { compareValues } from './compareValues';
 
 export type ChangeAction = 'add' | 'remove' | 'change' | 'reset';
 
@@ -49,6 +53,8 @@ export class CollectionView<T = Record<string, unknown>> {
   protected _position = -1;
   protected _filter: ((item: T) => boolean) | null = null;
   protected _sorts: SortDescription[] = [];
+  protected _groups: PropertyGroupDescription<T>[] = [];
+  protected _groupTree: CollectionViewGroup<T>[] = [];
   protected _pageSize = 0;
   protected _pageIndex = 0;
   protected _totalItemCount = 0;
@@ -125,6 +131,21 @@ export class CollectionView<T = Record<string, unknown>> {
   set sortDescriptions(value: SortDescription[]) {
     this._sorts = value ?? [];
     this.refresh();
+  }
+
+  /** Group-by descriptors applied to the view. Assigning rebuilds the group tree. */
+  get groupDescriptions(): PropertyGroupDescription<T>[] {
+    return this._groups;
+  }
+
+  set groupDescriptions(value: PropertyGroupDescription<T>[]) {
+    this._groups = value ?? [];
+    this.refresh();
+  }
+
+  /** The root groups, or an empty array when the view isn't grouped. */
+  get groups(): CollectionViewGroup<T>[] {
+    return this._groupTree;
   }
 
   get canChangePage(): boolean {
@@ -363,7 +384,16 @@ export class CollectionView<T = Record<string, unknown>> {
     const current = this.currentItem;
     const arranged = this.arrange();
     this._totalItemCount = arranged.length;
-    this.view = this.page(arranged);
+    // Grouping reorders the leaves and overrides paging so a group never splits
+    // across pages.
+    if (this._groups.length) {
+      const result = buildGroups(arranged, this._groups, this._sorts);
+      this._groupTree = result.groups;
+      this.view = result.leaves;
+    } else {
+      this._groupTree = [];
+      this.view = this.page(arranged);
+    }
     // Keep the same item current across the rebuild when it's still visible.
     const idx = current != null ? this.view.indexOf(current) : -1;
     this._position = idx >= 0 ? idx : Math.min(this._position, this.view.length - 1);
@@ -420,16 +450,4 @@ export class CollectionView<T = Record<string, unknown>> {
     if (this.updateDepth > 0) return;
     this.events.emit('collectionChanged', { action, item, index });
   }
-}
-
-// Default ordering: nulls last, then numbers/dates numerically, everything else
-// by locale-aware string comparison.
-function compareValues(a: unknown, b: unknown): number {
-  if (a === b) return 0;
-  if (a == null) return 1;
-  if (b == null) return -1;
-  if (typeof a === 'number' && typeof b === 'number') return a - b;
-  if (a instanceof Date && b instanceof Date) return a.getTime() - b.getTime();
-  if (typeof a === 'boolean' && typeof b === 'boolean') return a === b ? 0 : a ? 1 : -1;
-  return String(a).localeCompare(String(b));
 }

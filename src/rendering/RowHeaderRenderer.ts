@@ -35,7 +35,9 @@ export class RowHeaderRenderer {
       }
       el.style.height = `${ctx.layout.getRowHeight(row)}px`;
       setTransform(el, 0, ctx.layout.getRowTop(row));
-      el.textContent = String(row + 1);
+      const isGroup = ctx.data.rowType(row) === 'group';
+      el.className = isGroup ? 'apg-rowheader-cell apg-rowheader-group' : 'apg-rowheader-cell';
+      el.textContent = isGroup ? '' : String(row + 1);
     }
   }
 

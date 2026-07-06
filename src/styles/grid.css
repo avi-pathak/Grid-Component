@@ -99,6 +99,39 @@
   color: var(--apg-active-border);
 }
 
+/* Funnel button shown on filterable column headers. */
+.apg-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--apg-header-fg);
+  opacity: 0.55;
+  cursor: pointer;
+  flex: none;
+}
+
+.apg-filter-btn .apg-icon {
+  width: 13px;
+  height: 13px;
+}
+
+.apg-filter-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  opacity: 1;
+}
+
+.apg-filter-btn.apg-filter-active {
+  color: var(--apg-active-border);
+  opacity: 1;
+}
+
 .apg-rowheader-inner {
   grid-area: 1 / 1;
   align-self: start;
@@ -163,7 +196,7 @@
 }
 
 .apg-cell.apg-cell-active {
-  box-shadow: inset 0 0 0 2px var(--apg-active-border);
+  box-shadow: inset 0 0 0 1px var(--apg-active-border);
 }
 
 /* Data-mapped, editable cells show a chevron at rest so they read as dropdowns. */
@@ -528,6 +561,17 @@
   --apg-font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+.apg-filter-dialog {
+  --apg-border-color: #dde1e6;
+  --apg-cell-bg: #fff;
+  --apg-cell-fg: #1f2937;
+  --apg-header-fg: #4b5563;
+  --apg-hover-bg: rgba(33, 111, 237, 0.05);
+  --apg-selected-bg: rgba(33, 111, 237, 0.12);
+  --apg-active-border: #216fed;
+  --apg-font: 13px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
 /* Floating label that follows the cursor while a header is being dragged. */
 .apg-drag-ghost {
   position: fixed;
@@ -618,6 +662,180 @@
   height: 1px;
   margin: 5px 8px;
   background: var(--apg-border-color);
+}
+
+/* Column filter popup. */
+.apg-filter-dialog {
+  position: fixed;
+  z-index: 2000;
+  width: 240px;
+  padding: 10px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  font: var(--apg-font);
+  color: var(--apg-cell-fg);
+}
+
+.apg-filter-sort {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: -4px -4px 0;
+}
+
+.apg-filter-sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--apg-cell-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.apg-filter-sort-btn .apg-icon {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--apg-header-fg);
+}
+
+.apg-filter-sort-btn:hover {
+  background: var(--apg-hover-bg);
+}
+
+.apg-filter-sort-active {
+  color: var(--apg-active-border);
+  font-weight: 600;
+}
+
+.apg-filter-sort-active .apg-icon {
+  color: var(--apg-active-border);
+}
+
+.apg-filter-section {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.apg-filter-op {
+  flex: none;
+  width: 96px;
+}
+
+.apg-filter-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.apg-filter-op,
+.apg-filter-value,
+.apg-filter-search {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--apg-border-color);
+  border-radius: 5px;
+  font: inherit;
+  color: inherit;
+  background: var(--apg-cell-bg);
+  box-sizing: border-box;
+}
+
+.apg-filter-op:focus,
+.apg-filter-value:focus,
+.apg-filter-search:focus {
+  outline: none;
+  border-color: var(--apg-active-border);
+}
+
+.apg-filter-sep {
+  height: 1px;
+  margin: 8px -10px;
+  background: var(--apg-border-color);
+}
+
+.apg-filter-search {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.apg-filter-selectall {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.apg-filter-list {
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 2px 0 8px;
+  border: 1px solid var(--apg-border-color);
+  border-radius: 5px;
+}
+
+.apg-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.apg-filter-item:hover {
+  background: var(--apg-hover-bg);
+}
+
+.apg-filter-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.apg-filter-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.apg-filter-clear,
+.apg-filter-apply {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.apg-filter-clear {
+  border: 1px solid var(--apg-border-color);
+  background: var(--apg-cell-bg);
+  color: var(--apg-cell-fg);
+}
+
+.apg-filter-clear:hover {
+  border-color: var(--apg-active-border);
+}
+
+.apg-filter-apply {
+  border: 1px solid var(--apg-active-border);
+  background: var(--apg-active-border);
+  color: #fff;
+}
+
+.apg-filter-apply:hover {
+  filter: brightness(0.95);
 }
 
 /* Group-header rows: a sticky label at the left plus per-column aggregates. */

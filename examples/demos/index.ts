@@ -16,6 +16,7 @@ import { editing } from './editing';
 import { clipboard } from './clipboard';
 import { changeTracking } from './changeTracking';
 import { grouping } from './grouping';
+import { filtering } from './filtering';
 import { layout } from './layout';
 
 export type { Demo };
@@ -38,5 +39,6 @@ export const demos: Demo[] = [
   clipboard,
   changeTracking,
   grouping,
+  filtering,
   layout,
 ];

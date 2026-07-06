@@ -1076,4 +1076,150 @@ describe('Grid', () => {
     grid.groupBy('a', 'b', 'c');
     expect(grid.groupDescriptions.map((g) => g.property)).toEqual(['a', 'b']);
   });
+
+  // --- Filtering ---
+
+  function openFilter(): HTMLElement {
+    const btn = host.querySelector('.apg-filter-btn') as HTMLElement;
+    btn.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 0, clientY: 0 }),
+    );
+    btn.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, button: 0, clientX: 0, clientY: 0 }),
+    );
+    return document.querySelector('.apg-filter-dialog') as HTMLElement;
+  }
+
+  it('shows a filter button only on filterable columns', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 100, filter: true },
+      { binding: 'b', header: 'B', width: 100, filter: false },
+    ];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ a: '1', b: '2' }],
+      allowFiltering: true,
+    });
+    expect(host.querySelectorAll('.apg-filter-btn').length).toBe(1);
+    grid.dispose();
+
+    new Grid(host, {
+      columns: [{ binding: 'a', header: 'A', width: 100 }],
+      itemsSource: [{ a: '1' }],
+    });
+    expect(host.querySelector('.apg-filter-btn')).toBeNull(); // filtering off by default
+  });
+
+  it('filters rows by a value checklist and clears them again', () => {
+    const cols = [
+      { binding: 'kind', header: 'Kind', width: 120, filter: true },
+      { binding: 'id', header: 'ID', width: 60, dataType: 'Number' as const },
+    ];
+    const data = [
+      { kind: 'A', id: 1 },
+      { kind: 'A', id: 2 },
+      { kind: 'B', id: 3 },
+      { kind: 'C', id: 4 },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowFiltering: true });
+
+    const dialog = openFilter();
+    expect(dialog).not.toBeNull();
+    for (const item of [...dialog.querySelectorAll('.apg-filter-item')]) {
+      if (item.querySelector('span')!.textContent !== 'A') {
+        const box = item.querySelector('input') as HTMLInputElement;
+        box.checked = false;
+        box.dispatchEvent(new Event('change'));
+      }
+    }
+    (dialog.querySelector('.apg-filter-apply') as HTMLElement).click();
+
+    expect(grid.collectionView.itemCount).toBe(2); // only the two A rows
+    expect(host.querySelector('.apg-filter-btn.apg-filter-active')).not.toBeNull();
+
+    grid.clearFilters();
+    expect(grid.collectionView.itemCount).toBe(4);
+    expect(host.querySelector('.apg-filter-btn.apg-filter-active')).toBeNull();
+  });
+
+  it('filters numbers by a greater-than condition', () => {
+    const cols = [
+      { binding: 'n', header: 'N', width: 120, dataType: 'Number' as const, filter: true },
+    ];
+    const data = [{ n: 5 }, { n: 15 }, { n: 25 }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, allowFiltering: true });
+
+    const dialog = openFilter();
+    const op = dialog.querySelector('.apg-filter-op') as HTMLSelectElement;
+    op.value = 'gt';
+    op.dispatchEvent(new Event('change'));
+    const val = dialog.querySelector('.apg-filter-value') as HTMLInputElement;
+    val.value = '10';
+    val.dispatchEvent(new Event('input'));
+    (dialog.querySelector('.apg-filter-apply') as HTMLElement).click();
+
+    expect(grid.collectionView.itemCount).toBe(2); // 15 and 25
+  });
+
+  it('emits filterChanged with the active bindings', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 120, filter: true }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'B' }],
+      allowFiltering: true,
+    });
+    const events: string[][] = [];
+    grid.on('filterChanged', (e) => events.push(e.activeBindings));
+
+    const dialog = openFilter();
+    const items = [...dialog.querySelectorAll('.apg-filter-item')];
+    const bBox = items
+      .find((i) => i.querySelector('span')!.textContent === 'B')!
+      .querySelector('input') as HTMLInputElement;
+    bBox.checked = false;
+    bBox.dispatchEvent(new Event('change'));
+    (dialog.querySelector('.apg-filter-apply') as HTMLElement).click();
+
+    expect(events).toEqual([['kind']]);
+  });
+
+  it('sorts a column from the filter dialog', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 120, filter: true }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'B' }, { kind: 'A' }, { kind: 'C' }],
+      allowFiltering: true,
+    });
+
+    let dialog = openFilter();
+    const asc = [...dialog.querySelectorAll('.apg-filter-sort-btn')].find(
+      (b) => b.textContent === 'Sort Ascending',
+    ) as HTMLButtonElement;
+    asc.click();
+    expect(grid.collectionView.items.map((r) => (r as { kind: string }).kind)).toEqual([
+      'A',
+      'B',
+      'C',
+    ]);
+
+    // Reopening shows the ascending shortcut as active; clicking it clears the sort.
+    dialog = openFilter();
+    const activeBtn = dialog.querySelector('.apg-filter-sort-active') as HTMLButtonElement;
+    expect(activeBtn.textContent).toBe('Sort Ascending');
+    activeBtn.click();
+    expect(grid.collectionView.sortDescriptions).toHaveLength(0);
+  });
+
+  it('hides the sort shortcuts when sorting is disabled', () => {
+    const cols = [{ binding: 'kind', header: 'Kind', width: 120, filter: true }];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'A' }, { kind: 'B' }],
+      allowFiltering: true,
+      allowSorting: false,
+    });
+    const dialog = openFilter();
+    expect(dialog.querySelector('.apg-filter-sort')).toBeNull();
+    grid.dispose();
+  });
 });

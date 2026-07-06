@@ -21,6 +21,8 @@ export class GridState {
   alternatingRowStep = 1;
   /** Which column the view is sorted by, and the direction. Null when unsorted. */
   sort: { col: number; ascending: boolean } | null = null;
+  /** Column indices that currently have an active filter. */
+  activeFilters = new Set<number>();
 
   private listeners = new Set<StateListener>();
 

@@ -26,6 +26,8 @@ import { ColumnDragger } from '../events/ColumnDragger';
 import { ClipboardHandler } from '../events/ClipboardHandler';
 import { GroupPanel, GroupChip } from '../rendering/GroupPanel';
 import { GroupHeaderTemplate } from '../rendering/GroupHeader';
+import { FilterModel } from '../data/FilterModel';
+import { FilterEditor } from '../rendering/FilterEditor';
 import { UndoStack } from '../commands/UndoStack';
 import { ResizeColumnAction } from '../commands/ResizeColumnAction';
 import { EditAction } from '../commands/EditAction';
@@ -70,6 +72,8 @@ export class Grid {
   private clipboard?: ClipboardHandler;
   private groupPanel?: GroupPanel;
   private groupHeaderTemplate?: GroupHeaderTemplate;
+  private filterModel?: FilterModel;
+  private filterEditor?: FilterEditor;
   private maxGroups: number;
   private allowSorting: boolean;
   private headerDownX = -1;
@@ -180,6 +184,11 @@ export class Grid {
     const header = this.viewportRenderer.headerInner;
     header.addEventListener('mousedown', this.onHeaderMouseDown);
     header.addEventListener('click', this.onHeaderClick);
+
+    if (this.columns.some((c) => c.filterable)) {
+      this.filterModel = new FilterModel(this.data.collectionView);
+      this.filterEditor = new FilterEditor();
+    }
 
     this.editor = new EditorManager({
       cells: this.viewportRenderer.cells,
@@ -483,6 +492,63 @@ export class Grid {
     this.groupPanel?.render();
   }
 
+  /** Remove every column filter and show all rows. */
+  clearFilters(): void {
+    if (!this.filterModel) return;
+    this.filterModel.clearAll();
+    this.syncActiveFilters();
+    this.refresh();
+    this.events.emit('filterChanged', { activeBindings: [] });
+  }
+
+  // Open the filter popup for a column, anchored to its header filter button.
+  private openFilter(col: number, anchor: DOMRect): void {
+    const column = this.columns[col];
+    if (!this.filterModel || !this.filterEditor || !column?.filterable) return;
+    const filter = this.filterModel.get(column);
+    const cur = this.state.sort;
+    this.filterEditor.open(anchor, {
+      column,
+      values: this.filterModel.distinctValues(column),
+      filter,
+      showSort: this.allowSorting && !!column.binding && !column.isCalculated,
+      sort: cur && cur.col === col ? (cur.ascending ? 'asc' : 'desc') : null,
+      onSort: (dir) => this.sortByColumn(col, dir),
+      onApply: (draft) => {
+        filter.values = draft.values;
+        filter.condition = draft.condition;
+        this.filterModel!.apply();
+        this.afterFilterChanged();
+      },
+      onClear: () => {
+        filter.clear();
+        this.filterModel!.apply();
+        this.afterFilterChanged();
+      },
+    });
+  }
+
+  private afterFilterChanged(): void {
+    this.syncActiveFilters();
+    this.refresh();
+    this.events.emit('filterChanged', {
+      activeBindings: this.columns
+        .filter((c) => this.filterModel!.isActive(c.binding))
+        .map((c) => c.binding),
+    });
+  }
+
+  // Rebuild the set of column indices that show an active filter glyph.
+  private syncActiveFilters(): void {
+    const active = new Set<number>();
+    if (this.filterModel) {
+      this.columns.forEach((c, i) => {
+        if (c.filterable && this.filterModel!.isActive(c.binding)) active.add(i);
+      });
+    }
+    this.state.activeFilters = active;
+  }
+
   // Sort data-mapped columns by their display text rather than the raw key.
   private readonly sortConverter = (sd: SortDescription, _item: Row, value: unknown): unknown => {
     const column = this.columns.find((c) => c.binding === sd.property);
@@ -606,6 +672,7 @@ export class Grid {
     this.dragger?.dispose();
     this.clipboard?.dispose();
     this.groupPanel?.dispose();
+    this.filterEditor?.close();
     this.events.clear();
     this.undoStack.clear();
     this.resizeObserver?.disconnect();
@@ -671,7 +738,13 @@ export class Grid {
   };
 
   private readonly onHeaderClick = (e: MouseEvent): void => {
-    if (!this.allowSorting || Math.abs(e.clientX - this.headerDownX) > 4) return;
+    if (Math.abs(e.clientX - this.headerDownX) > 4) return; // was a drag, not a click
+    const btn = (e.target as HTMLElement).closest('.apg-filter-btn') as HTMLElement | null;
+    if (btn) {
+      this.openFilter(Number(btn.dataset.filter), btn.getBoundingClientRect());
+      return;
+    }
+    if (!this.allowSorting) return;
     const header = this.viewportRenderer.headerInner;
     const x = e.clientX - header.getBoundingClientRect().left;
     const col = this.layout.colAtX(x);

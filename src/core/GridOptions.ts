@@ -24,6 +24,8 @@ export interface GridOptions<T = Record<string, unknown>> {
   allowSorting?: boolean;
   /** Enable copy/paste shortcuts (Ctrl+C / Ctrl+V). Default false. */
   allowClipboard?: boolean;
+  /** Show a filter button on each column header. Per-column `filter` overrides it. Default false. */
+  allowFiltering?: boolean;
   /**
    * Show the grouping bar; drag column headers into it to group. `true` enables
    * everything, `false` (default) hides it, or pass an options object to switch
@@ -52,6 +54,7 @@ export interface ResolvedOptions<T> {
   allowColumnReorder: boolean;
   allowSorting: boolean;
   allowClipboard: boolean;
+  allowFiltering: boolean;
   groupPanel: boolean;
   groupPanelOptions: ResolvedGroupPanel;
   maxGroups: number;
@@ -73,8 +76,14 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     options.groupPanelPlaceholder ?? DEFAULT_GROUP_PLACEHOLDER,
     options.maxGroups ?? DEFAULT_MAX_GROUPS,
   );
+  const allowFiltering = options.allowFiltering ?? false;
+  const columns = options.columns.map((def) => {
+    const col = new Column<T>(def);
+    col.filterable = def.filter ?? allowFiltering;
+    return col;
+  });
   return {
-    columns: options.columns.map((def) => new Column<T>(def)),
+    columns,
     view,
     rowHeight: options.rowHeight ?? DEFAULT_ROW_HEIGHT,
     headerHeight: options.headerHeight ?? DEFAULT_HEADER_HEIGHT,
@@ -85,6 +94,7 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     allowColumnReorder: options.allowColumnReorder ?? true,
     allowSorting: options.allowSorting ?? true,
     allowClipboard: options.allowClipboard ?? false,
+    allowFiltering,
     groupPanel: !!options.groupPanel,
     groupPanelOptions,
     maxGroups: groupPanelOptions.maxGroups,

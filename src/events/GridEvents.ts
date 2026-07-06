@@ -15,6 +15,8 @@ export interface GridEvents {
   groupsChanged: { bindings: string[] };
   /** After a group-header row is expanded or collapsed. */
   groupCollapsedChanged: { pathKey: string; collapsed: boolean };
+  /** After any column filter is applied, edited, or cleared. */
+  filterChanged: { activeBindings: string[] };
   /** Before copying the selection. Set `cancel` to true to block the copy. */
   copying: { range: CellRange; cancel: boolean };
   /** After the selection was written to the clipboard. */

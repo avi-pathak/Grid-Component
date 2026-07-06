@@ -30,6 +30,12 @@ export const icons = {
   // Stacked, indented bars — reads as "grouping".
   group:
     '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><rect x="2" y="3" width="12" height="2" rx="1"/><rect x="5" y="7" width="9" height="2" rx="1"/><rect x="5" y="11" width="9" height="2" rx="1"/></svg>',
+  // Funnel outline — a column filter that isn't active yet.
+  filter:
+    '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.3V8.5z"/></svg>',
+  // Funnel filled — shown when the column has an active filter.
+  filterActive:
+    '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.3V8.5z"/></svg>',
 } as const;
 
 export type IconName = keyof typeof icons;

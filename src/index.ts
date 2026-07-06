@@ -19,6 +19,7 @@ export { DataMap } from './models/DataMap';
 export { DataMapEditor } from './models/DataMapEditor';
 export { PropertyGroupDescription } from './models/GroupDescription';
 export { CollectionViewGroup } from './data/CollectionViewGroup';
+export { ColumnFilter } from './models/ColumnFilter';
 export { icons, iconEl } from './utils/icons';
 
 export type { ColumnDef } from './models/Column';
@@ -31,6 +32,7 @@ export type {
 } from './models/Column';
 export type { GroupHeaderContext, GroupHeaderTemplate } from './rendering/GroupHeader';
 export type { GroupPanelOptions } from './rendering/GroupPanel';
+export type { FilterOperator, FilterCondition, OperatorChoice } from './models/ColumnFilter';
 export type { IconName } from './utils/icons';
 export type { GridOptions, HeadersVisibility } from './core/GridOptions';
 export type { CellAddress, CellRange } from './models/Cell';

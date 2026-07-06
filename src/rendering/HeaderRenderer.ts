@@ -1,5 +1,6 @@
 import { RenderContext } from './RenderContext';
 import { createEl } from '../utils/DOM';
+import { iconEl } from '../utils/icons';
 import { ObjectPool } from '../utils/ObjectPool';
 
 /** Renders the column header cells for the visible columns, pooled like body cells. */
@@ -44,6 +45,16 @@ export class HeaderRenderer {
         const arrow = createEl('span', 'apg-sort-arrow');
         arrow.textContent = sort.ascending ? '▲' : '▼';
         el.appendChild(arrow);
+      }
+      if (column.filterable) {
+        const active = ctx.state.activeFilters.has(col);
+        const btn = createEl('button', 'apg-filter-btn');
+        btn.type = 'button';
+        btn.dataset.filter = String(col);
+        btn.title = active ? 'Edit filter' : 'Filter';
+        if (active) btn.classList.add('apg-filter-active');
+        btn.appendChild(iconEl(active ? 'filterActive' : 'filter'));
+        el.appendChild(btn);
       }
     }
   }

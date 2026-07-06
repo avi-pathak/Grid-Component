@@ -32,6 +32,8 @@ export interface ColumnDef<T = Record<string, unknown>> {
   dataMapEditor?: DataMapEditor;
   /** Aggregate shown for this column on group-header rows. */
   aggregate?: AggregateType;
+  /** Allow a filter dialog on this column. Overrides the grid's `allowFiltering`. */
+  filter?: boolean;
   /** Return custom cell HTML. Overrides the default text/checkbox rendering. */
   cellTemplate?: (ctx: CellTemplateContext<T>) => string;
 }
@@ -61,6 +63,8 @@ export class Column<T = Record<string, unknown>> {
   readonly align: CellAlign;
   readonly dataMapEditor: DataMapEditor;
   readonly aggregate?: AggregateType;
+  /** Whether the header shows a filter button. Resolved from the grid + column options. */
+  filterable = false;
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
 
   private readonly valueGetter?: (item: T) => unknown;

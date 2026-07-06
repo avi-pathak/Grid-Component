@@ -38,6 +38,11 @@ import { clamp } from '../utils/Math';
 
 type Row = Record<string, unknown>;
 
+// Event names whose payload carries a `cancel` flag (the "-ing"/before events).
+type CancelableEvent = {
+  [K in keyof GridEvents]: GridEvents[K] extends { cancel: boolean } ? K : never;
+}[keyof GridEvents];
+
 const GROUP_PANEL_HEIGHT = 40;
 
 /**
@@ -197,7 +202,12 @@ export class Grid {
       columns: this.columns,
       undo: this.undoStack,
       onApplied: () => this.draw(),
+      onBeginning: (cell) => !this.emitCancel('beginningEdit', { row: cell.row, col: cell.col }),
       onStart: (cell) => this.events.emit('cellEditStart', cell),
+      onEnding: (cell, value) =>
+        !this.emitCancel('cellEditEnding', { row: cell.row, col: cell.col, value }),
+      onEnded: (cell, value) =>
+        this.events.emit('cellEditEnded', { row: cell.row, col: cell.col, value }),
       onEnd: (cell) => this.events.emit('cellEditEnd', cell),
     });
     this.undoStack.onStateChanged = () =>
@@ -438,15 +448,18 @@ export class Grid {
   resizeColumn(index: number, width: number): void {
     const column = this.columns[index];
     if (!column || column.width === width) return;
+    if (this.emitCancel('resizingColumn', { col: index, width })) return;
     this.undoStack.push(new ResizeColumnAction(column, column.width, width, () => this.refresh()));
     column.width = width;
     this.refresh();
+    this.events.emit('resizedColumn', { col: index, width });
   }
 
   /** Move a column to a new index. Recorded on the undo stack. */
   moveColumn(from: number, to: number): void {
     const last = this.columns.length - 1;
     if (from === to || from < 0 || from > last || to < 0 || to > last) return;
+    if (this.emitCancel('columnReordering', { from, to })) return;
     this.undoStack.push(new MoveColumnAction(this.columns, from, to, () => this.refresh()));
     moveColumn(this.columns, from, to);
     this.refresh();
@@ -463,27 +476,32 @@ export class Grid {
   private sortByColumn(col: number, ascending?: boolean | null): void {
     const column = this.columns[col];
     if (!column || !column.binding || column.isCalculated) return;
+
+    // Resolve the target direction (null = clear) before announcing it.
+    let target: boolean | null;
     if (ascending === null) {
-      this.clearSort();
+      target = null;
+    } else if (ascending != null) {
+      target = ascending;
+    } else {
+      const cur = this.state.sort;
+      if (cur && cur.col === col) target = cur.ascending ? false : null;
+      else target = true;
+    }
+
+    if (this.emitCancel('sortingColumn', { col, binding: column.binding, ascending: target })) {
       return;
     }
-    let dir = ascending;
-    if (dir == null) {
-      const cur = this.state.sort;
-      if (cur && cur.col === col) {
-        if (!cur.ascending) {
-          this.clearSort();
-          return;
-        }
-        dir = false;
-      } else {
-        dir = true;
-      }
+
+    if (target === null) {
+      this.clearSort();
+    } else {
+      this.state.sort = { col, ascending: target };
+      this.data.collectionView.sortConverter = this.sortConverter;
+      this.data.collectionView.sortDescriptions = [new SortDescription(column.binding, target)];
+      this.groupPanel?.render();
     }
-    this.state.sort = { col, ascending: dir };
-    this.data.collectionView.sortConverter = this.sortConverter;
-    this.data.collectionView.sortDescriptions = [new SortDescription(column.binding, dir)];
-    this.groupPanel?.render();
+    this.events.emit('sortedColumn', { col, binding: column.binding, ascending: target });
   }
 
   private clearSort(): void {
@@ -515,12 +533,14 @@ export class Grid {
       sort: cur && cur.col === col ? (cur.ascending ? 'asc' : 'desc') : null,
       onSort: (dir) => this.sortByColumn(col, dir),
       onApply: (draft) => {
+        if (this.emitCancel('filtering', { binding: column.binding })) return;
         filter.values = draft.values;
         filter.condition = draft.condition;
         this.filterModel!.apply();
         this.afterFilterChanged();
       },
       onClear: () => {
+        if (this.emitCancel('filtering', { binding: column.binding })) return;
         filter.clear();
         this.filterModel!.apply();
         this.afterFilterChanged();
@@ -647,6 +667,11 @@ export class Grid {
     const gr = this.data.groupRow(row);
     if (!gr) return;
     this.host.focus();
+    if (
+      this.emitCancel('groupCollapsedChanging', { pathKey: gr.pathKey, collapsed: !gr.collapsed })
+    ) {
+      return;
+    }
     this.data.toggleGroup(gr.pathKey);
     this.refreshRows();
     this.events.emit('groupCollapsedChanged', { pathKey: gr.pathKey, collapsed: !gr.collapsed });
@@ -692,6 +717,16 @@ export class Grid {
       state: this.state,
       groupHeaderTemplate: this.groupHeaderTemplate,
     };
+  }
+
+  // Emit a cancelable ("-ing") event and return true if a handler set cancel.
+  private emitCancel<K extends CancelableEvent>(
+    type: K,
+    payload: Omit<GridEvents[K], 'cancel'>,
+  ): boolean {
+    const e = { ...payload, cancel: false } as GridEvents[K];
+    this.events.emit(type, e);
+    return (e as unknown as { cancel: boolean }).cancel;
   }
 
   private syncViewportSize(): void {
@@ -772,6 +807,7 @@ export class Grid {
 
   private applyMove(cell: CellAddress, extend: boolean): void {
     if (this.data.rowType(cell.row) === 'group') return;
+    if (this.emitCancel('selectionChanging', { row: cell.row, col: cell.col })) return;
     if (!this.selectionModel.moveTo(cell, extend)) return;
     this.data.collectionView.moveCurrentToPosition(this.data.dataIndexAt(cell.row)); // currency follows selection
     this.syncSelectionState();

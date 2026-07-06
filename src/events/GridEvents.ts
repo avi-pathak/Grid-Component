@@ -4,17 +4,41 @@ import { ChangeAction } from '../data/CollectionView';
 export interface GridEvents {
   cellClick: CellAddress;
   cellDoubleClick: CellAddress;
+  /** Before the active cell moves. Set `cancel` to true to keep the current selection. */
+  selectionChanging: { row: number; col: number; cancel: boolean };
   selectionChanged: CellAddress | null;
   scrollChanged: { scrollTop: number; scrollLeft: number };
+  /** Before a cell enters edit mode. Set `cancel` to true to prevent editing. */
+  beginningEdit: { row: number; col: number; cancel: boolean };
+  /** After the editor opened for a cell. */
   cellEditStart: CellAddress;
+  /** Before the edited value is committed. Set `cancel` to true to reject it (validation). */
+  cellEditEnding: { row: number; col: number; value: unknown; cancel: boolean };
+  /** After an edited value was committed to the row. */
+  cellEditEnded: { row: number; col: number; value: unknown };
+  /** After the editor closed (whether or not a value was committed). */
   cellEditEnd: CellAddress;
   undoStackChanged: { canUndo: boolean; canRedo: boolean };
+  /** Before a column is sorted. `ascending` is the target direction (null = clearing). Cancelable. */
+  sortingColumn: { col: number; binding: string; ascending: boolean | null; cancel: boolean };
+  /** After a column's sort changed (null = cleared). */
+  sortedColumn: { col: number; binding: string; ascending: boolean | null };
+  /** Before a column is resized. Set `cancel` to true to keep the current width. */
+  resizingColumn: { col: number; width: number; cancel: boolean };
+  /** After a column was resized. */
+  resizedColumn: { col: number; width: number };
+  /** Before a column moves to a new index. Set `cancel` to true to block the move. */
+  columnReordering: { from: number; to: number; cancel: boolean };
   columnReordered: { from: number; to: number };
   collectionChanged: { action: ChangeAction };
   /** After the group-by columns change (added, removed, reordered, or cleared). */
   groupsChanged: { bindings: string[] };
+  /** Before a group-header row is expanded or collapsed. `collapsed` is the target state. Cancelable. */
+  groupCollapsedChanging: { pathKey: string; collapsed: boolean; cancel: boolean };
   /** After a group-header row is expanded or collapsed. */
   groupCollapsedChanged: { pathKey: string; collapsed: boolean };
+  /** Before a column filter is applied or cleared from the dialog. Cancelable. */
+  filtering: { binding: string; cancel: boolean };
   /** After any column filter is applied, edited, or cleared. */
   filterChanged: { activeBindings: string[] };
   /** Before copying the selection. Set `cancel` to true to block the copy. */

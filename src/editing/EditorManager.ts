@@ -17,7 +17,13 @@ export interface EditorDeps {
   columns: Column[];
   undo: UndoStack;
   onApplied: () => void;
+  /** Return false to prevent the cell from entering edit mode. */
+  onBeginning?: (cell: CellAddress) => boolean;
   onStart: (cell: CellAddress) => void;
+  /** Return false to reject the new value before it is committed. */
+  onEnding?: (cell: CellAddress, value: unknown) => boolean;
+  /** Called after a new value was committed to the row. */
+  onEnded?: (cell: CellAddress, value: unknown) => void;
   onEnd: (cell: CellAddress) => void;
 }
 
@@ -64,6 +70,7 @@ export class EditorManager {
   begin(cell: CellAddress): void {
     const column = this.deps.columns[cell.col];
     if (!column || !column.editable || column.dataType === 'Boolean' || this.editing) return;
+    if (this.deps.onBeginning && !this.deps.onBeginning(cell)) return; // a handler canceled it
 
     const rect = this.cellRect(cell);
     this.editing = cell;
@@ -83,12 +90,14 @@ export class EditorManager {
     const item = this.deps.data.item(cell.row);
     const oldValue = column.getValue(item);
     const newValue = column.parse(value);
-    if (newValue !== oldValue) {
+    // Commit only when the value changed and no handler rejects it.
+    if (newValue !== oldValue && (!this.deps.onEnding || this.deps.onEnding(cell, newValue))) {
       this.deps.undo.push(
         new EditAction(this.deps.data, column, cell.row, oldValue, newValue, this.deps.onApplied),
       );
       this.deps.data.applyEdit(item, () => column.setValue(item, newValue));
       this.deps.onApplied();
+      this.deps.onEnded?.(cell, newValue);
     }
     this.deps.onEnd(cell);
   }

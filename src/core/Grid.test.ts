@@ -1222,4 +1222,116 @@ describe('Grid', () => {
     expect(dialog.querySelector('.apg-filter-sort')).toBeNull();
     grid.dispose();
   });
+
+  // --- Events ---
+
+  it('fires the full editing lifecycle in order', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      { binding: 'name', header: 'Name', width: 120, editable: true },
+    ];
+    const data = [{ id: 0, name: 'a' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+    const log: string[] = [];
+    grid.on('beginningEdit', () => log.push('beginningEdit'));
+    grid.on('cellEditStart', () => log.push('cellEditStart'));
+    grid.on('cellEditEnding', (e) => log.push(`cellEditEnding:${e.value}`));
+    grid.on('cellEditEnded', (e) => log.push(`cellEditEnded:${e.value}`));
+    grid.on('cellEditEnd', () => log.push('cellEditEnd'));
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-editor') as HTMLInputElement;
+    input.value = 'changed';
+    input.dispatchEvent(new Event('blur'));
+
+    expect(log).toEqual([
+      'beginningEdit',
+      'cellEditStart',
+      'cellEditEnding:changed',
+      'cellEditEnded:changed',
+      'cellEditEnd',
+    ]);
+    expect(data[0].name).toBe('changed');
+  });
+
+  it('cancels editing when beginningEdit is canceled', () => {
+    const cols = [{ binding: 'name', header: 'Name', width: 120, editable: true }];
+    const grid = new Grid(host, { columns: cols, itemsSource: [{ name: 'a' }] });
+    grid.on('beginningEdit', (e) => (e.cancel = true));
+    grid.editCell(0, 0);
+    expect(host.querySelector('.apg-editor')).toBeNull(); // no editor opened
+  });
+
+  it('rejects the new value when cellEditEnding is canceled', () => {
+    const cols = [{ binding: 'name', header: 'Name', width: 120, editable: true }];
+    const data = [{ name: 'a' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+    let endedFired = false;
+    grid.on('cellEditEnding', (e) => (e.cancel = true));
+    grid.on('cellEditEnded', () => (endedFired = true));
+
+    grid.editCell(0, 0);
+    const input = host.querySelector('.apg-editor') as HTMLInputElement;
+    input.value = 'rejected';
+    input.dispatchEvent(new Event('blur'));
+
+    expect(data[0].name).toBe('a'); // value not applied
+    expect(endedFired).toBe(false);
+    expect(grid.canUndo).toBe(false);
+  });
+
+  it('fires sortingColumn/sortedColumn and can cancel a sort', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    const sorting: Array<boolean | null> = [];
+    const sorted: Array<boolean | null> = [];
+    grid.on('sortingColumn', (e) => sorting.push(e.ascending));
+    grid.on('sortedColumn', (e) => sorted.push(e.ascending));
+
+    grid.sort('id'); // -> ascending
+    expect(sorting).toEqual([true]);
+    expect(sorted).toEqual([true]);
+    expect(grid.collectionView.sortDescriptions).toHaveLength(1);
+
+    const off = grid.on('sortingColumn', (e) => (e.cancel = true));
+    grid.sort('id'); // would go descending, but canceled
+    expect(grid.collectionView.sortDescriptions[0]).toMatchObject({ ascending: true });
+    off();
+  });
+
+  it('fires resizingColumn/resizedColumn and can cancel a resize', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    const canvas = host.querySelector('.apg-canvas') as HTMLElement;
+    const resized: number[] = [];
+    grid.on('resizedColumn', (e) => resized.push(e.width));
+    grid.resizeColumn(0, 150);
+    expect(resized).toEqual([150]);
+    const widthAfterResize = canvas.style.width;
+
+    grid.on('resizingColumn', (e) => (e.cancel = true));
+    grid.resizeColumn(0, 260);
+    expect(canvas.style.width).toBe(widthAfterResize); // canceled, no change
+  });
+
+  it('fires columnReordering and can cancel a move', () => {
+    const cols = [
+      { binding: 'a', header: 'A', width: 80 },
+      { binding: 'b', header: 'B', width: 80 },
+      { binding: 'c', header: 'C', width: 80 },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(5) });
+    grid.on('columnReordering', (e) => (e.cancel = true));
+    let reordered = false;
+    grid.on('columnReordered', () => (reordered = true));
+    grid.moveColumn(0, 2);
+    expect(reordered).toBe(false);
+    expect(grid.canUndo).toBe(false);
+  });
+
+  it('fires selectionChanging and can cancel a selection move', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(10) });
+    grid.select(1, 1);
+    grid.on('selectionChanging', (e) => (e.cancel = true));
+    grid.select(5, 0);
+    expect(grid.selectedCell).toEqual({ row: 1, col: 1 }); // stayed put
+  });
 });

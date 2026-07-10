@@ -269,6 +269,93 @@ body {
   color: #98a2b3;
 }
 
+/* Market-ticker cells: value + percent + arrow + sparkline on a colored ground. */
+.apg-cell.demo-q {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.apg-cell.demo-q-up {
+  background: #d3f4dd;
+}
+
+.apg-cell.demo-q-down {
+  background: #fcd6d3;
+}
+
+.apg-cell.demo-q-flat {
+  background: transparent;
+}
+
+.demo-q-val {
+  font-weight: 600;
+}
+
+.demo-q-pct {
+  font-size: 11px;
+  color: #475467;
+}
+
+.demo-q-arrow.demo-q-up {
+  color: #067647;
+}
+
+.demo-q-arrow.demo-q-down {
+  color: #d92d20;
+}
+
+.demo-q-arrow.demo-q-flat {
+  color: #98a2b3;
+}
+
+.demo-q-spark {
+  margin-left: auto;
+  overflow: visible;
+}
+
+.demo-q-spark polyline {
+  fill: none;
+  stroke: #475467;
+  stroke-width: 1.25;
+}
+
+.demo-q-up .demo-q-spark polyline {
+  stroke: #067647;
+}
+
+.demo-q-down .demo-q-spark polyline {
+  stroke: #d92d20;
+}
+
+.apg-cell.demo-q-sym {
+  font-weight: 700;
+  background: #f2f4f7;
+}
+
+/* Toolbar fields for the live-data controls. */
+.apg-demo-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.apg-demo-check {
+  cursor: pointer;
+}
+
+.apg-demo-input {
+  font: inherit;
+  width: 70px;
+  padding: 5px 8px;
+  border: 1px solid var(--site-border);
+  border-radius: 6px;
+  background: #fff;
+}
+
 .apg-demo-badge {
   margin-top: 12px;
   display: inline-block;

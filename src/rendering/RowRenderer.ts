@@ -40,15 +40,17 @@ export class RowRenderer {
 
   render(ctx: RenderContext): void {
     const { firstRow, lastRow } = ctx.state;
+    // The frozen panels own the pinned rows, so the body starts past them.
+    const bodyFirst = Math.max(firstRow, ctx.state.frozenRows);
 
     for (const [row, view] of this.active) {
-      if (row < firstRow || row > lastRow) {
+      if (row < bodyFirst || row > lastRow) {
         this.releaseRow(view);
         this.active.delete(row);
       }
     }
 
-    for (let row = firstRow; row <= lastRow; row++) {
+    for (let row = bodyFirst; row <= lastRow; row++) {
       const kind = ctx.data.rowType(row);
       let view = this.active.get(row);
       if (view && view.kind !== kind) {
@@ -155,17 +157,19 @@ export class RowRenderer {
     const item = ctx.data.item(row) as Record<string, unknown>;
     const rowSelected = selection != null && row >= selection.topRow && row <= selection.bottomRow;
     const activeCol = activeCell && activeCell.row === row ? activeCell.col : -1;
+    // The frozen-column panel owns the pinned columns, so the body starts past them.
+    const bodyFirstCol = Math.max(firstCol, ctx.state.frozenCols);
 
     this.applyRowStyle(view.el, row, item, ctx);
 
     for (const [col, cellEl] of view.cells) {
-      if (col < firstCol || col > lastCol) {
+      if (col < bodyFirstCol || col > lastCol) {
         this.cells.release(cellEl);
         view.cells.delete(col);
       }
     }
 
-    for (let col = firstCol; col <= lastCol; col++) {
+    for (let col = bodyFirstCol; col <= lastCol; col++) {
       let cellEl = view.cells.get(col);
       if (!cellEl) {
         cellEl = this.cells.acquire();

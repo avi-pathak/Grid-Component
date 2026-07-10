@@ -58,6 +58,17 @@ export class LayoutEngine {
     return this.colLefts[col + 1] - this.colLefts[col];
   }
 
+  /** Total width of the first `count` columns (the frozen band). */
+  frozenColsWidth(count: number): number {
+    const c = clamp(count, 0, this.colCount);
+    return this.colLefts[c];
+  }
+
+  /** Total height of the first `count` rows (the frozen band). */
+  frozenRowsHeight(count: number): number {
+    return clamp(count, 0, this._rowCount) * this.rowHeight;
+  }
+
   getVisibleRows(scrollTop: number, viewportHeight: number): IndexRange {
     if (this._rowCount === 0) return { first: 0, last: -1 };
     const first = Math.floor(scrollTop / this.rowHeight);

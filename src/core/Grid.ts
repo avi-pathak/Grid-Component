@@ -104,6 +104,8 @@ export class Grid {
     this.rowStyle = resolved.rowStyle;
     this.selectionModel = new SelectionModel(resolved.selectionMode);
     this.state.alternatingRowStep = resolved.alternatingRowStep;
+    this.state.frozenCols = resolved.frozenColumns;
+    this.state.frozenRows = resolved.frozenRows;
 
     const showColumnHeader =
       resolved.headersVisibility === 'All' || resolved.headersVisibility === 'Column';
@@ -288,12 +290,57 @@ export class Grid {
     this.layout.setColumns(this.columns);
     this.layout.setRowCount(this.data.length);
     this.renderer.resize(this.context());
+    this.syncFrozen();
     this.draw();
   }
 
   /** Redraw the current window without recomputing totals. */
   invalidate(): void {
     this.draw();
+  }
+
+  /** Number of columns pinned to the left. */
+  get frozenColumns(): number {
+    return this.state.frozenCols;
+  }
+
+  /** Number of rows pinned to the top. */
+  get frozenRows(): number {
+    return this.state.frozenRows;
+  }
+
+  /** Pin the first `count` columns to the left. Pass 0 to unfreeze. */
+  freezeColumns(count: number): void {
+    const c = clamp(Math.floor(count), 0, this.layout.colCount);
+    if (c === this.state.frozenCols) return;
+    if (this.emitCancel('freezingColumns', { count: c })) return;
+    this.state.frozenCols = c;
+    this.syncFrozen();
+    this.draw();
+    this.events.emit('frozenColumnsChanged', { count: c });
+  }
+
+  /** Pin the first `count` rows to the top. Pass 0 to unfreeze. */
+  freezeRows(count: number): void {
+    const c = clamp(Math.floor(count), 0, this.layout.rowCount);
+    if (c === this.state.frozenRows) return;
+    if (this.emitCancel('freezingRows', { count: c })) return;
+    this.state.frozenRows = c;
+    this.syncFrozen();
+    this.draw();
+    this.events.emit('frozenRowsChanged', { count: c });
+  }
+
+  // Clamp the freeze counts to the current grid size and size the pinned panels.
+  private syncFrozen(): void {
+    const cols = clamp(this.state.frozenCols, 0, this.layout.colCount);
+    const rows = clamp(this.state.frozenRows, 0, this.layout.rowCount);
+    this.state.frozenCols = cols;
+    this.state.frozenRows = rows;
+    this.viewportRenderer.setFrozen(
+      this.layout.frozenColsWidth(cols),
+      this.layout.frozenRowsHeight(rows),
+    );
   }
 
   setData(items: Row[]): void {

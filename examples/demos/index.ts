@@ -19,6 +19,7 @@ import { grouping } from './grouping';
 import { filtering } from './filtering';
 import { conditionalStyling } from './conditionalStyling';
 import { liveData } from './liveData';
+import { freeze } from './freeze';
 import { layout } from './layout';
 
 export type { Demo };
@@ -44,5 +45,6 @@ export const demos: Demo[] = [
   filtering,
   conditionalStyling,
   liveData,
+  freeze,
   layout,
 ];

@@ -17,16 +17,18 @@ export class RowHeaderRenderer {
 
   render(ctx: RenderContext): void {
     const { firstRow, lastRow } = ctx.state;
+    // The frozen-row header owns the pinned rows; the body starts past them.
+    const bodyFirst = Math.max(firstRow, ctx.state.frozenRows);
 
     for (const [row, el] of this.active) {
-      if (row < firstRow || row > lastRow) {
+      if (row < bodyFirst || row > lastRow) {
         el.remove();
         this.pool.release(el);
         this.active.delete(row);
       }
     }
 
-    for (let row = firstRow; row <= lastRow; row++) {
+    for (let row = bodyFirst; row <= lastRow; row++) {
       let el = this.active.get(row);
       if (!el) {
         el = this.pool.acquire();

@@ -29,12 +29,22 @@ export type {
   DataMapEntry,
   CellTemplateContext,
   AggregateType,
+  CellStyle,
+  CellClassFn,
+  CellStyleFn,
+  CellClassRules,
 } from './models/Column';
 export type { GroupHeaderContext, GroupHeaderTemplate } from './rendering/GroupHeader';
 export type { GroupPanelOptions } from './rendering/GroupPanel';
 export type { FilterOperator, FilterCondition, OperatorChoice } from './models/ColumnFilter';
 export type { IconName } from './utils/icons';
-export type { GridOptions, HeadersVisibility } from './core/GridOptions';
+export type {
+  GridOptions,
+  HeadersVisibility,
+  RowStyleContext,
+  RowClass,
+  RowStyle,
+} from './core/GridOptions';
 export type { CellAddress, CellRange } from './models/Cell';
 export type { SelectionMode } from './selection/SelectionModel';
 export type { GridEvents } from './events/GridEvents';

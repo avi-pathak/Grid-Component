@@ -1,10 +1,22 @@
-import { Column, ColumnDef } from '../models/Column';
+import { Column, ColumnDef, CellStyle } from '../models/Column';
 import { SelectionMode } from '../selection/SelectionModel';
 import { CollectionView } from '../data/CollectionView';
 import { GroupHeaderTemplate } from '../rendering/GroupHeader';
 import { GroupPanelOptions, ResolvedGroupPanel } from '../rendering/GroupPanel';
 
 export type HeadersVisibility = 'None' | 'Column' | 'Row' | 'All';
+
+/** Context passed to row-level conditional styling callbacks. */
+export interface RowStyleContext<T = Record<string, unknown>> {
+  item: T;
+  row: number;
+}
+
+export type RowClass<T = Record<string, unknown>> =
+  string | string[] | ((ctx: RowStyleContext<T>) => string | string[] | null | undefined);
+
+export type RowStyle<T = Record<string, unknown>> =
+  CellStyle | ((ctx: RowStyleContext<T>) => CellStyle | null | undefined);
 
 export interface GridOptions<T = Record<string, unknown>> {
   columns: ColumnDef<T>[];
@@ -38,6 +50,10 @@ export interface GridOptions<T = Record<string, unknown>> {
   maxGroups?: number;
   /** Custom renderer for the label on group-header rows (after the chevron). */
   groupHeaderTemplate?: GroupHeaderTemplate<T>;
+  /** CSS class(es) for each data row. A function enables conditional styling. */
+  rowClass?: RowClass<T>;
+  /** Inline styles for each data row. A function enables conditional styling. */
+  rowStyle?: RowStyle<T>;
   /** Track added/removed/edited rows on the collection view. Default false. */
   trackChanges?: boolean;
 }
@@ -59,6 +75,8 @@ export interface ResolvedOptions<T> {
   groupPanelOptions: ResolvedGroupPanel;
   maxGroups: number;
   groupHeaderTemplate?: GroupHeaderTemplate<T>;
+  rowClass?: RowClass<T>;
+  rowStyle?: RowStyle<T>;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -99,6 +117,8 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     groupPanelOptions,
     maxGroups: groupPanelOptions.maxGroups,
     groupHeaderTemplate: options.groupHeaderTemplate,
+    rowClass: options.rowClass,
+    rowStyle: options.rowStyle,
   };
 }
 

@@ -1,6 +1,6 @@
 import { RenderContext } from './RenderContext';
 import { CellRenderer } from './CellRenderer';
-import { createEl, setTransform } from '../utils/DOM';
+import { createEl, setTransform, setConditionalStyle } from '../utils/DOM';
 import { iconEl } from '../utils/icons';
 import { ObjectPool } from '../utils/ObjectPool';
 import { computeAggregate } from '../data/aggregate';
@@ -21,6 +21,7 @@ interface RowView {
  */
 export class RowRenderer {
   private active = new Map<number, RowView>();
+  private rowClasses = new WeakMap<HTMLElement, string[]>();
   private rowPool = new ObjectPool<HTMLElement>(
     () => createEl('div', 'apg-row'),
     (el) => {
@@ -155,6 +156,8 @@ export class RowRenderer {
     const rowSelected = selection != null && row >= selection.topRow && row <= selection.bottomRow;
     const activeCol = activeCell && activeCell.row === row ? activeCell.col : -1;
 
+    this.applyRowStyle(view.el, row, item, ctx);
+
     for (const [col, cellEl] of view.cells) {
       if (col < firstCol || col > lastCol) {
         this.cells.release(cellEl);
@@ -195,4 +198,43 @@ export class RowRenderer {
     this.rowPool.release(view.el);
     view.el.remove();
   }
+
+  // Apply the optional row-level conditional class(es) and styles. Previously
+  // applied classes are tracked so recycled rows reset instead of accumulating.
+  private applyRowStyle(
+    el: HTMLElement,
+    row: number,
+    item: Record<string, unknown>,
+    ctx: RenderContext,
+  ): void {
+    if (ctx.rowClass || this.rowClasses.has(el)) {
+      const prev = this.rowClasses.get(el);
+      if (prev) el.classList.remove(...prev);
+      const resolved = ctx.rowClass ? resolveRowValue(ctx.rowClass, { item, row }) : undefined;
+      const classes = toClassList(resolved);
+      if (classes.length) {
+        el.classList.add(...classes);
+        this.rowClasses.set(el, classes);
+      } else {
+        this.rowClasses.delete(el);
+      }
+    }
+    const style = ctx.rowStyle ? resolveRowValue(ctx.rowStyle, { item, row }) : null;
+    setConditionalStyle(el, (style as Record<string, string>) ?? null);
+  }
+}
+
+function resolveRowValue<V>(
+  def: V | ((ctx: { item: Record<string, unknown>; row: number }) => V),
+  ctx: { item: Record<string, unknown>; row: number },
+): V {
+  return typeof def === 'function' ? (def as (c: typeof ctx) => V)(ctx) : def;
+}
+
+function toClassList(value: string | string[] | null | undefined): string[] {
+  if (!value) return [];
+  const list = Array.isArray(value) ? value : [value];
+  const out: string[] = [];
+  for (const entry of list) for (const token of entry.split(/\s+/)) if (token) out.push(token);
+  return out;
 }

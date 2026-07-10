@@ -3,6 +3,7 @@ import { Column } from '../models/Column';
 import { DataView } from '../data/DataView';
 import { GridState } from '../core/GridState';
 import { GroupHeaderTemplate } from './GroupHeader';
+import { RowClass, RowStyle } from '../core/GridOptions';
 
 /**
  * Everything a render pass needs, passed in fresh each frame so the renderers
@@ -15,4 +16,8 @@ export interface RenderContext {
   state: GridState;
   /** Optional custom renderer for group-header row labels. */
   groupHeaderTemplate?: GroupHeaderTemplate;
+  /** Optional conditional class(es) for data rows. */
+  rowClass?: RowClass;
+  /** Optional conditional inline styles for data rows. */
+  rowStyle?: RowStyle;
 }

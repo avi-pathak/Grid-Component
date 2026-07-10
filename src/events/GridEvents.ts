@@ -49,4 +49,12 @@ export interface GridEvents {
   pasting: { text: string; cancel: boolean };
   /** After pasted text was applied to the given range. */
   pasted: { range: CellRange };
+  /** Before the number of pinned (left) columns changes. Cancelable. */
+  freezingColumns: { count: number; cancel: boolean };
+  /** After the number of pinned columns changed. */
+  frozenColumnsChanged: { count: number };
+  /** Before the number of pinned (top) rows changes. Cancelable. */
+  freezingRows: { count: number; cancel: boolean };
+  /** After the number of pinned rows changed. */
+  frozenRowsChanged: { count: number };
 }

@@ -26,6 +26,10 @@ export interface GridOptions<T = Record<string, unknown>> {
   rowHeight?: number;
   headerHeight?: number;
   rowHeaderWidth?: number;
+  /** Number of leading columns kept pinned to the left while the rest scroll. Default 0. */
+  frozenColumns?: number;
+  /** Number of leading rows kept pinned to the top while the rest scroll. Default 0. */
+  frozenRows?: number;
   selectionMode?: SelectionMode;
   headersVisibility?: HeadersVisibility;
   /** Regular rows between alternating-colored rows. 0 disables. Default 1. */
@@ -64,6 +68,8 @@ export interface ResolvedOptions<T> {
   rowHeight: number;
   headerHeight: number;
   rowHeaderWidth: number;
+  frozenColumns: number;
+  frozenRows: number;
   selectionMode: SelectionMode;
   headersVisibility: HeadersVisibility;
   alternatingRowStep: number;
@@ -106,6 +112,8 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     rowHeight: options.rowHeight ?? DEFAULT_ROW_HEIGHT,
     headerHeight: options.headerHeight ?? DEFAULT_HEADER_HEIGHT,
     rowHeaderWidth: options.rowHeaderWidth ?? DEFAULT_ROW_HEADER_WIDTH,
+    frozenColumns: Math.max(0, options.frozenColumns ?? 0),
+    frozenRows: Math.max(0, options.frozenRows ?? 0),
     selectionMode: options.selectionMode ?? 'Cell',
     headersVisibility: options.headersVisibility ?? 'All',
     alternatingRowStep: options.alternatingRowStep ?? 1,

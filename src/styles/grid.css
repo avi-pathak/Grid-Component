@@ -17,6 +17,7 @@
   --apg-group-bg: #f4f6fb;
   --apg-group-bg-hover: #eaeef7;
   --apg-panel-bg: #eef1f6;
+  --apg-frozen-cell-bg: #eff4fb;
   position: relative;
   overflow: hidden;
   font: var(--apg-font);
@@ -57,7 +58,7 @@
   position: sticky;
   top: 0;
   left: 0;
-  z-index: 3;
+  z-index: 5;
   background: var(--apg-header-bg);
   border-right: var(--apg-border);
   border-bottom: var(--apg-border);
@@ -69,7 +70,7 @@
   justify-self: start;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
   background: var(--apg-header-bg);
   border-bottom: var(--apg-border);
 }
@@ -138,7 +139,7 @@
   justify-self: start;
   position: sticky;
   left: 0;
-  z-index: 2;
+  z-index: 3;
   background: var(--apg-header-bg);
   border-right: var(--apg-border);
 }
@@ -156,6 +157,82 @@
   color: var(--apg-header-fg);
   border-bottom: var(--apg-border);
   will-change: transform;
+}
+
+/* Pinned (frozen) bands. Each is a sticky panel the compositor keeps in place:
+   columns pin left, rows pin top, and the corner pins both. Opaque backgrounds
+   and a heavier boundary edge separate the frozen area from the scrolling body. */
+.apg-frozen-cols,
+.apg-frozen-rows,
+.apg-frozen-corner,
+.apg-frozen-cols-header,
+.apg-frozen-rows-header {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
+  background: var(--apg-cell-bg);
+}
+
+.apg-frozen-cols {
+  z-index: 2;
+  border-right: 2px solid var(--apg-border-color);
+}
+
+.apg-frozen-rows {
+  z-index: 2;
+  border-bottom: 2px solid var(--apg-border-color);
+}
+
+.apg-frozen-cols-header,
+.apg-frozen-rows-header {
+  z-index: 4;
+}
+
+.apg-frozen-corner {
+  z-index: 3;
+}
+
+.apg-frozen-cols-header {
+  top: 0;
+  background: var(--apg-header-bg);
+  border-right: 2px solid var(--apg-border-color);
+  border-bottom: var(--apg-border);
+}
+
+.apg-frozen-rows-header {
+  left: 0;
+  background: var(--apg-header-bg);
+  border-right: var(--apg-border);
+  border-bottom: 2px solid var(--apg-border-color);
+}
+
+.apg-frozen-corner {
+  border-right: 2px solid var(--apg-border-color);
+  border-bottom: 2px solid var(--apg-border-color);
+}
+
+.apg-frozen-cell-row {
+  position: absolute;
+  left: 0;
+  will-change: transform;
+}
+
+.apg-frozen-cell-row.apg-row-alt {
+  background: var(--apg-cell-bg-alt);
+}
+
+/* Styling hooks for pinned cells. Override these to distinguish frozen content
+   (`apg-frozen-cell` is on every pinned data cell; the region-specific classes
+   target just the columns band, rows band, or their corner). */
+.apg-frozen-cell {
+  background: var(--apg-frozen-cell-bg, #eff4fb);
+  font-weight: 500;
+}
+
+.apg-frozen-cell.apg-cell-selected,
+.apg-frozen-corner-cell.apg-cell-selected {
+  background: var(--apg-selected-bg);
 }
 
 .apg-row {

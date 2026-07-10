@@ -16,6 +16,11 @@ export class GridState {
   firstCol = 0;
   lastCol = 0;
 
+  /** Leading columns pinned to the left. */
+  frozenCols = 0;
+  /** Leading rows pinned to the top. */
+  frozenRows = 0;
+
   selection: CellRange | null = null;
   activeCell: CellAddress | null = null;
   alternatingRowStep = 1;

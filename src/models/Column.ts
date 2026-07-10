@@ -15,6 +15,25 @@ export interface CellTemplateContext<T = Record<string, unknown>> {
   column: Column<T>;
 }
 
+/** Inline styles as a plain object, e.g. `{ color: 'red', backgroundColor: '#fee' }`. */
+export type CellStyle = Partial<CSSStyleDeclaration> & Record<string, string>;
+
+/** Resolves a cell's CSS classes from its value/row. Return one or more class names. */
+export type CellClassFn<T = Record<string, unknown>> = (
+  ctx: CellTemplateContext<T>,
+) => string | string[] | null | undefined;
+
+/** Resolves a cell's inline styles from its value/row. */
+export type CellStyleFn<T = Record<string, unknown>> = (
+  ctx: CellTemplateContext<T>,
+) => CellStyle | null | undefined;
+
+/** Map of class name to a predicate; each class is applied when its predicate is true. */
+export type CellClassRules<T = Record<string, unknown>> = Record<
+  string,
+  (ctx: CellTemplateContext<T>) => boolean
+>;
+
 export interface ColumnDef<T = Record<string, unknown>> {
   /** Field to bind to. Optional for calculated columns that use `valueGetter`. */
   binding?: string;
@@ -34,6 +53,12 @@ export interface ColumnDef<T = Record<string, unknown>> {
   aggregate?: AggregateType;
   /** Allow a filter dialog on this column. Overrides the grid's `allowFiltering`. */
   filter?: boolean;
+  /** CSS class(es) for the cell. A function receives the cell context for conditional styling. */
+  cellClass?: string | string[] | CellClassFn<T>;
+  /** Inline styles for the cell. A function receives the cell context for conditional styling. */
+  cellStyle?: CellStyle | CellStyleFn<T>;
+  /** Class-name → predicate map; each class is applied when its predicate returns true. */
+  cellClassRules?: CellClassRules<T>;
   /** Return custom cell HTML. Overrides the default text/checkbox rendering. */
   cellTemplate?: (ctx: CellTemplateContext<T>) => string;
 }
@@ -70,6 +95,9 @@ export class Column<T = Record<string, unknown>> {
   private readonly valueGetter?: (item: T) => unknown;
   private readonly valueFormatter?: (value: unknown, item: T) => string;
   private readonly map?: DataMap;
+  private readonly cellClassDef?: string | string[] | CellClassFn<T>;
+  private readonly cellStyleDef?: CellStyle | CellStyleFn<T>;
+  private readonly cellClassRules?: CellClassRules<T>;
 
   constructor(def: ColumnDef<T>) {
     this.binding = def.binding ?? '';
@@ -83,6 +111,9 @@ export class Column<T = Record<string, unknown>> {
     this.map = def.dataMap ? toDataMap(def.dataMap) : undefined;
     this.dataMapEditor = def.dataMapEditor ?? DataMapEditor.DropDownList;
     this.aggregate = def.aggregate;
+    this.cellClassDef = def.cellClass;
+    this.cellStyleDef = def.cellStyle;
+    this.cellClassRules = def.cellClassRules;
     // Calculated columns are read-only; combo cells stay editable.
     this.editable = (def.editable ?? false) && !this.isCalculated;
   }
@@ -143,5 +174,40 @@ export class Column<T = Record<string, unknown>> {
     if (this.dataType === 'Boolean') return ''; // rendered as a checkbox
     if (this.dataType === 'Date' && value instanceof Date) return value.toLocaleDateString();
     return String(value);
+  }
+
+  /** The CSS classes for a cell, from `cellClass` plus any matching `cellClassRules`. */
+  cellClasses(item: T, row: number): string[] {
+    if (!this.cellClassDef && !this.cellClassRules) return [];
+    const ctx = this.cellContext(item, row);
+    const out: string[] = [];
+    const cc = typeof this.cellClassDef === 'function' ? this.cellClassDef(ctx) : this.cellClassDef;
+    addClasses(out, cc);
+    if (this.cellClassRules) {
+      for (const name in this.cellClassRules) {
+        if (this.cellClassRules[name](ctx)) addClasses(out, name);
+      }
+    }
+    return out;
+  }
+
+  /** The inline styles for a cell, or null when `cellStyle` is unset or returns nothing. */
+  cellInlineStyle(item: T, row: number): CellStyle | null {
+    if (!this.cellStyleDef) return null;
+    if (typeof this.cellStyleDef !== 'function') return this.cellStyleDef;
+    return this.cellStyleDef(this.cellContext(item, row)) ?? null;
+  }
+
+  private cellContext(item: T, row: number): CellTemplateContext<T> {
+    return { value: this.getValue(item), item, row, column: this };
+  }
+}
+
+// Push class name(s) as individual tokens (space-separated strings are split).
+function addClasses(out: string[], value: string | string[] | null | undefined): void {
+  if (!value) return;
+  const list = Array.isArray(value) ? value : [value];
+  for (const entry of list) {
+    for (const token of entry.split(/\s+/)) if (token) out.push(token);
   }
 }

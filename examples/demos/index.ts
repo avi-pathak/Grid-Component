@@ -17,6 +17,8 @@ import { clipboard } from './clipboard';
 import { changeTracking } from './changeTracking';
 import { grouping } from './grouping';
 import { filtering } from './filtering';
+import { conditionalStyling } from './conditionalStyling';
+import { liveData } from './liveData';
 import { layout } from './layout';
 
 export type { Demo };
@@ -40,5 +42,7 @@ export const demos: Demo[] = [
   changeTracking,
   grouping,
   filtering,
+  conditionalStyling,
+  liveData,
   layout,
 ];

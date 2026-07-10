@@ -210,6 +210,65 @@ body {
   font-size: 0.85em;
 }
 
+/* Classes used by the conditional-styling demo (cellClass / cellClassRules / rowClass). */
+.demo-cell-high {
+  background: #fde2e1;
+  color: #b42318;
+  font-weight: 600;
+}
+
+.demo-cell-low {
+  background: #e7f0ff;
+  color: #1849a9;
+}
+
+.demo-neg {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.demo-pos {
+  color: #067647;
+}
+
+.demo-row-inactive {
+  background: #f4f4f5;
+  color: #9aa0a6;
+  font-style: italic;
+}
+
+/* Live-data demo: flashing price cells and numeric alignment. */
+.demo-num {
+  font-variant-numeric: tabular-nums;
+  transition: background 0.6s ease;
+}
+
+.demo-flash-up {
+  background: #b6ecc4;
+}
+
+.demo-flash-down {
+  background: #fcccc8;
+}
+
+/* Change columns: arrow + colored value, like a real ticker. */
+.demo-tick {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.demo-tick.demo-up {
+  color: #067647;
+}
+
+.demo-tick.demo-down {
+  color: #d92d20;
+}
+
+.demo-tick.demo-flat {
+  color: #98a2b3;
+}
+
 .apg-demo-badge {
   margin-top: 12px;
   display: inline-block;

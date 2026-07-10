@@ -77,6 +77,8 @@ export class Grid {
   private clipboard?: ClipboardHandler;
   private groupPanel?: GroupPanel;
   private groupHeaderTemplate?: GroupHeaderTemplate;
+  private rowClass?: RenderContext['rowClass'];
+  private rowStyle?: RenderContext['rowStyle'];
   private filterModel?: FilterModel;
   private filterEditor?: FilterEditor;
   private maxGroups: number;
@@ -98,6 +100,8 @@ export class Grid {
     this.headerHeight = resolved.headerHeight;
     this.maxGroups = resolved.maxGroups;
     this.groupHeaderTemplate = resolved.groupHeaderTemplate;
+    this.rowClass = resolved.rowClass;
+    this.rowStyle = resolved.rowStyle;
     this.selectionModel = new SelectionModel(resolved.selectionMode);
     this.state.alternatingRowStep = resolved.alternatingRowStep;
 
@@ -716,6 +720,8 @@ export class Grid {
       data: this.data,
       state: this.state,
       groupHeaderTemplate: this.groupHeaderTemplate,
+      rowClass: this.rowClass,
+      rowStyle: this.rowStyle,
     };
   }
 

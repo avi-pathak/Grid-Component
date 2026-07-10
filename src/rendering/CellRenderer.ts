@@ -1,5 +1,5 @@
 import { Column } from '../models/Column';
-import { createEl } from '../utils/DOM';
+import { createEl, setConditionalStyle } from '../utils/DOM';
 import { ObjectPool } from '../utils/ObjectPool';
 
 /** Owns the pool of cell elements and knows how to position and fill one. */
@@ -36,6 +36,12 @@ export class CellRenderer {
     el.className = `apg-cell apg-align-${column.align}`;
     if (selected) el.classList.add('apg-cell-selected');
     if (active) el.classList.add('apg-cell-active');
+
+    // Conditional styling (rebuilt every pass, so it tracks edits and never leaks
+    // onto recycled cells).
+    const classes = column.cellClasses(item, row);
+    if (classes.length) el.classList.add(...classes);
+    setConditionalStyle(el, column.cellInlineStyle(item, row));
 
     if (column.cellTemplate) {
       el.classList.add('apg-cell-template');

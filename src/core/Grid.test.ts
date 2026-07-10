@@ -1334,4 +1334,95 @@ describe('Grid', () => {
     grid.select(5, 0);
     expect(grid.selectedCell).toEqual({ row: 1, col: 1 }); // stayed put
   });
+
+  // --- Conditional styling ---
+
+  function cellAt(row: number, col: number): HTMLElement {
+    const cells = [...host.querySelectorAll('.apg-row')][row].querySelectorAll('.apg-cell');
+    return cells[col] as HTMLElement;
+  }
+
+  it('applies cellStyle inline styles from the value', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      {
+        binding: 'n',
+        header: 'N',
+        width: 100,
+        dataType: 'Number' as const,
+        cellStyle: ({ value }: { value: unknown }) =>
+          Number(value) > 10 ? { backgroundColor: 'rgb(0, 128, 0)' } : null,
+      },
+    ];
+    const data = [
+      { id: 0, n: 20 },
+      { id: 1, n: 5 },
+    ];
+    new Grid(host, { columns: cols, itemsSource: data });
+    expect(cellAt(0, 1).style.backgroundColor).toBe('rgb(0, 128, 0)');
+    expect(cellAt(1, 1).style.backgroundColor).toBe(''); // no style below threshold
+  });
+
+  it('applies cellClass and cellClassRules', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      {
+        binding: 'n',
+        header: 'N',
+        width: 100,
+        dataType: 'Number' as const,
+        cellClass: 'always',
+        cellClassRules: { big: ({ value }: { value: unknown }) => Number(value) >= 100 },
+      },
+    ];
+    const data = [
+      { id: 0, n: 150 },
+      { id: 1, n: 3 },
+    ];
+    new Grid(host, { columns: cols, itemsSource: data });
+    expect(cellAt(0, 1).classList.contains('always')).toBe(true);
+    expect(cellAt(0, 1).classList.contains('big')).toBe(true);
+    expect(cellAt(1, 1).classList.contains('always')).toBe(true);
+    expect(cellAt(1, 1).classList.contains('big')).toBe(false);
+  });
+
+  it('re-evaluates conditional styles after an edit', () => {
+    const cols = [
+      {
+        binding: 'n',
+        header: 'N',
+        width: 100,
+        dataType: 'Number' as const,
+        editable: true,
+        cellClassRules: { big: ({ value }: { value: unknown }) => Number(value) >= 100 },
+      },
+    ];
+    const data = [{ n: 5 }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+    expect(cellAt(0, 0).classList.contains('big')).toBe(false);
+
+    grid.setCellValue(0, 0, 500);
+    expect(cellAt(0, 0).classList.contains('big')).toBe(true);
+
+    grid.setCellValue(0, 0, 1); // drops below threshold — class must be removed
+    expect(cellAt(0, 0).classList.contains('big')).toBe(false);
+  });
+
+  it('applies rowClass and rowStyle to data rows', () => {
+    const cols = [{ binding: 'name', header: 'Name', width: 120 }];
+    const data = [
+      { name: 'keep', flag: true },
+      { name: 'dim', flag: false },
+    ];
+    new Grid(host, {
+      columns: cols,
+      itemsSource: data,
+      rowClass: ({ item }) => ((item as { flag: boolean }).flag ? '' : 'muted'),
+      rowStyle: ({ item }) => ((item as { flag: boolean }).flag ? null : { opacity: '0.5' }),
+    });
+    const rows = [...host.querySelectorAll('.apg-row')] as HTMLElement[];
+    expect(rows[0].classList.contains('muted')).toBe(false);
+    expect(rows[1].classList.contains('muted')).toBe(true);
+    expect(rows[1].style.opacity).toBe('0.5');
+  });
 });

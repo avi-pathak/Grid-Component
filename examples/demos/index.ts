@@ -21,6 +21,7 @@ import { conditionalStyling } from './conditionalStyling';
 import { liveData } from './liveData';
 import { freeze } from './freeze';
 import { merging } from './merging';
+import { stateSerialization } from './stateSerialization';
 import { layout } from './layout';
 
 export type { Demo };
@@ -48,5 +49,6 @@ export const demos: Demo[] = [
   liveData,
   freeze,
   merging,
+  stateSerialization,
   layout,
 ];

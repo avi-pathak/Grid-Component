@@ -78,6 +78,17 @@ export class DataView<T = Record<string, unknown>> {
     this.refreshGroups();
   }
 
+  /** Path keys of the currently collapsed groups. */
+  collapsedGroups(): string[] {
+    return this.groupModel.collapsedKeys();
+  }
+
+  /** Restore the collapsed groups from saved path keys. */
+  setCollapsedGroups(keys: string[]): void {
+    this.groupModel.setCollapsed(keys);
+    this.refreshGroups();
+  }
+
   setItems(items: T[]): void {
     this.view.sourceCollection = items;
   }

@@ -53,6 +53,8 @@ export interface ColumnDef<T = Record<string, unknown>> {
   aggregate?: AggregateType;
   /** Allow a filter dialog on this column. Overrides the grid's `allowFiltering`. */
   filter?: boolean;
+  /** Let this column merge adjacent equal-valued cells. Overrides the grid's `allowMerging`. */
+  allowMerging?: boolean;
   /** CSS class(es) for the cell. A function receives the cell context for conditional styling. */
   cellClass?: string | string[] | CellClassFn<T>;
   /** Inline styles for the cell. A function receives the cell context for conditional styling. */
@@ -90,6 +92,8 @@ export class Column<T = Record<string, unknown>> {
   readonly aggregate?: AggregateType;
   /** Whether the header shows a filter button. Resolved from the grid + column options. */
   filterable = false;
+  /** Whether this column participates in cell merging. Resolved from the grid + column options. */
+  allowMerging = false;
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
 
   private readonly valueGetter?: (item: T) => unknown;

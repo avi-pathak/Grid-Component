@@ -4,10 +4,12 @@ import { RowRenderer } from './RowRenderer';
 import { HeaderRenderer } from './HeaderRenderer';
 import { RowHeaderRenderer } from './RowHeaderRenderer';
 import { FrozenRenderer } from './FrozenRenderer';
+import { MergeRenderer } from './MergeRenderer';
 
 /** Runs one render pass: headers, then body rows, then the pinned bands. */
 export class Renderer {
   private frozen: FrozenRenderer;
+  private merge: MergeRenderer;
 
   constructor(
     private viewport: ViewportRenderer,
@@ -17,6 +19,7 @@ export class Renderer {
     private showRowHeader: boolean,
   ) {
     this.frozen = new FrozenRenderer(viewport);
+    this.merge = new MergeRenderer(viewport.mergeLayer);
   }
 
   /** Resize the scroll canvas to the current totals. Call when layout changes. */
@@ -30,6 +33,7 @@ export class Renderer {
     if (this.showRowHeader) {
       this.rowHeader.render(ctx);
     }
+    this.merge.render(ctx);
     this.frozen.render(ctx);
   }
 }

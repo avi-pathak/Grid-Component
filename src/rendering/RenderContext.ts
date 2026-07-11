@@ -4,6 +4,10 @@ import { DataView } from '../data/DataView';
 import { GridState } from '../core/GridState';
 import { GroupHeaderTemplate } from './GroupHeader';
 import { RowClass, RowStyle } from '../core/GridOptions';
+import { CellRange } from '../models/Cell';
+
+/** Resolved merge lookup: the span a cell belongs to, or null when it stands alone. */
+export type MergeLookup = (row: number, col: number) => CellRange | null;
 
 /**
  * Everything a render pass needs, passed in fresh each frame so the renderers
@@ -20,4 +24,6 @@ export interface RenderContext {
   rowClass?: RowClass;
   /** Optional conditional inline styles for data rows. */
   rowStyle?: RowStyle;
+  /** Optional cell-merge lookup. Present only when merging is enabled. */
+  merge?: MergeLookup;
 }

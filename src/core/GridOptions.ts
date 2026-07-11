@@ -3,6 +3,7 @@ import { SelectionMode } from '../selection/SelectionModel';
 import { CollectionView } from '../data/CollectionView';
 import { GroupHeaderTemplate } from '../rendering/GroupHeader';
 import { GroupPanelOptions, ResolvedGroupPanel } from '../rendering/GroupPanel';
+import { MergeManager } from '../models/MergeManager';
 
 export type HeadersVisibility = 'None' | 'Column' | 'Row' | 'All';
 
@@ -42,6 +43,10 @@ export interface GridOptions<T = Record<string, unknown>> {
   allowClipboard?: boolean;
   /** Show a filter button on each column header. Per-column `filter` overrides it. Default false. */
   allowFiltering?: boolean;
+  /** Merge adjacent equal-valued cells. Per-column `allowMerging` overrides it. Default false. */
+  allowMerging?: boolean;
+  /** Custom rule for how cells merge. Replaces the default content-driven merge. */
+  mergeManager?: MergeManager;
   /**
    * Show the grouping bar; drag column headers into it to group. `true` enables
    * everything, `false` (default) hides it, or pass an options object to switch
@@ -77,6 +82,8 @@ export interface ResolvedOptions<T> {
   allowSorting: boolean;
   allowClipboard: boolean;
   allowFiltering: boolean;
+  allowMerging: boolean;
+  mergeManager?: MergeManager;
   groupPanel: boolean;
   groupPanelOptions: ResolvedGroupPanel;
   maxGroups: number;
@@ -101,9 +108,11 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     options.maxGroups ?? DEFAULT_MAX_GROUPS,
   );
   const allowFiltering = options.allowFiltering ?? false;
+  const allowMerging = options.allowMerging ?? false;
   const columns = options.columns.map((def) => {
     const col = new Column<T>(def);
     col.filterable = def.filter ?? allowFiltering;
+    col.allowMerging = def.allowMerging ?? allowMerging;
     return col;
   });
   return {
@@ -121,6 +130,8 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     allowSorting: options.allowSorting ?? true,
     allowClipboard: options.allowClipboard ?? false,
     allowFiltering,
+    allowMerging,
+    mergeManager: options.mergeManager,
     groupPanel: !!options.groupPanel,
     groupPanelOptions,
     maxGroups: groupPanelOptions.maxGroups,

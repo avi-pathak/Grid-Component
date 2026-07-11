@@ -81,4 +81,14 @@ export class GroupRowModel<T = Record<string, unknown>> {
   expandAll(): void {
     this.collapsed.clear();
   }
+
+  /** The path keys of every collapsed group, for saving state. */
+  collapsedKeys(): string[] {
+    return [...this.collapsed];
+  }
+
+  /** Replace the collapsed set (used when restoring saved state). */
+  setCollapsed(keys: string[]): void {
+    this.collapsed = new Set(keys);
+  }
 }

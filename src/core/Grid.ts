@@ -35,6 +35,7 @@ import { BatchAction } from '../commands/BatchAction';
 import { MoveColumnAction, moveColumn } from '../commands/MoveColumnAction';
 import { EditorManager } from '../editing/EditorManager';
 import { MergeManager, contentMerge } from '../models/MergeManager';
+import { GridStateSnapshot } from '../models/GridStateSnapshot';
 import { clamp } from '../utils/Math';
 
 type Row = Record<string, unknown>;
@@ -346,6 +347,102 @@ export class Grid {
       this.layout.frozenColsWidth(cols),
       this.layout.frozenRowsHeight(rows),
     );
+  }
+
+  /** Capture the current column layout, sort, filters, grouping, freeze, selection, and scroll. */
+  toJSON(): GridStateSnapshot {
+    const active = this.selectionModel.getActive();
+    return {
+      version: 1,
+      columns: this.columns.map((c) => ({ binding: c.binding, width: c.width })),
+      sort: this.state.sort
+        ? {
+            binding: this.columns[this.state.sort.col].binding,
+            ascending: this.state.sort.ascending,
+          }
+        : null,
+      filters: this.filterModel
+        ? this.columns
+            .map((c) => this.filterModel!.get(c))
+            .filter((f) => f.isActive)
+            .map((f) => ({
+              binding: f.column.binding,
+              values: f.values ? [...f.values] : null,
+              condition: f.condition ? { ...f.condition } : null,
+            }))
+        : [],
+      groups: this.groupDescriptions.map((g) => g.property),
+      collapsedGroups: this.data.collapsedGroups(),
+      frozen: { columns: this.state.frozenCols, rows: this.state.frozenRows },
+      selectionMode: this.selectionModel.getMode(),
+      activeCell: active ? { row: active.row, col: active.col } : null,
+      scroll: {
+        top: this.viewportRenderer.viewport.scrollTop,
+        left: this.viewportRenderer.viewport.scrollLeft,
+      },
+    };
+  }
+
+  /** Restore a snapshot from {@link toJSON}. Unknown bindings are ignored. */
+  loadJSON(snapshot: GridStateSnapshot): void {
+    if (!snapshot || snapshot.version !== 1) return;
+
+    if (snapshot.columns) this.applyColumnState(snapshot.columns);
+
+    // Grouping first, then filters and sort, so the collapse keys line up.
+    if (snapshot.groups) this.groupBy(...snapshot.groups);
+
+    if (this.filterModel) {
+      for (const c of this.columns) this.filterModel.get(c).clear();
+      for (const f of snapshot.filters ?? []) {
+        const column = this.columns.find((c) => c.binding === f.binding);
+        if (!column) continue;
+        const cf = this.filterModel.get(column);
+        cf.values = f.values ? new Set(f.values) : null;
+        cf.condition = f.condition ? { ...f.condition } : null;
+      }
+      this.filterModel.apply();
+      this.syncActiveFilters();
+    }
+
+    if (snapshot.sort === null) this.clearSort();
+    else if (snapshot.sort) this.sort(snapshot.sort.binding, snapshot.sort.ascending);
+
+    if (snapshot.frozen) {
+      this.freezeColumns(snapshot.frozen.columns);
+      this.freezeRows(snapshot.frozen.rows);
+    }
+
+    this.refresh();
+
+    if (snapshot.collapsedGroups) this.data.setCollapsedGroups(snapshot.collapsedGroups);
+
+    if (snapshot.selectionMode) this.selectionMode = snapshot.selectionMode as SelectionMode;
+    if (snapshot.activeCell) this.select(snapshot.activeCell.row, snapshot.activeCell.col);
+
+    this.refresh();
+
+    if (snapshot.scroll) {
+      this.viewportRenderer.viewport.scrollTop = snapshot.scroll.top;
+      this.viewportRenderer.viewport.scrollLeft = snapshot.scroll.left;
+      this.draw();
+    }
+  }
+
+  // Reorder columns to match the saved bindings and restore their widths. Any
+  // columns missing from the snapshot keep their current relative order at the end.
+  private applyColumnState(saved: { binding: string; width: number }[]): void {
+    const byBinding = new Map(this.columns.map((c) => [c.binding, c]));
+    const ordered: Column[] = [];
+    for (const s of saved) {
+      const col = byBinding.get(s.binding);
+      if (!col) continue;
+      col.width = s.width;
+      ordered.push(col);
+      byBinding.delete(s.binding);
+    }
+    for (const col of this.columns) if (byBinding.has(col.binding)) ordered.push(col);
+    this.columns = ordered;
   }
 
   setData(items: Row[]): void {

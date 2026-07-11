@@ -48,6 +48,11 @@ export type {
 export type { CellAddress, CellRange } from './models/Cell';
 export type { MergeQuery, MergeManager } from './models/MergeManager';
 export { contentMerge } from './models/MergeManager';
+export type {
+  GridStateSnapshot,
+  ColumnStateSnapshot,
+  FilterStateSnapshot,
+} from './models/GridStateSnapshot';
 export type { SelectionMode } from './selection/SelectionModel';
 export type { GridEvents } from './events/GridEvents';
 export type { UndoableAction } from './commands/UndoableAction';

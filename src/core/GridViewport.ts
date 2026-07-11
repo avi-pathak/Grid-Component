@@ -1,8 +1,11 @@
 import { GridState } from './GridState';
 import { LayoutEngine } from '../virtualization/LayoutEngine';
 
-const BUFFER_ROWS = 3;
-const BUFFER_COLS = 1;
+// Extra rows/cols kept in the DOM beyond the visible window. A larger row
+// overscan absorbs fast scrollbar drags so freshly exposed rows are already
+// rendered instead of flashing blank for a frame.
+const BUFFER_ROWS = 8;
+const BUFFER_COLS = 2;
 
 /**
  * Turns a scroll position into the buffered range of rows and columns that

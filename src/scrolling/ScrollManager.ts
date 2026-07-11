@@ -1,18 +1,11 @@
 /**
- * Coalesces native scroll events into a single callback per animation frame.
- * A fast scroll fires many `scroll` events; we only want to re-render once per
- * frame, reading the latest scroll position inside the rAF callback.
+ * Renders on scroll. Browsers already fire `scroll` at most once per frame, so
+ * we render synchronously in the handler instead of deferring to the next
+ * animation frame — deferring leaves one blank frame on a fast drag, where the
+ * canvas has already scrolled but the new rows haven't been painted yet.
  */
 export class ScrollManager {
-  private frame = 0;
-
   private readonly onScroll = (): void => {
-    if (this.frame) return;
-    this.frame = requestAnimationFrame(this.run);
-  };
-
-  private readonly run = (): void => {
-    this.frame = 0;
     this.tick();
   };
 
@@ -25,6 +18,5 @@ export class ScrollManager {
 
   dispose(): void {
     this.scroller.removeEventListener('scroll', this.onScroll);
-    if (this.frame) cancelAnimationFrame(this.frame);
   }
 }

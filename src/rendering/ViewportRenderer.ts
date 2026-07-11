@@ -23,6 +23,7 @@ export class ViewportRenderer {
   readonly viewport: HTMLElement;
   readonly canvas: HTMLElement;
   readonly cells: HTMLElement;
+  readonly mergeLayer: HTMLElement;
   readonly headerInner: HTMLElement;
   readonly rowHeaderInner: HTMLElement;
   readonly gutterLeft: number;
@@ -54,6 +55,11 @@ export class ViewportRenderer {
     this.cells = createEl('div', 'apg-cells');
     this.cells.style.left = `${this.gutterLeft}px`;
     this.cells.style.top = `${this.gutterTop}px`;
+
+    // Spanning cells paint on top of the normal rows, so their layer lives inside
+    // the cells container and is added last.
+    this.mergeLayer = createEl('div', 'apg-merge-layer');
+    this.cells.appendChild(this.mergeLayer);
 
     this.headerInner = createEl('div', 'apg-header-inner');
     this.headerInner.style.marginLeft = `${this.gutterLeft}px`;

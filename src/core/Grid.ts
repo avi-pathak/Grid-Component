@@ -34,6 +34,7 @@ import { EditAction } from '../commands/EditAction';
 import { BatchAction } from '../commands/BatchAction';
 import { MoveColumnAction, moveColumn } from '../commands/MoveColumnAction';
 import { EditorManager } from '../editing/EditorManager';
+import { MergeManager, contentMerge } from '../models/MergeManager';
 import { clamp } from '../utils/Math';
 
 type Row = Record<string, unknown>;
@@ -79,6 +80,8 @@ export class Grid {
   private groupHeaderTemplate?: GroupHeaderTemplate;
   private rowClass?: RenderContext['rowClass'];
   private rowStyle?: RenderContext['rowStyle'];
+  private mergeManager?: MergeManager;
+  private anyMergeable = false;
   private filterModel?: FilterModel;
   private filterEditor?: FilterEditor;
   private maxGroups: number;
@@ -102,6 +105,8 @@ export class Grid {
     this.groupHeaderTemplate = resolved.groupHeaderTemplate;
     this.rowClass = resolved.rowClass;
     this.rowStyle = resolved.rowStyle;
+    this.mergeManager = resolved.mergeManager;
+    this.anyMergeable = this.columns.some((c) => c.allowMerging);
     this.selectionModel = new SelectionModel(resolved.selectionMode);
     this.state.alternatingRowStep = resolved.alternatingRowStep;
     this.state.frozenCols = resolved.frozenColumns;
@@ -769,7 +774,24 @@ export class Grid {
       groupHeaderTemplate: this.groupHeaderTemplate,
       rowClass: this.rowClass,
       rowStyle: this.rowStyle,
+      merge: this.mergeLookup(),
     };
+  }
+
+  // Build the per-frame merge lookup, or undefined when merging is off. A custom
+  // manager takes over entirely; otherwise the default content-driven merge runs
+  // for columns that opted in.
+  private mergeLookup(): RenderContext['merge'] {
+    const manager = this.mergeManager ?? (this.anyMergeable ? contentMerge : undefined);
+    if (!manager) return undefined;
+    const rowCount = this.layout.rowCount;
+    const colCount = this.layout.colCount;
+    const value = (row: number, col: number): unknown => {
+      if (this.data.rowType(row) !== 'data') return null;
+      return this.columns[col].getValue(this.data.item(row) as Record<string, unknown>);
+    };
+    const mergeableCol = (col: number): boolean => this.columns[col].allowMerging;
+    return (row, col) => manager({ row, col, rowCount, colCount, value, mergeableCol });
   }
 
   // Emit a cancelable ("-ing") event and return true if a handler set cancel.

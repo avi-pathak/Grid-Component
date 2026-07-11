@@ -163,13 +163,15 @@ export class RowRenderer {
     this.applyRowStyle(view.el, row, item, ctx);
 
     for (const [col, cellEl] of view.cells) {
-      if (col < bodyFirstCol || col > lastCol) {
+      if (col < bodyFirstCol || col > lastCol || (ctx.merge && ctx.merge(row, col))) {
         this.cells.release(cellEl);
         view.cells.delete(col);
       }
     }
 
     for (let col = bodyFirstCol; col <= lastCol; col++) {
+      // Cells inside a span are painted by the merge layer, not here.
+      if (ctx.merge && ctx.merge(row, col)) continue;
       let cellEl = view.cells.get(col);
       if (!cellEl) {
         cellEl = this.cells.acquire();

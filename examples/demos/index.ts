@@ -20,6 +20,7 @@ import { filtering } from './filtering';
 import { conditionalStyling } from './conditionalStyling';
 import { liveData } from './liveData';
 import { freeze } from './freeze';
+import { merging } from './merging';
 import { layout } from './layout';
 
 export type { Demo };
@@ -46,5 +47,6 @@ export const demos: Demo[] = [
   conditionalStyling,
   liveData,
   freeze,
+  merging,
   layout,
 ];

@@ -38,7 +38,7 @@ const grid = new Grid('#theGrid', {
 ## Scripts
 
 `npm run dev` · `npm run build` · `npm test` · `npm run typecheck` · `npm run lint`
-
+some thing needed here
 ## Docs
 
 See [docs/](./docs/) — architecture, rendering, virtualization, interaction, build,

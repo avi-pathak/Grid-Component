@@ -9,7 +9,7 @@ How `@avi-pathak/apgrid` is compiled, bundled, and published.
 | Language | TypeScript 5 (strict) |
 | Bundler | Webpack 5 |
 | Type declarations | `tsc --emitDeclarationOnly` |
-| CSS | `mini-css-extract-plugin` + `css-minimizer-webpack-plugin` |
+| Styles | SCSS via `sass` + `sass-loader`, extracted with `mini-css-extract-plugin` + `css-minimizer-webpack-plugin` |
 | Minification | `terser-webpack-plugin` |
 | Lint / format | ESLint + Prettier |
 | Hooks | Husky + lint-staged |
@@ -27,7 +27,9 @@ dist/
 ├── esm/apgrid.mjs        # ES module (import)
 ├── cjs/apgrid.cjs        # CommonJS (require)
 ├── umd/apgrid.umd.js     # UMD, global "ApGrid" (script tag)
-├── apgrid.css            # extracted, minified stylesheet
+├── apgrid.css            # extracted stylesheet (light + dark)
+├── apgrid-light.css      # light-only theme
+├── apgrid-dark.css       # dark-first theme
 ├── *.map                 # source maps for each bundle
 └── types/                # .d.ts tree, entry at types/index.d.ts
 ```
@@ -43,20 +45,38 @@ configs) sharing one base. See [webpack.config.js](../webpack.config.js).
 | ESM | `module` | needs `experiments.outputModule` |
 | CJS | `commonjs2` | classic `require` interop |
 
-### CSS handling
+### Styles (SCSS)
 
-The library imports its stylesheet exactly once, from `src/index.ts`. Only the **UMD**
-build extracts it to `dist/apgrid.css`. The ESM and CJS builds drop the CSS import with
-`webpack.IgnorePlugin` so the three compilers never write the same file in parallel.
+Styles are authored in **SCSS** under `src/styles/`: a token layer
+(`_tokens.scss`) plus feature partials (`_base`, `_header`, `_cells`, `_frozen`,
+`_editors`, `_grouping`, `_overlays`, `_theme-dark`), composed by the entry
+`apgrid.scss`. `sass-loader` compiles it and the library imports it exactly once
+from `src/index.ts`.
 
-Consumers load the stylesheet separately:
+Only the **UMD** build extracts it to `dist/apgrid.css` (via
+`mini-css-extract-plugin`); the ESM and CJS builds drop the import with
+`webpack.IgnorePlugin` so the three compilers never write the same file in
+parallel. A separate `build:themes` step compiles the single-theme entries
+`apgrid-light.scss` / `apgrid-dark.scss` to `dist/apgrid-light.css` and
+`dist/apgrid-dark.css` with the Sass CLI.
+
+Consumers load a stylesheet separately:
 
 ```ts
-import '@avi-pathak/apgrid/styles.css';
+import '@avi-pathak/apgrid/styles.css';        // light + dark (class-gated)
+// or a single theme:
+import '@avi-pathak/apgrid/styles-light.css';
+import '@avi-pathak/apgrid/styles-dark.css';
+// or compose the SCSS partials directly:
+// @use '@avi-pathak/apgrid/scss/apgrid';
 ```
 
-This mirrors how AG Grid and similar libraries ship CSS — the JS stays free of
-injected styles, and the stylesheet is themeable through CSS custom properties.
+**Theming.** Every value is a `--apg-*` CSS custom property on `.apg`, so a
+consumer retheme is just a variable override — no recompile. Dark mode ships in
+the default stylesheet, opt-in via the `apg-theme-dark` class on the grid host
+(or any ancestor); `apg-theme-auto` follows `prefers-color-scheme`. This mirrors
+how AG Grid (Quartz/Alpine) and Wijmo ship token-driven, class-switchable themes
+while keeping the JS free of injected styles.
 
 ## package.json wiring
 

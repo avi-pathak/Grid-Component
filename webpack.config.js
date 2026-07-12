@@ -24,10 +24,16 @@ const base = {
   },
 };
 
-// CSS lives in src/index.ts as a single import. Only the UMD build extracts it to
-// dist/apgrid.css; the ESM and CJS builds drop the import so they don't race on the
-// same output file. Consumers import the stylesheet via "@avi-pathak/apgrid/styles.css".
-const dropCss = new webpack.IgnorePlugin({ resourceRegExp: /\.css$/ });
+// Styles live in src/index.ts as a single SCSS import. Only the UMD build
+// extracts it to dist/apgrid.css; the ESM and CJS builds drop the import so they
+// don't race on the same output file. Consumers import the compiled stylesheet
+// via "@avi-pathak/apgrid/styles.css".
+const dropCss = new webpack.IgnorePlugin({ resourceRegExp: /\.s?css$/ });
+
+const scssRule = {
+  test: /\.scss$/,
+  use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
+};
 
 module.exports = [
   {
@@ -40,7 +46,7 @@ module.exports = [
       globalObject: 'this',
     },
     module: {
-      rules: [tsRule, { test: /\.css$/, use: [MiniCssExtractPlugin.loader, 'css-loader'] }],
+      rules: [tsRule, scssRule],
     },
     plugins: [new MiniCssExtractPlugin({ filename: 'apgrid.css' })],
   },

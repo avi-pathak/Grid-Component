@@ -1,0 +1,218 @@
+// Row grouping: the grouping bar with its chips, and the in-body group-header
+// rows with their toggle, label, count badge, and per-column aggregates.
+
+// ---- Grouping bar -----------------------------------------------------------
+.apg-grouppanel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--apg-panel-bg);
+  border-bottom: var(--apg-border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+
+  &::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--apg-scrollbar-thumb);
+    border-radius: 3px;
+  }
+
+  &.apg-grouppanel-over {
+    background: var(--apg-hover-bg);
+    box-shadow: inset 0 0 0 2px var(--apg-active-border);
+  }
+}
+
+.apg-grouppanel-icon {
+  color: var(--apg-header-fg);
+  opacity: 0.5;
+}
+
+.apg-group-placeholder {
+  color: var(--apg-fg-muted);
+  font-style: italic;
+  font-size: 0.92em;
+}
+
+.apg-group-chips {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+// Chevron between chips reads as a hierarchy: A › B › C
+.apg-group-sep {
+  width: 12px;
+  height: 12px;
+  color: var(--apg-header-fg);
+  opacity: 0.4;
+}
+
+.apg-group-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 26px;
+  padding: 0 4px 0 6px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: var(--apg-radius);
+  color: var(--apg-cell-fg);
+  cursor: grab;
+  user-select: none;
+  box-shadow: var(--apg-shadow-sm);
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease;
+
+  &:hover {
+    border-color: var(--apg-active-border);
+    box-shadow: var(--apg-shadow-md);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.apg-group-chip-grip {
+  width: 12px;
+  height: 14px;
+  color: var(--apg-header-fg);
+  opacity: 0.4;
+}
+
+.apg-group-chip-label {
+  font-weight: 500;
+  font-size: 0.9em;
+}
+
+.apg-group-chip-sort {
+  width: 12px;
+  height: 12px;
+  color: var(--apg-active-border);
+}
+
+.apg-group-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: var(--apg-radius-sm);
+  background: transparent;
+  color: var(--apg-header-fg);
+  opacity: 0.55;
+  cursor: pointer;
+
+  .apg-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  &:hover {
+    background: var(--apg-control-hover);
+    opacity: 1;
+  }
+}
+
+.apg-group-chip-marker {
+  width: 2px;
+  height: 20px;
+  align-self: center;
+  border-radius: 1px;
+  background: var(--apg-active-border);
+}
+
+// ---- In-body group-header rows ---------------------------------------------
+.apg-group-row {
+  background: var(--apg-group-bg);
+  border-bottom: var(--apg-border);
+  contain: none;
+
+  &:hover {
+    background: var(--apg-group-bg-hover);
+  }
+}
+
+.apg-group-label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 100%;
+  padding-right: 16px;
+  background: inherit;
+  white-space: nowrap;
+}
+
+.apg-group-toggle {
+  width: 16px;
+  height: 16px;
+  color: var(--apg-header-fg);
+  border-radius: var(--apg-radius-sm);
+  cursor: pointer;
+  transition: transform 0.15s ease;
+
+  &:hover {
+    background: var(--apg-control-hover);
+    color: var(--apg-cell-fg);
+  }
+
+  &.apg-group-toggle-open {
+    transform: rotate(90deg);
+  }
+}
+
+.apg-group-inner {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.apg-group-name {
+  font-weight: 600;
+  color: var(--apg-cell-fg);
+}
+
+.apg-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  background: var(--apg-control-hover);
+  color: var(--apg-header-fg);
+  font-size: 0.78em;
+  font-weight: 600;
+}
+
+.apg-group-agg {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: var(--apg-cell-padding);
+  font-weight: 600;
+  color: var(--apg-cell-fg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

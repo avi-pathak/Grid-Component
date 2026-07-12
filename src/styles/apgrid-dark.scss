@@ -1,0 +1,22 @@
+// Dark-first theme entry. Structure + the dark palette applied to `.apg` by
+// default (no class needed). Import this instead of `apgrid.css` for a grid that
+// is dark out of the box. Usage:
+// `@use '@avi-pathak/apgrid/scss/apgrid-dark';` or import the compiled
+// `apgrid-dark.css`.
+
+@use 'tokens' as *;
+@use 'base';
+@use 'header';
+@use 'cells';
+@use 'frozen';
+@use 'editors';
+@use 'grouping';
+@use 'overlays';
+
+// Apply the dark palette as the default on every token-carrying root.
+.apg,
+.apg-drag-ghost,
+.apg-context-menu,
+.apg-filter-dialog {
+  @include tokens($dark);
+}

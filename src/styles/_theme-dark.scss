@@ -1,0 +1,43 @@
+// Dark theme. Opt in explicitly with the `apg-theme-dark` class — either on the
+// grid host / overlay root itself, or on any ancestor (so a page wrapper can
+// theme every grid inside it). Use `apg-theme-auto` to follow the OS via
+// prefers-color-scheme. Only token VALUES change — every rule in the other
+// partials reads the same custom properties, so nothing else needs a dark copy.
+@use 'tokens' as *;
+
+// Roots that carry tokens: the grid host and the body-mounted overlays.
+$roots: '.apg, .apg-drag-ghost, .apg-context-menu, .apg-filter-dialog';
+
+// On the root itself…
+#{$roots} {
+  &.apg-theme-dark {
+    @include tokens($dark);
+  }
+}
+
+// …or inherited from an ancestor container.
+.apg-theme-dark {
+  .apg,
+  .apg-drag-ghost,
+  .apg-context-menu,
+  .apg-filter-dialog {
+    @include tokens($dark);
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  #{$roots} {
+    &.apg-theme-auto {
+      @include tokens($dark);
+    }
+  }
+
+  .apg-theme-auto {
+    .apg,
+    .apg-drag-ghost,
+    .apg-context-menu,
+    .apg-filter-dialog {
+      @include tokens($dark);
+    }
+  }
+}

@@ -1,0 +1,108 @@
+// Root: emit the light tokens and the grid's own box model + scroll structure.
+@use 'tokens' as *;
+
+.apg {
+  @include tokens($light);
+
+  position: relative;
+  overflow: hidden;
+  font: var(--apg-font);
+  color: var(--apg-cell-fg);
+  background: var(--apg-cell-bg);
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-user-select: none;
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+}
+
+.apg-viewport {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+
+  // Slimmer, theme-aware scrollbars so the chrome doesn't fight the content.
+  scrollbar-width: thin;
+  scrollbar-color: var(--apg-scrollbar-thumb) transparent;
+
+  &::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--apg-scrollbar-thumb);
+    border: 3px solid transparent;
+    border-radius: 8px;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--apg-border-strong);
+    background-clip: padding-box;
+  }
+}
+
+.apg-canvas {
+  position: relative;
+  display: grid;
+}
+
+// The body is a viewport-sized panel the compositor keeps pinned (like the
+// header), not a slice of a giant scrolling layer. Rows inside are translated by
+// the scroll offset, so content never sits millions of pixels down where a fast
+// drag would outrun rasterization and flash blank. The tall canvas above only
+// provides the scrollbar range.
+.apg-cells {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
+  top: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.apg-corner {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 5;
+  background: var(--apg-header-bg);
+  border-right: var(--apg-border);
+  border-bottom: var(--apg-border);
+}
+
+// Focus: no default outline on click; a clear accent ring for keyboard users.
+.apg:focus {
+  outline: none;
+}
+
+.apg:focus-visible {
+  outline: 2px solid var(--apg-focus-ring);
+  outline-offset: -2px;
+}
+
+// Inline SVG icon wrapper. Size/color come from the element it's placed on.
+.apg-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex: none;
+  line-height: 0;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+}

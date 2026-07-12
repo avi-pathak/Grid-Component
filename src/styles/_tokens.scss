@@ -1,0 +1,119 @@
+// =============================================================================
+// apgrid — design tokens
+// =============================================================================
+// Every visual value is a CSS custom property on `.apg`, so consumers retheme at
+// runtime by overriding a variable and the light/dark theme files just set
+// different defaults. Token NAMES are the public API and are kept stable
+// (`--apg-cell-bg`, `--apg-active-border`, …); only their default VALUES are
+// refreshed here. The Grid also writes `--apg-row-height`,
+// `--apg-header-height`, and `--apg-group-header-height` at runtime.
+
+@use 'sass:map';
+
+// ---- Light (default) palette ------------------------------------------------
+// A calm neutral surface with a single blue accent, soft hairline borders and
+// airy spacing — ag-Grid Quartz in spirit, with Wijmo's crisp header contrast.
+$light: (
+  // geometry
+  'row-height': 30px,
+  'header-height': 36px,
+  'group-header-height': 34px,
+  'col-width': 100px,
+  'cell-padding-x': 12px,
+  'radius': 6px,
+  'radius-sm': 4px,
+  // typography
+  'font-family': (
+      -apple-system,
+      BlinkMacSystemFont,
+      'Segoe UI',
+      Roboto,
+      Helvetica,
+      Arial,
+      sans-serif
+    ),
+  'font-size': 13px,
+  'line-height': 1.45,
+  // surfaces
+  'cell-bg': #ffffff,
+  'cell-bg-alt': #f7f9fc,
+  'cell-fg': #1f2933,
+  'surface-sunken': #eef1f6,
+  'fg-muted': #5a6675,
+  // borders
+  'border-color': #e3e7ef,
+  'border-strong': #cbd2dd,
+  // header
+  'header-bg': #f4f6fa,
+  'header-fg': #3d4757,
+  // accent + states  (`active-border` is the legacy accent token name)
+  'active-border': #2563eb,
+  'accent-contrast': #ffffff,
+  'selected-bg': rgba(37, 99, 235, 0.1),
+  'hover-bg': rgba(37, 99, 235, 0.055),
+  'focus-ring': rgba(37, 99, 235, 0.4),
+  // grouping
+  'group-bg': #eef2fb,
+  'group-bg-hover': #e4eaf7,
+  'panel-bg': #eef1f6,
+  'frozen-cell-bg': #eef4fc,
+  // chrome
+  'shadow-sm': (0 1px 2px rgba(15, 23, 42, 0.06)),
+  'shadow-md': (0 4px 12px rgba(15, 23, 42, 0.14)),
+  'shadow-lg': (0 10px 28px rgba(15, 23, 42, 0.2)),
+  'scrollbar-thumb': rgba(15, 23, 42, 0.18),
+  'control-hover': rgba(15, 23, 42, 0.06),
+  'checkbox-border': #9aa3af
+);
+
+// ---- Dark palette (value overrides only) ------------------------------------
+$dark: (
+  'cell-bg': #1b1f27,
+  'cell-bg-alt': #21262f,
+  'cell-fg': #e6e9ee,
+  'surface-sunken': #161a21,
+  'fg-muted': #9aa4b2,
+  'border-color': #2c333d,
+  'border-strong': #3a424e,
+  'header-bg': #232833,
+  'header-fg': #c2cad6,
+  'active-border': #4b8bff,
+  'accent-contrast': #0d1017,
+  'selected-bg': rgba(75, 139, 255, 0.22),
+  'hover-bg': rgba(75, 139, 255, 0.12),
+  'focus-ring': rgba(75, 139, 255, 0.55),
+  'group-bg': #262c37,
+  'group-bg-hover': #2d3540,
+  'panel-bg': #1f242d,
+  'frozen-cell-bg': #222834,
+  'shadow-sm': (
+    0 1px 2px rgba(0, 0, 0, 0.4),
+  ),
+  'shadow-md': (
+    0 4px 12px rgba(0, 0, 0, 0.5),
+  ),
+  'shadow-lg': (
+    0 12px 30px rgba(0, 0, 0, 0.6),
+  ),
+  'scrollbar-thumb': rgba(255, 255, 255, 0.22),
+  'control-hover': rgba(255, 255, 255, 0.08),
+  'checkbox-border': #5c6675,
+);
+
+// Emit a token map as `--apg-*` custom properties plus the composite vars
+// (border shorthand, cell padding, font) — the composites only when their
+// primitives are present, so a partial override map (e.g. $dark) stays clean.
+@mixin tokens($m) {
+  @each $name, $value in $m {
+    --apg-#{$name}: #{$value};
+  }
+  @if map.has-key($m, 'border-color') {
+    --apg-border: 1px solid var(--apg-border-color);
+  }
+  @if map.has-key($m, 'cell-padding-x') {
+    --apg-cell-padding: 0 var(--apg-cell-padding-x);
+  }
+  @if map.has-key($m, 'font-family') {
+    --apg-font: var(--apg-font-size) / var(--apg-line-height) var(--apg-font-family);
+  }
+}

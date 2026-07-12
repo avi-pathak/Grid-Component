@@ -24,12 +24,10 @@ export const conditionalStyling: Demo = {
           width: 130,
           dataType: 'Number',
           valueFormatter: money,
-          // Inline style straight from the value: bigger sales get greener.
-          cellStyle: ({ value }) => {
-            const n = Number(value);
-            if (n >= 8000) return { backgroundColor: '#d7f2dd', fontWeight: '600' };
-            if (n >= 5000) return { backgroundColor: '#eafaef' };
-            return null;
+          // Class per threshold so the tint follows the site's light/dark theme.
+          cellClassRules: {
+            'demo-sales-high': ({ value }) => Number(value) >= 8000,
+            'demo-sales-mid': ({ value }) => Number(value) >= 5000 && Number(value) < 8000,
           },
         },
         {

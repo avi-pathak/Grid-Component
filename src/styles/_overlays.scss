@@ -1,0 +1,276 @@
+// Popups/overlays appended to <body>, outside the `.apg` scope, so the theme
+// variables aren't inherited. Re-emit the full token set on each overlay root so
+// they render correctly wherever they mount (and pick up dark mode via the
+// media query in the theme files).
+@use 'tokens' as *;
+
+.apg-drag-ghost,
+.apg-context-menu,
+.apg-filter-dialog {
+  @include tokens($light);
+}
+
+// Floating label that follows the cursor while a header is being dragged.
+.apg-drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1000;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: var(--apg-radius);
+  box-shadow: var(--apg-shadow-lg);
+  color: var(--apg-cell-fg);
+  font: var(--apg-font);
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0.96;
+}
+
+.apg-drag-ghost-icon {
+  color: var(--apg-header-fg);
+  opacity: 0.7;
+}
+
+.apg-drag-ghost-active {
+  border-color: var(--apg-active-border);
+  background: var(--apg-hover-bg);
+
+  .apg-drag-ghost-icon {
+    color: var(--apg-active-border);
+    opacity: 1;
+  }
+}
+
+// Right-click menu (grouping bar actions).
+.apg-context-menu {
+  position: fixed;
+  z-index: 2000;
+  min-width: 184px;
+  padding: 5px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: 8px;
+  box-shadow: var(--apg-shadow-lg);
+  font: var(--apg-font);
+  color: var(--apg-cell-fg);
+}
+
+.apg-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 30px;
+  padding: 0 10px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--apg-hover-bg);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+}
+
+.apg-context-menu-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  color: var(--apg-header-fg);
+}
+
+.apg-context-menu-label {
+  flex: 1;
+}
+
+.apg-context-menu-sep {
+  height: 1px;
+  margin: 5px 8px;
+  background: var(--apg-border-color);
+}
+
+// Column filter popup.
+.apg-filter-dialog {
+  position: fixed;
+  z-index: 2000;
+  width: 240px;
+  padding: 10px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: 8px;
+  box-shadow: var(--apg-shadow-lg);
+  font: var(--apg-font);
+  color: var(--apg-cell-fg);
+}
+
+.apg-filter-sort {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: -4px -4px 0;
+}
+
+.apg-filter-sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--apg-cell-fg);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  .apg-icon {
+    width: 14px;
+    height: 14px;
+    flex: none;
+    color: var(--apg-header-fg);
+  }
+
+  &:hover {
+    background: var(--apg-hover-bg);
+  }
+}
+
+.apg-filter-sort-active {
+  color: var(--apg-active-border);
+  font-weight: 600;
+
+  .apg-icon {
+    color: var(--apg-active-border);
+  }
+}
+
+.apg-filter-section {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.apg-filter-op {
+  flex: none;
+  width: 96px;
+}
+
+.apg-filter-value {
+  flex: 1;
+  min-width: 0;
+}
+
+.apg-filter-op,
+.apg-filter-value,
+.apg-filter-search {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--apg-border-color);
+  border-radius: 5px;
+  font: inherit;
+  color: inherit;
+  background: var(--apg-cell-bg);
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--apg-active-border);
+  }
+}
+
+.apg-filter-sep {
+  height: 1px;
+  margin: 8px -10px;
+  background: var(--apg-border-color);
+}
+
+.apg-filter-search {
+  width: 100%;
+  margin-bottom: 6px;
+}
+
+.apg-filter-selectall {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 2px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.apg-filter-list {
+  max-height: 180px;
+  overflow-y: auto;
+  margin: 2px 0 8px;
+  border: 1px solid var(--apg-border-color);
+  border-radius: 5px;
+}
+
+.apg-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--apg-hover-bg);
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.apg-filter-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.apg-filter-clear,
+.apg-filter-apply {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--apg-radius);
+  font: inherit;
+  cursor: pointer;
+}
+
+.apg-filter-clear {
+  border: 1px solid var(--apg-border-color);
+  background: var(--apg-cell-bg);
+  color: var(--apg-cell-fg);
+
+  &:hover {
+    border-color: var(--apg-active-border);
+  }
+}
+
+.apg-filter-apply {
+  border: 1px solid var(--apg-active-border);
+  background: var(--apg-active-border);
+  color: var(--apg-accent-contrast);
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}

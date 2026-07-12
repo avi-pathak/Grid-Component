@@ -1,4 +1,4 @@
-import './styles/grid.css';
+import './styles/apgrid.scss';
 
 import * as controls from './controls';
 

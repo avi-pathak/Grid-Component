@@ -1,0 +1,43 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "tsconfig": "tsconfig.json",
+  "out": "docs-site",
+  "name": "apgrid",
+  "readme": "README.md",
+  "includeVersion": true,
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "categorizeByGroup": true,
+  "navigationLinks": {
+    "npm": "https://www.npmjs.com/package/@avi-pathak/apgrid",
+    "GitHub": "https://github.com/avi-pathak/Grid-Component"
+  },
+  "projectDocuments": [
+    "docs/01-Architecture.md",
+    "docs/02-Core-Engine.md",
+    "docs/03-Rendering.md",
+    "docs/04-Virtualization.md",
+    "docs/05-Interaction.md",
+    "docs/06-Data-Layer.md",
+    "docs/10-Column-Groups.md",
+    "docs/07-Build-System.md",
+    "docs/08-Testing.md",
+    "docs/09-Roadmap.md"
+  ],
+  "sort": ["source-order"],
+  "highlightLanguages": ["typescript", "javascript", "json", "jsonc", "css", "scss", "bash", "html", "mermaid"],
+  "intentionallyNotExported": [
+    "EventHandler",
+    "Row",
+    "FieldType",
+    "CollectionViewEvents"
+  ],
+  "visibilityFilters": {
+    "protected": false,
+    "private": false,
+    "inherited": true,
+    "external": false
+  }
+}

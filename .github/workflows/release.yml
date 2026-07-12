@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   release:
-    if: github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release): bump version')
+    if: "github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, 'chore(release): bump version')"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -51,10 +51,9 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: chore/release-version-bump
           delete-branch: true
-          commit-message: chore(release): bump version [skip ci]
-          title: chore(release): bump version
-          body: |
-            Automated version bump after npm publish.
+          commit-message: "chore(release): bump version [skip ci]"
+          title: "chore(release): bump version"
+          body: Automated version bump after npm publish.
           add-paths: |
             package.json
             package-lock.json

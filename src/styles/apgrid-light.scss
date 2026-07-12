@@ -1,0 +1,12 @@
+// Light-only theme entry. Same as the default stylesheet minus the dark tokens —
+// import this instead of `apgrid.css` when you never need dark mode and want the
+// smallest stylesheet. Usage: `@use '@avi-pathak/apgrid/scss/apgrid-light';`
+// or import the compiled `apgrid-light.css`.
+
+@use 'base';
+@use 'header';
+@use 'cells';
+@use 'frozen';
+@use 'editors';
+@use 'grouping';
+@use 'overlays';

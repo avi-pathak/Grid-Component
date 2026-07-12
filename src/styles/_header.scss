@@ -1,0 +1,192 @@
+// Column header, multi-level column groups, sort arrow, filter button.
+
+.apg-header-inner {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--apg-header-bg);
+  border-bottom: var(--apg-border);
+}
+
+.apg-header-cell {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: var(--apg-cell-padding);
+  font-weight: 600;
+  color: var(--apg-header-fg);
+  letter-spacing: 0.01em;
+  border-right: var(--apg-border);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: default;
+  transition: background-color 0.12s ease;
+
+  &.apg-sortable {
+    cursor: pointer;
+
+    &:hover {
+      background: var(--apg-control-hover);
+    }
+  }
+}
+
+.apg-sort-arrow {
+  margin-left: 4px;
+  font-size: 0.7em;
+  color: var(--apg-active-border);
+}
+
+// ---- Multi-level column groups ---------------------------------------------
+// The group band sits above the leaf header, pinned to the top edge; the leaf
+// header is pushed down by its height.
+.apg-columngroup-inner {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--apg-header-bg);
+  border-bottom: var(--apg-border);
+}
+
+.apg-columngroup-cell {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--apg-cell-padding);
+  font-weight: 600;
+  color: var(--apg-header-fg);
+  border-right: var(--apg-border);
+  border-bottom: var(--apg-border);
+  // Subtle top-down tint gives grouped bands a touch of depth over the leaves.
+  background:
+    linear-gradient(to bottom, var(--apg-control-hover), transparent 70%), var(--apg-header-bg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  // A shallow leaf's header rendered inside the band as one tall cell.
+  // fillHeaderCell gives it .apg-header-cell styling (left-aligned, sortable);
+  // the band just supplies the divider so it reads as a normal column header.
+  &.apg-columngroup-leaf {
+    border-right: var(--apg-border);
+    border-bottom: none;
+    background: var(--apg-header-bg);
+  }
+
+  &.apg-collapsible {
+    cursor: pointer;
+
+    &:hover {
+      background: var(--apg-group-bg-hover);
+    }
+  }
+}
+
+// Collapse/expand animation, opt-in via the `columnGroupAnimation` option (adds
+// `.apg-animated` to the host). Group header cells ease their geometry as
+// columns hide/show, mirroring Wijmo FlexGrid's `.animated` transition.
+.apg-animated .apg-columngroup-cell {
+  transition:
+    left 0.2s ease,
+    width 0.2s ease,
+    top 0.2s ease,
+    height 0.2s ease;
+}
+
+.apg-columngroup-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--apg-header-fg);
+  transition: transform 0.18s ease;
+
+  // Chevron points right when collapsed, down when expanded.
+  &.apg-columngroup-chevron-open {
+    transform: rotate(90deg);
+  }
+}
+
+.apg-columngroup-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+// ---- Filter button on filterable headers -----------------------------------
+.apg-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  border-radius: var(--apg-radius-sm);
+  background: transparent;
+  color: var(--apg-header-fg);
+  opacity: 0.55;
+  cursor: pointer;
+  flex: none;
+  transition:
+    background-color 0.12s ease,
+    opacity 0.12s ease;
+
+  .apg-icon {
+    width: 13px;
+    height: 13px;
+  }
+
+  &:hover {
+    background: var(--apg-control-hover);
+    opacity: 1;
+  }
+
+  &.apg-filter-active {
+    color: var(--apg-active-border);
+    opacity: 1;
+  }
+}
+
+// ---- Row-number header column ----------------------------------------------
+.apg-rowheader-inner {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
+  top: 0;
+  left: 0;
+  z-index: 3;
+  overflow: hidden;
+  background: var(--apg-header-bg);
+  border-right: var(--apg-border);
+}
+
+.apg-rowheader-cell {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: var(--apg-row-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85em;
+  color: var(--apg-fg-muted);
+  border-bottom: var(--apg-border);
+  will-change: transform;
+}
+
+.apg-rowheader-group {
+  background: var(--apg-group-bg);
+}

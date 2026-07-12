@@ -1,4 +1,4 @@
-import '../src/styles/grid.css';
+import '../src/styles/apgrid.scss';
 import './site.css';
 import { VERSION } from '../src';
 import { demos } from './demos';
@@ -10,6 +10,20 @@ const demoTagline = document.getElementById('demo-tagline') as HTMLElement;
 const versionEl = document.getElementById('version') as HTMLElement;
 
 versionEl.textContent = `v${VERSION}`;
+
+// Dark-theme toggle: adds `apg-theme-dark` to <body>, which the stylesheet's
+// ancestor rule applies to every `.apg` grid (and its body-mounted overlays).
+const themeToggle = document.getElementById('theme-toggle') as HTMLButtonElement;
+const applyTheme = (dark: boolean): void => {
+  document.body.classList.toggle('apg-theme-dark', dark);
+  document.body.classList.toggle('site-dark', dark);
+  themeToggle.textContent = dark ? 'Light' : 'Dark';
+  themeToggle.setAttribute('aria-pressed', String(dark));
+};
+themeToggle.addEventListener('click', () => {
+  applyTheme(!document.body.classList.contains('apg-theme-dark'));
+});
+applyTheme(false);
 
 let dispose: (() => void) | null = null;
 

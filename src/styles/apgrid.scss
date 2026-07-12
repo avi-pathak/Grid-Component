@@ -1,0 +1,16 @@
+// =============================================================================
+// @avi-pathak/apgrid — stylesheet entry
+// =============================================================================
+// Imported once from src/index.ts and extracted to dist/apgrid.css. Pulls in the
+// base structure, all feature partials, and the dark theme. Token names are the
+// public theming API (`--apg-*` custom properties on `.apg`); override them at
+// runtime or use the `apg-theme-dark` / `apg-theme-auto` classes.
+
+@use 'base';
+@use 'header';
+@use 'cells';
+@use 'frozen';
+@use 'editors';
+@use 'grouping';
+@use 'overlays';
+@use 'theme-dark';

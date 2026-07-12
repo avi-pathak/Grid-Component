@@ -9,6 +9,44 @@
   --site-sidebar-fg: #cbd5e1;
 }
 
+/* Dark site chrome, toggled alongside the grid's own dark theme. */
+body.site-dark {
+  --site-bg: #12151b;
+  --site-panel: #1b1f27;
+  --site-border: #2c333d;
+  --site-fg: #e6e9ee;
+  --site-muted: #9aa4b2;
+  --site-sidebar: #0b0e13;
+  --site-sidebar-fg: #b4becc;
+}
+
+.demo-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.theme-toggle {
+  flex: none;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--site-border);
+  border-radius: 8px;
+  background: var(--site-panel);
+  color: var(--site-fg);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.theme-toggle:hover {
+  border-color: var(--site-accent);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -239,6 +277,17 @@ body {
 }
 
 /* Classes used by the conditional-styling demo (cellClass / cellClassRules / rowClass). */
+.demo-sales-high {
+  background: #d7f2dd;
+  color: #05603a;
+  font-weight: 600;
+}
+
+.demo-sales-mid {
+  background: #eafaef;
+  color: #087443;
+}
+
 .demo-cell-high {
   background: #fde2e1;
   color: #b42318;
@@ -424,4 +473,117 @@ body {
   font-variant-numeric: tabular-nums;
   color: var(--site-muted);
   font-size: 12px;
+}
+
+/* =============================================================================
+   Dark-theme overrides for demo-specific conditional cell colors.
+   The grid core themes itself via `--apg-*` tokens; these classes are demo
+   markup with baked-in light values, so they get dark-appropriate tints here
+   (translucent so the dark row background shows through and text stays legible).
+   ============================================================================= */
+body.site-dark {
+  /* conditional-styling demo */
+  .demo-sales-high {
+    background: rgba(34, 197, 94, 0.2);
+    color: #6ee7a8;
+  }
+  .demo-sales-mid {
+    background: rgba(34, 197, 94, 0.12);
+    color: #8ff0bd;
+  }
+  .demo-cell-high {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ff9d95;
+  }
+  .demo-cell-low {
+    background: rgba(59, 130, 246, 0.2);
+    color: #9dc0ff;
+  }
+  .demo-neg {
+    color: #ff9d95;
+  }
+  .demo-pos {
+    color: #6ee7a8;
+  }
+  .demo-row-inactive {
+    background: rgba(255, 255, 255, 0.04);
+    color: #8b93a1;
+  }
+
+  /* nested column-groups demo */
+  .apg-demo-grid .big-val {
+    color: #6ee7a8;
+  }
+  .apg-demo-grid .small-val {
+    color: #ff9d95;
+  }
+
+  /* live-data ticker demo */
+  .demo-flash-up {
+    background: rgba(34, 197, 94, 0.28);
+  }
+  .demo-flash-down {
+    background: rgba(239, 68, 68, 0.28);
+  }
+  .demo-tick.demo-up {
+    color: #6ee7a8;
+  }
+  .demo-tick.demo-down {
+    color: #ff9d95;
+  }
+  .demo-tick.demo-flat {
+    color: #8b93a1;
+  }
+  .apg-cell.demo-q-up {
+    background: rgba(34, 197, 94, 0.18);
+  }
+  .apg-cell.demo-q-down {
+    background: rgba(239, 68, 68, 0.18);
+  }
+  .demo-q-pct {
+    color: #9aa4b2;
+  }
+  .demo-q-arrow.demo-q-up {
+    color: #6ee7a8;
+  }
+  .demo-q-arrow.demo-q-down {
+    color: #ff9d95;
+  }
+  .demo-q-arrow.demo-q-flat {
+    color: #8b93a1;
+  }
+  .demo-q-spark polyline {
+    stroke: #9aa4b2;
+  }
+  .demo-q-up .demo-q-spark polyline {
+    stroke: #6ee7a8;
+  }
+  .demo-q-down .demo-q-spark polyline {
+    stroke: #ff9d95;
+  }
+  .apg-cell.demo-q-sym {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  /* progress-bar demo */
+  .apg-cell .bar {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Site chrome controls that hardcode white backgrounds — theme them in dark. */
+body.site-dark .apg-demo-toolbar select,
+body.site-dark .apg-demo-btn,
+body.site-dark .apg-demo-input {
+  background: var(--site-panel);
+  color: var(--site-fg);
+}
+
+body.site-dark .apg-demo-json {
+  color: #cbd5e1;
+  background: #12151b;
+}
+
+body.site-dark .stage {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }

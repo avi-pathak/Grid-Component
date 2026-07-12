@@ -7,6 +7,8 @@ export interface ScaffoldConfig {
   rowHeaderWidth: number;
   showGroupPanel: boolean;
   groupPanelHeight: number;
+  /** Height of the multi-level column-group header band. 0 (default) when there are no groups. */
+  columnGroupHeight?: number;
 }
 
 /**
@@ -25,6 +27,8 @@ export class ViewportRenderer {
   readonly cells: HTMLElement;
   readonly mergeLayer: HTMLElement;
   readonly headerInner: HTMLElement;
+  /** Top header band holding multi-level column-group cells. Present only when there are groups. */
+  readonly columnGroupInner?: HTMLElement;
   readonly rowHeaderInner: HTMLElement;
   readonly gutterLeft: number;
   readonly gutterTop: number;
@@ -47,7 +51,11 @@ export class ViewportRenderer {
   ) {
     host.classList.add('apg');
     this.gutterLeft = config.showRowHeader ? config.rowHeaderWidth : 0;
-    this.gutterTop = config.showColumnHeader ? config.headerHeight : 0;
+    // The group band (when present) stacks above the leaf header, so both
+    // heights make up the top gutter.
+    const groupHeight = config.showColumnHeader ? (config.columnGroupHeight ?? 0) : 0;
+    const leafHeaderHeight = config.showColumnHeader ? config.headerHeight : 0;
+    this.gutterTop = groupHeight + leafHeaderHeight;
 
     this.viewport = createEl('div', 'apg-viewport');
     this.canvas = createEl('div', 'apg-canvas');
@@ -62,9 +70,21 @@ export class ViewportRenderer {
     this.mergeLayer = createEl('div', 'apg-merge-layer');
     this.cells.appendChild(this.mergeLayer);
 
+    // Optional multi-level column-group band, pinned to the very top. The leaf
+    // header sits directly below it.
+    if (config.showColumnHeader && groupHeight > 0) {
+      const groupInner = createEl('div', 'apg-columngroup-inner');
+      groupInner.style.marginLeft = `${this.gutterLeft}px`;
+      groupInner.style.height = `${groupHeight}px`;
+      this.columnGroupInner = groupInner;
+    }
+
     this.headerInner = createEl('div', 'apg-header-inner');
     this.headerInner.style.marginLeft = `${this.gutterLeft}px`;
-    this.headerInner.style.height = `${this.gutterTop}px`;
+    this.headerInner.style.height = `${leafHeaderHeight}px`;
+    // Push the leaf header below the group band and pin it there while scrolling.
+    this.headerInner.style.marginTop = `${groupHeight}px`;
+    this.headerInner.style.top = `${groupHeight}px`;
     this.headerInner.style.display = config.showColumnHeader ? '' : 'none';
 
     this.rowHeaderInner = createEl('div', 'apg-rowheader-inner');
@@ -122,6 +142,7 @@ export class ViewportRenderer {
       this.corner,
       this.frozenCorner,
     );
+    if (this.columnGroupInner) this.canvas.appendChild(this.columnGroupInner);
     this.viewport.appendChild(this.canvas);
 
     if (config.showGroupPanel) {
@@ -140,6 +161,7 @@ export class ViewportRenderer {
     this.canvas.style.width = `${this.gutterLeft + totalWidth}px`;
     this.canvas.style.height = `${this.gutterTop + totalHeight}px`;
     this.headerInner.style.width = `${totalWidth}px`;
+    if (this.columnGroupInner) this.columnGroupInner.style.width = `${totalWidth}px`;
     this.cells.style.width = `${totalWidth}px`;
     this.frozenRows.style.width = `${totalWidth}px`;
   }

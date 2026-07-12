@@ -5,6 +5,7 @@ import { HeaderRenderer } from './HeaderRenderer';
 import { RowHeaderRenderer } from './RowHeaderRenderer';
 import { FrozenRenderer } from './FrozenRenderer';
 import { MergeRenderer } from './MergeRenderer';
+import { ColumnGroupRenderer } from './ColumnGroupRenderer';
 
 /** Runs one render pass: headers, then body rows, then the pinned bands. */
 export class Renderer {
@@ -17,6 +18,7 @@ export class Renderer {
     private header: HeaderRenderer,
     private rowHeader: RowHeaderRenderer,
     private showRowHeader: boolean,
+    private columnGroups?: ColumnGroupRenderer,
   ) {
     this.frozen = new FrozenRenderer(viewport);
     this.merge = new MergeRenderer(viewport.mergeLayer);
@@ -28,6 +30,8 @@ export class Renderer {
   }
 
   render(ctx: RenderContext): void {
+    // The group-header band sits above the leaf headers; draw it first.
+    this.columnGroups?.render(ctx);
     this.header.render(ctx);
     this.rows.render(ctx);
     if (this.showRowHeader) {

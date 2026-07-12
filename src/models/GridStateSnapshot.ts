@@ -14,6 +14,19 @@ export interface FilterStateSnapshot {
 }
 
 /**
+ * A saved column group. `columns` mirrors the def tree: a plain binding string
+ * for a leaf, or a nested snapshot for a subgroup. So collapse state round-trips
+ * at every nesting level.
+ */
+export interface ColumnGroupStateSnapshot {
+  key: string;
+  header: string;
+  columns: (string | ColumnGroupStateSnapshot)[];
+  collapsed: boolean;
+  collapseTo?: string | null;
+}
+
+/**
  * A serializable snapshot of everything the user can adjust: column order and
  * widths, sort, filters, grouping (and which groups are collapsed), frozen
  * rows/columns, selection, and scroll position. Produced by `grid.toJSON()` and
@@ -26,6 +39,7 @@ export interface GridStateSnapshot {
   filters?: FilterStateSnapshot[];
   groups?: string[];
   collapsedGroups?: string[];
+  columnGroups?: ColumnGroupStateSnapshot[];
   frozen?: { columns: number; rows: number };
   selectionMode?: string;
   activeCell?: { row: number; col: number } | null;

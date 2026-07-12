@@ -1,5 +1,6 @@
 import { LayoutEngine } from '../virtualization/LayoutEngine';
 import { Column } from '../models/Column';
+import { ColumnGroup } from '../models/ColumnGroup';
 import { DataView } from '../data/DataView';
 import { GridState } from '../core/GridState';
 import { GroupHeaderTemplate } from './GroupHeader';
@@ -26,4 +27,6 @@ export interface RenderContext {
   rowStyle?: RowStyle;
   /** Optional cell-merge lookup. Present only when merging is enabled. */
   merge?: MergeLookup;
+  /** Active column-header groups. Consumed by the ColumnGroupRenderer. */
+  columnGroups?: ColumnGroup[];
 }

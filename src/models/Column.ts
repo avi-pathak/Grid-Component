@@ -94,6 +94,8 @@ export class Column<T = Record<string, unknown>> {
   filterable = false;
   /** Whether this column participates in cell merging. Resolved from the grid + column options. */
   allowMerging = false;
+  /** Excluded from layout/rendering/selection when true. Driven by collapsed column groups. */
+  hidden = false;
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
 
   private readonly valueGetter?: (item: T) => unknown;

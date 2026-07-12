@@ -57,4 +57,10 @@ export interface GridEvents {
   freezingRows: { count: number; cancel: boolean };
   /** After the number of pinned rows changed. */
   frozenRowsChanged: { count: number };
+  /** Before a column group is collapsed or expanded. `collapsed` is the target state. Cancelable. */
+  columnGroupCollapsing: { key: string; collapsed: boolean; cancel: boolean };
+  /** After a column group's collapsed state changed. */
+  columnGroupCollapsedChanged: { key: string; collapsed: boolean };
+  /** After the set of column groups changed (added, removed, or replaced). */
+  columnGroupsChanged: { keys: string[] };
 }

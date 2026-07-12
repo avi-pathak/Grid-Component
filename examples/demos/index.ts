@@ -20,6 +20,8 @@ import { filtering } from './filtering';
 import { conditionalStyling } from './conditionalStyling';
 import { liveData } from './liveData';
 import { freeze } from './freeze';
+import { columnGroups } from './columnGroups';
+import { nestedColumnGroups } from './nestedColumnGroups';
 import { merging } from './merging';
 import { stateSerialization } from './stateSerialization';
 import { layout } from './layout';
@@ -48,6 +50,8 @@ export const demos: Demo[] = [
   conditionalStyling,
   liveData,
   freeze,
+  columnGroups,
+  nestedColumnGroups,
   merging,
   stateSerialization,
   layout,

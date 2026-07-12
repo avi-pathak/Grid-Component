@@ -15,6 +15,8 @@ and verified in the browser.
 - Cell editing (TextEditor) gated by `column.editable`
 - Column resize by dragging the header edge
 - Undo / redo for edits and resizes (`UndoStack`, ctrl+Z / ctrl+Y)
+- Multi-level **column groups**: header bands spanning leaf columns, with
+  collapse/expand (`columnGroups` option, `toggleColumnGroup`, persisted in state)
 - Typed event bus; ResizeObserver-driven layout
 - Webpack 5 build (ESM/CJS/UMD + types), Vitest, ESLint/Prettier, CI
 

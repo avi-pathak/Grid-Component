@@ -2,6 +2,7 @@ import { RenderContext } from './RenderContext';
 import { createEl } from '../utils/DOM';
 import { iconEl } from '../utils/icons';
 import { ObjectPool } from '../utils/ObjectPool';
+import { buildColumnGroupLayout } from '../data/buildColumnGroups';
 
 /** Renders the column header cells for the visible columns, pooled like body cells. */
 export class HeaderRenderer {
@@ -20,9 +21,14 @@ export class HeaderRenderer {
     const { firstCol, lastCol } = ctx.state;
     // The frozen-column header owns the pinned columns; the body starts past them.
     const bodyFirst = Math.max(firstCol, ctx.state.frozenCols);
+    // Columns whose header is drawn (tall) in the group band are skipped here so
+    // the header isn't rendered twice.
+    const inBand = ctx.columnGroups?.length
+      ? buildColumnGroupLayout(ctx.columns, ctx.columnGroups).leafHeaderCols
+      : null;
 
     for (const [col, el] of this.active) {
-      if (col < bodyFirst || col > lastCol) {
+      if (col < bodyFirst || col > lastCol || inBand?.has(col)) {
         el.remove();
         this.pool.release(el);
         this.active.delete(col);
@@ -30,6 +36,7 @@ export class HeaderRenderer {
     }
 
     for (let col = bodyFirst; col <= lastCol; col++) {
+      if (inBand?.has(col)) continue;
       let el = this.active.get(col);
       if (!el) {
         el = this.pool.acquire();

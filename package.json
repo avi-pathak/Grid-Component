@@ -1,6 +1,6 @@
 {
   "name": "@avi-pathak/apgrid",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A fast, virtualized data grid for the web. Renders millions of rows with a recycled DOM.",
   "license": "MIT",
   "author": "Avi Pathak",

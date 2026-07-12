@@ -38,6 +38,7 @@ class CellBand {
     lastRow: number,
     firstCol: number,
     lastCol: number,
+    yOffset: number,
   ): void {
     for (const [row, view] of this.active) {
       if (row < firstRow || row > lastRow) {
@@ -51,6 +52,8 @@ class CellBand {
         view = this.acquireRow(row, ctx);
         this.active.set(row, view);
       }
+      view.el.style.height = `${ctx.layout.getRowHeight(row)}px`;
+      setTransform(view.el, 0, ctx.layout.getRowTop(row) - yOffset);
       this.fill(view, row, ctx, firstCol, lastCol);
     }
   }
@@ -65,7 +68,6 @@ class CellBand {
     el.style.height = `${ctx.layout.getRowHeight(row)}px`;
     const step = ctx.state.alternatingRowStep;
     el.classList.toggle('apg-row-alt', step > 0 && Math.floor(row / step) % 2 === 1);
-    setTransform(el, 0, ctx.layout.getRowTop(row));
     this.inner.appendChild(el);
     return { el, cells: new Map() };
   }
@@ -238,11 +240,13 @@ export class FrozenRenderer {
   render(ctx: RenderContext): void {
     const fCols = ctx.state.frozenCols;
     const fRows = ctx.state.frozenRows;
-    const { firstRow, lastRow, firstCol, lastCol } = ctx.state;
+    const { firstRow, lastRow, firstCol, lastCol, scrollTop } = ctx.state;
 
     if (fCols > 0) {
+      // The frozen-column band scrolls vertically with the body, so it uses the
+      // same scroll offset. The frozen-row band and corner stay pinned (offset 0).
       const bodyFirstRow = Math.max(firstRow, fRows);
-      this.colsBand.render(ctx, bodyFirstRow, lastRow, 0, fCols - 1);
+      this.colsBand.render(ctx, bodyFirstRow, lastRow, 0, fCols - 1, scrollTop);
       this.colsHeader.render(ctx, 0, fCols - 1);
     } else {
       this.colsBand.clear();
@@ -251,7 +255,7 @@ export class FrozenRenderer {
 
     if (fRows > 0) {
       const bodyFirstCol = Math.max(firstCol, fCols);
-      this.rowsBand.render(ctx, 0, fRows - 1, bodyFirstCol, lastCol);
+      this.rowsBand.render(ctx, 0, fRows - 1, bodyFirstCol, lastCol, 0);
       this.rowsHeader.render(ctx, 0, fRows - 1);
     } else {
       this.rowsBand.clear();
@@ -259,7 +263,7 @@ export class FrozenRenderer {
     }
 
     if (fCols > 0 && fRows > 0) {
-      this.cornerBand.render(ctx, 0, fRows - 1, 0, fCols - 1);
+      this.cornerBand.render(ctx, 0, fRows - 1, 0, fCols - 1, 0);
     } else {
       this.cornerBand.clear();
     }

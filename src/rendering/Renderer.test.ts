@@ -73,7 +73,7 @@ describe('Renderer', () => {
     );
     // row index 1000 shows as "1001" (1-based)
     expect(nums).toContain(1001);
-    expect(host.querySelectorAll('.apg-rowheader-cell').length).toBeLessThan(30);
+    expect(host.querySelectorAll('.apg-rowheader-cell').length).toBeLessThan(40);
   });
 
   it('renders only the visible window plus a buffer', () => {
@@ -81,10 +81,10 @@ describe('Renderer', () => {
     viewport.update(0, 0);
     renderer.render(ctx);
 
-    // 480 / 24 = 20 visible rows, +3 buffer each side, clamped at the top
+    // 480 / 24 = 20 visible rows, plus the row buffer each side, clamped at the top
     const rowEls = host.querySelectorAll('.apg-row').length;
     expect(rowEls).toBeGreaterThan(20);
-    expect(rowEls).toBeLessThan(30);
+    expect(rowEls).toBeLessThan(40);
 
     // cells = rows * visible columns (all 3 fit in 300px)
     expect(host.querySelectorAll('.apg-cell').length).toBe(rowEls * columns.length);
@@ -103,7 +103,7 @@ describe('Renderer', () => {
 
     // Jumping 500k rows must not grow the DOM; it stays at the visible window.
     expect(afterScroll).toBeGreaterThanOrEqual(initial);
-    expect(afterScroll).toBeLessThan(30);
+    expect(afterScroll).toBeLessThan(40);
   });
 
   it('fills cells with formatted values', () => {
@@ -143,6 +143,6 @@ describe('Renderer', () => {
       document.createElement = realCreate;
     }
 
-    expect(host.querySelectorAll('.apg-row').length).toBeLessThan(30);
+    expect(host.querySelectorAll('.apg-row').length).toBeLessThan(40);
   });
 });

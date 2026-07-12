@@ -43,9 +43,14 @@ export class RowRenderer {
     // The frozen panels own the pinned rows, so the body starts past them.
     const bodyFirst = Math.max(firstRow, ctx.state.frozenRows);
 
+    // Rows that left the range are kept ATTACHED and reused in place for the rows
+    // that entered. Detaching and re-appending would destroy each row's compositor
+    // layer (they use `will-change: transform`) and flash blank on a fast drag.
+    const freeData: RowView[] = [];
+    const freeGroup: RowView[] = [];
     for (const [row, view] of this.active) {
       if (row < bodyFirst || row > lastRow) {
-        this.releaseRow(view);
+        (view.kind === 'group' ? freeGroup : freeData).push(view);
         this.active.delete(row);
       }
     }
@@ -54,16 +59,39 @@ export class RowRenderer {
       const kind = ctx.data.rowType(row);
       let view = this.active.get(row);
       if (view && view.kind !== kind) {
-        this.releaseRow(view);
+        (view.kind === 'group' ? freeGroup : freeData).push(view);
         this.active.delete(row);
         view = undefined;
       }
       if (!view) {
-        view = this.acquireRow(row, ctx, kind);
+        const free = kind === 'group' ? freeGroup : freeData;
+        view = free.pop() ?? this.acquireRow(row, ctx, kind);
         this.active.set(row, view);
       }
+      // Body panel is pinned, so rows are placed relative to the scroll each
+      // pass — reposition every visible row, not just newly acquired ones.
+      this.repositionRow(view, row, ctx);
       if (kind === 'group') this.fillGroup(view, row, ctx);
       else this.fillCells(view, row, ctx);
+    }
+
+    // Leftover rows (the viewport shrank) are the only ones actually removed.
+    for (const view of freeData) this.releaseRow(view);
+    for (const view of freeGroup) this.releaseRow(view);
+  }
+
+  // Move an already-attached pooled row to a new index without touching the DOM
+  // tree — just its position and alternating-row class.
+  private repositionRow(view: RowView, row: number, ctx: RenderContext): void {
+    const el = view.el;
+    el.style.height = `${ctx.layout.getRowHeight(row)}px`;
+    const top = ctx.layout.getRowTop(row) - ctx.state.scrollTop;
+    if (view.kind === 'group') {
+      el.style.top = `${top}px`;
+    } else {
+      const step = ctx.state.alternatingRowStep;
+      el.classList.toggle('apg-row-alt', step > 0 && Math.floor(row / step) % 2 === 1);
+      setTransform(el, 0, top);
     }
   }
 
@@ -74,7 +102,9 @@ export class RowRenderer {
 
   private acquireRow(row: number, ctx: RenderContext, kind: 'data' | 'group'): RowView {
     const el = this.rowPool.acquire();
-    const top = ctx.layout.getRowTop(row);
+    // The body panel is pinned to the viewport, so rows are placed relative to
+    // the current scroll position rather than at absolute canvas coordinates.
+    const top = ctx.layout.getRowTop(row) - ctx.state.scrollTop;
     el.style.height = `${ctx.layout.getRowHeight(row)}px`;
 
     if (kind === 'group') {

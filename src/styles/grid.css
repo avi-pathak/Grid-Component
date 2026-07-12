@@ -45,10 +45,19 @@
   display: grid;
 }
 
+/* The body is a viewport-sized panel the compositor keeps pinned (like the
+   header), not a slice of a giant scrolling layer. Rows inside are translated by
+   the scroll offset, so content never sits millions of pixels down where a fast
+   drag would outrun rasterization and flash blank. The tall canvas above only
+   provides the scrollbar range. */
 .apg-cells {
-  position: absolute;
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
   top: 0;
-  left: 0;
+  z-index: 0;
+  overflow: hidden;
 }
 
 .apg-corner {
@@ -138,8 +147,10 @@
   align-self: start;
   justify-self: start;
   position: sticky;
+  top: 0;
   left: 0;
   z-index: 3;
+  overflow: hidden;
   background: var(--apg-header-bg);
   border-right: var(--apg-border);
 }
@@ -176,6 +187,7 @@
 
 .apg-frozen-cols {
   z-index: 2;
+  overflow: hidden;
   border-right: 2px solid var(--apg-border-color);
 }
 

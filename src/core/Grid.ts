@@ -210,6 +210,7 @@ export class Grid {
     this.editor = new EditorManager({
       cells: this.viewportRenderer.cells,
       layout: this.layout,
+      scrollTop: () => this.viewportRenderer.viewport.scrollTop,
       data: this.data,
       columns: this.columns,
       undo: this.undoStack,
@@ -906,6 +907,7 @@ export class Grid {
     const width = vp.clientWidth - this.viewportRenderer.gutterLeft;
     const height = vp.clientHeight - this.viewportRenderer.gutterTop;
     this.viewport.setSize(Math.max(0, width), Math.max(0, height));
+    this.viewportRenderer.setViewport(vp.clientWidth, vp.clientHeight);
   }
 
   private draw(): void {
@@ -921,8 +923,10 @@ export class Grid {
 
   private onScroll(): void {
     const vp = this.viewportRenderer.viewport;
-    const changed = this.viewport.update(vp.scrollTop, vp.scrollLeft);
-    if (changed) this.renderer.render(this.context());
+    // The body panel is pinned to the viewport, so every scroll must reposition
+    // its rows — not only the scrolls that change the row/column range.
+    this.viewport.update(vp.scrollTop, vp.scrollLeft);
+    this.renderer.render(this.context());
     this.events.emit('scrollChanged', { scrollTop: vp.scrollTop, scrollLeft: vp.scrollLeft });
   }
 

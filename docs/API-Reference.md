@@ -27,6 +27,9 @@ Throws if a string selector matches nothing.
 | `rowHeight` | `number` | 24 | |
 | `headerHeight` | `number` | 28 | |
 | `rowHeaderWidth` | `number` | 48 | |
+| `columnGroups` | `ColumnGroupDef[]` | — | multi-level header groups |
+| `groupHeaderRowHeight` | `number` | = `headerHeight` | height of the group-header row |
+| `columnGroupAnimation` | `boolean` | `false` | animate group headers on collapse/expand |
 | `selectionMode` | `SelectionMode` | `'Cell'` | |
 | `headersVisibility` | `HeadersVisibility` | `'All'` | None / Column / Row / All |
 
@@ -35,6 +38,20 @@ Throws if a string selector matches nothing.
 ```ts
 { binding, header?, width?, editable?, valueGetter?, valueFormatter? }
 ```
+
+### ColumnGroupDef
+
+A recursive tree: a node is a **leaf** (`binding`) or a **group** (nested
+`columns`). A string in `columns` is shorthand for `{ binding }`.
+
+```ts
+{ header?, binding?, columns?: (string | ColumnGroupDef)[],
+  collapsed?, collapsible?, collapseTo?, key? }
+```
+
+`collapseTo` names the one **descendant** column kept visible while collapsed
+(defaults to the first descendant leaf; `null` hides all). See
+[10-Column-Groups](./10-Column-Groups.md).
 
 ## Properties
 
@@ -55,6 +72,12 @@ Throws if a string selector matches nothing.
 | `addColumn(def, index?)` / `removeColumn(index)` | columns |
 | `editCell(row, col)` | begin editing (if editable) |
 | `resizeColumn(index, width)` | resize (undoable) |
+| `columnGroups` | resolved column groups (getter) |
+| `columnGroupAnimation` | get/set collapse-expand animation |
+| `setColumnGroups(defs)` | replace all column groups |
+| `addColumnGroup(def)` / `removeColumnGroup(key)` | add / remove one group |
+| `toggleColumnGroup(key, collapsed?)` | collapse/expand a group (omit = toggle) |
+| `collapseAllColumnGroups()` / `expandAllColumnGroups()` | bulk collapse/expand |
 | `undo()` / `redo()` | undo stack |
 | `refresh()` / `invalidate()` | recompute / redraw |
 | `on(type, handler)` | subscribe; returns unsubscribe |
@@ -63,7 +86,8 @@ Throws if a string selector matches nothing.
 ## Events
 
 `cellClick`, `cellDoubleClick`, `selectionChanged`, `scrollChanged`,
-`cellEditStart`, `cellEditEnd`, `undoStackChanged`.
+`cellEditStart`, `cellEditEnd`, `undoStackChanged`,
+`columnGroupCollapsing`, `columnGroupCollapsedChanged`, `columnGroupsChanged`.
 
 ```ts
 const off = grid.on('selectionChanged', (cell) => console.log(cell));

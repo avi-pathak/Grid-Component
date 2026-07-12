@@ -2,6 +2,8 @@ import { GridOptions, resolveOptions } from './GridOptions';
 import { GridState } from './GridState';
 import { GridViewport } from './GridViewport';
 import { Column, ColumnDef } from '../models/Column';
+import { ColumnGroup, ColumnGroupDef, ColumnGroupNode } from '../models/ColumnGroup';
+import { buildColumnGroups } from '../data/buildColumnGroups';
 import { CellAddress, CellRange } from '../models/Cell';
 import { DataView } from '../data/DataView';
 import { CollectionView } from '../data/CollectionView';
@@ -11,6 +13,7 @@ import { LayoutEngine } from '../virtualization/LayoutEngine';
 import { ViewportRenderer } from '../rendering/ViewportRenderer';
 import { RowRenderer } from '../rendering/RowRenderer';
 import { HeaderRenderer } from '../rendering/HeaderRenderer';
+import { ColumnGroupRenderer } from '../rendering/ColumnGroupRenderer';
 import { RowHeaderRenderer } from '../rendering/RowHeaderRenderer';
 import { CellRenderer } from '../rendering/CellRenderer';
 import { Renderer } from '../rendering/Renderer';
@@ -35,7 +38,7 @@ import { BatchAction } from '../commands/BatchAction';
 import { MoveColumnAction, moveColumn } from '../commands/MoveColumnAction';
 import { EditorManager } from '../editing/EditorManager';
 import { MergeManager, contentMerge } from '../models/MergeManager';
-import { GridStateSnapshot } from '../models/GridStateSnapshot';
+import { GridStateSnapshot, ColumnGroupStateSnapshot } from '../models/GridStateSnapshot';
 import { clamp } from '../utils/Math';
 
 type Row = Record<string, unknown>;
@@ -47,6 +50,39 @@ type CancelableEvent = {
 
 const GROUP_PANEL_HEIGHT = 40;
 
+// Serialize a resolved column-group node back into a plain def, preserving
+// nesting and collapse state. A leaf becomes its binding string (the shorthand
+// form), a group becomes a def object with recursively-serialized children.
+function nodeToDef(node: ColumnGroupNode): string | ColumnGroupDef {
+  if (node.kind === 'leaf') return node.binding;
+  return groupToDef(node);
+}
+
+function groupToDef(group: ColumnGroup): ColumnGroupDef {
+  return {
+    header: group.header,
+    key: group.key,
+    collapsed: group.collapsed,
+    collapsible: group.collapsible,
+    collapseTo: group.collapseTo,
+    columns: group.children.map(nodeToDef),
+  };
+}
+
+// Serialize a group subtree for persistence. Leaves become binding strings,
+// subgroups nest recursively — so collapse state round-trips at every level.
+function groupToSnapshot(group: ColumnGroup): ColumnGroupStateSnapshot {
+  return {
+    key: group.key,
+    header: group.header,
+    collapsed: group.collapsed,
+    collapseTo: group.collapseTo,
+    columns: group.children.map((child) =>
+      child.kind === 'leaf' ? child.binding : groupToSnapshot(child),
+    ),
+  };
+}
+
 /**
  * The grid facade. Constructs and owns every subsystem, drives the
  * scroll/resize render loop, and exposes the public API.
@@ -55,6 +91,9 @@ export class Grid {
   private host: HTMLElement;
   private state = new GridState();
   private data: DataView;
+  /** The authored columns in stable order, including any currently hidden by a collapsed group. */
+  private allColumns: Column[];
+  /** The visible columns (`allColumns` minus hidden). Everything indexed by column reads this. */
   private columns: Column[];
   private rowHeight: number;
   private headerHeight: number;
@@ -65,6 +104,7 @@ export class Grid {
   private viewportRenderer: ViewportRenderer;
   private rowRenderer: RowRenderer;
   private headerRenderer: HeaderRenderer;
+  private columnGroupRenderer?: ColumnGroupRenderer;
   private rowHeaderRenderer: RowHeaderRenderer;
   private renderer: Renderer;
   private scroll: ScrollManager;
@@ -79,6 +119,12 @@ export class Grid {
   private clipboard?: ClipboardHandler;
   private groupPanel?: GroupPanel;
   private groupHeaderTemplate?: GroupHeaderTemplate;
+  /** Active multi-level column-header groups, in authored order. Empty when none. */
+  private columnGroupList: ColumnGroup[] = [];
+  /** Number of header rows the group band shows (deepest group nesting). */
+  private columnGroupDepth = 0;
+  /** Height of the group-header row (only shown when there are column groups). */
+  private groupHeaderRowHeight: number;
   private rowClass?: RenderContext['rowClass'];
   private rowStyle?: RenderContext['rowStyle'];
   private mergeManager?: MergeManager;
@@ -98,16 +144,19 @@ export class Grid {
     this.host = el;
 
     const resolved = resolveOptions(options);
-    this.columns = resolved.columns;
+    this.allColumns = resolved.columns;
+    this.columnGroupList = buildColumnGroups(this.allColumns, resolved.columnGroups);
+    this.columns = this.syncHiddenColumns();
     this.data = new DataView(resolved.view);
     this.rowHeight = resolved.rowHeight;
     this.headerHeight = resolved.headerHeight;
+    this.groupHeaderRowHeight = resolved.groupHeaderRowHeight;
     this.maxGroups = resolved.maxGroups;
     this.groupHeaderTemplate = resolved.groupHeaderTemplate;
     this.rowClass = resolved.rowClass;
     this.rowStyle = resolved.rowStyle;
     this.mergeManager = resolved.mergeManager;
-    this.anyMergeable = this.columns.some((c) => c.allowMerging);
+    this.anyMergeable = this.allColumns.some((c) => c.allowMerging);
     this.selectionModel = new SelectionModel(resolved.selectionMode);
     this.state.alternatingRowStep = resolved.alternatingRowStep;
     this.state.frozenCols = resolved.frozenColumns;
@@ -117,9 +166,15 @@ export class Grid {
       resolved.headersVisibility === 'All' || resolved.headersVisibility === 'Column';
     this.showRowHeader =
       resolved.headersVisibility === 'All' || resolved.headersVisibility === 'Row';
+    const hasColumnGroups = this.columnGroupList.length > 0;
+    // Header depth (rows) is fixed by the authored tree — collapsing hides
+    // columns but never changes how many header rows the band shows.
+    this.columnGroupDepth = this.columnGroupList.reduce((m, g) => Math.max(m, g.depth()), 0);
 
     this.host.style.setProperty('--apg-row-height', `${this.rowHeight}px`);
     this.host.style.setProperty('--apg-header-height', `${this.headerHeight}px`);
+    this.host.style.setProperty('--apg-group-header-height', `${this.groupHeaderRowHeight}px`);
+    if (resolved.columnGroupAnimation) this.host.classList.add('apg-animated');
     this.host.tabIndex = 0;
 
     this.layout = new LayoutEngine(this.data.length, this.rowHeight, this.columns);
@@ -132,9 +187,18 @@ export class Grid {
       rowHeaderWidth: resolved.rowHeaderWidth,
       showGroupPanel: resolved.groupPanel,
       groupPanelHeight: GROUP_PANEL_HEIGHT,
+      // The band is as tall as the deepest group nesting requires.
+      columnGroupHeight: this.columnGroupDepth * this.groupHeaderRowHeight,
     });
     this.rowRenderer = new RowRenderer(this.viewportRenderer.cells, new CellRenderer());
     this.headerRenderer = new HeaderRenderer(this.viewportRenderer.headerInner);
+    if (hasColumnGroups && this.viewportRenderer.columnGroupInner) {
+      this.columnGroupRenderer = new ColumnGroupRenderer(
+        this.viewportRenderer.columnGroupInner,
+        (key) => this.toggleColumnGroup(key),
+        this.groupHeaderRowHeight,
+      );
+    }
     this.rowHeaderRenderer = new RowHeaderRenderer(this.viewportRenderer.rowHeaderInner);
     this.renderer = new Renderer(
       this.viewportRenderer,
@@ -142,6 +206,7 @@ export class Grid {
       this.headerRenderer,
       this.rowHeaderRenderer,
       this.showRowHeader,
+      this.columnGroupRenderer,
     );
 
     this.scroll = new ScrollManager(this.viewportRenderer.viewport, () => this.onScroll());
@@ -294,6 +359,9 @@ export class Grid {
   /** Recompute totals and redraw. Call after the data or columns change. */
   refresh(): void {
     this.data.refreshGroups();
+    // Re-derive visible columns from the authored list in case group membership
+    // or the authored order changed since the last refresh.
+    this.columns = this.syncHiddenColumns();
     this.layout.setColumns(this.columns);
     this.layout.setRowCount(this.data.length);
     this.renderer.resize(this.context());
@@ -355,7 +423,9 @@ export class Grid {
     const active = this.selectionModel.getActive();
     return {
       version: 1,
-      columns: this.columns.map((c) => ({ binding: c.binding, width: c.width })),
+      // Persist the full authored order/width, including columns currently hidden
+      // by a collapsed group, so restore round-trips even while collapsed.
+      columns: this.allColumns.map((c) => ({ binding: c.binding, width: c.width })),
       sort: this.state.sort
         ? {
             binding: this.columns[this.state.sort.col].binding,
@@ -363,7 +433,7 @@ export class Grid {
           }
         : null,
       filters: this.filterModel
-        ? this.columns
+        ? this.allColumns
             .map((c) => this.filterModel!.get(c))
             .filter((f) => f.isActive)
             .map((f) => ({
@@ -374,6 +444,7 @@ export class Grid {
         : [],
       groups: this.groupDescriptions.map((g) => g.property),
       collapsedGroups: this.data.collapsedGroups(),
+      columnGroups: this.columnGroupList.map((g) => groupToSnapshot(g)),
       frozen: { columns: this.state.frozenCols, rows: this.state.frozenRows },
       selectionMode: this.selectionModel.getMode(),
       activeCell: active ? { row: active.row, col: active.col } : null,
@@ -390,13 +461,26 @@ export class Grid {
 
     if (snapshot.columns) this.applyColumnState(snapshot.columns);
 
+    // Restore column groups (and their collapse state) after the column order is
+    // settled, so membership resolves against the final bindings. The snapshot
+    // tree is structurally a ColumnGroupDef tree, so it feeds the resolver
+    // directly.
+    if (snapshot.columnGroups) {
+      this.columnGroupList = buildColumnGroups(
+        this.allColumns,
+        snapshot.columnGroups as ColumnGroupDef[],
+      );
+      this.columnGroupDepth = this.columnGroupList.reduce((m, g) => Math.max(m, g.depth()), 0);
+      this.columns = this.syncHiddenColumns();
+    }
+
     // Grouping first, then filters and sort, so the collapse keys line up.
     if (snapshot.groups) this.groupBy(...snapshot.groups);
 
     if (this.filterModel) {
-      for (const c of this.columns) this.filterModel.get(c).clear();
+      for (const c of this.allColumns) this.filterModel.get(c).clear();
       for (const f of snapshot.filters ?? []) {
-        const column = this.columns.find((c) => c.binding === f.binding);
+        const column = this.allColumns.find((c) => c.binding === f.binding);
         if (!column) continue;
         const cf = this.filterModel.get(column);
         cf.values = f.values ? new Set(f.values) : null;
@@ -433,7 +517,7 @@ export class Grid {
   // Reorder columns to match the saved bindings and restore their widths. Any
   // columns missing from the snapshot keep their current relative order at the end.
   private applyColumnState(saved: { binding: string; width: number }[]): void {
-    const byBinding = new Map(this.columns.map((c) => [c.binding, c]));
+    const byBinding = new Map(this.allColumns.map((c) => [c.binding, c]));
     const ordered: Column[] = [];
     for (const s of saved) {
       const col = byBinding.get(s.binding);
@@ -442,8 +526,9 @@ export class Grid {
       ordered.push(col);
       byBinding.delete(s.binding);
     }
-    for (const col of this.columns) if (byBinding.has(col.binding)) ordered.push(col);
-    this.columns = ordered;
+    for (const col of this.allColumns) if (byBinding.has(col.binding)) ordered.push(col);
+    this.allColumns = ordered;
+    this.columns = this.syncHiddenColumns();
   }
 
   setData(items: Row[]): void {
@@ -453,13 +538,19 @@ export class Grid {
 
   addColumn(def: ColumnDef, index?: number): void {
     const col = new Column(def);
-    if (index == null) this.columns.push(col);
-    else this.columns.splice(index, 0, col);
+    // `index` is a visible-column position; translate it to the authored array.
+    if (index == null) this.allColumns.push(col);
+    else {
+      const at = this.toAllColumnsIndex(index);
+      this.allColumns.splice(at < 0 ? this.allColumns.length : at, 0, col);
+    }
     this.refresh();
   }
 
   removeColumn(index: number): void {
-    this.columns.splice(index, 1);
+    const at = this.toAllColumnsIndex(index);
+    if (at < 0) return;
+    this.allColumns.splice(at, 1);
     this.refresh();
   }
 
@@ -614,10 +705,26 @@ export class Grid {
     const last = this.columns.length - 1;
     if (from === to || from < 0 || from > last || to < 0 || to > last) return;
     if (this.emitCancel('columnReordering', { from, to })) return;
-    this.undoStack.push(new MoveColumnAction(this.columns, from, to, () => this.refresh()));
-    moveColumn(this.columns, from, to);
+    // Translate the visible from/to into positions in the authored array, which
+    // is what actually reorders (refresh re-derives the visible list from it).
+    const fromAll = this.toAllColumnsIndex(from);
+    const toAll = this.toAllColumnsIndex(to);
+    if (fromAll < 0 || toAll < 0) return;
+    this.undoStack.push(
+      new MoveColumnAction(this.allColumns, fromAll, toAll, () => this.refresh()),
+    );
+    moveColumn(this.allColumns, fromAll, toAll);
     this.refresh();
     this.events.emit('columnReordered', { from, to });
+  }
+
+  // Map a visible-column index to its position in the authored `allColumns`
+  // array. Returns -1 when out of range. With no hidden columns the two spaces
+  // coincide, so this is the identity in the common case.
+  private toAllColumnsIndex(visibleIndex: number): number {
+    const col = this.columns[visibleIndex];
+    if (!col) return -1;
+    return this.allColumns.indexOf(col);
   }
 
   /** Sort by a column's binding. Omit `ascending` to toggle, or pass null to clear. */
@@ -839,6 +946,155 @@ export class Grid {
     this.draw();
   }
 
+  // ---- Column groups (multi-level header) ------------------------------------
+
+  /** The active column-header groups, in authored order. */
+  get columnGroups(): ColumnGroup[] {
+    return this.columnGroupList;
+  }
+
+  /** Whether column-group headers animate when collapsing/expanding. */
+  get columnGroupAnimation(): boolean {
+    return this.host.classList.contains('apg-animated');
+  }
+
+  set columnGroupAnimation(on: boolean) {
+    this.host.classList.toggle('apg-animated', on);
+  }
+
+  /** Replace all column groups. Pass an empty array to remove grouping entirely. */
+  setColumnGroups(defs: ColumnGroupDef[]): void {
+    this.columnGroupList = buildColumnGroups(this.allColumns, defs);
+    this.applyColumnGroups();
+    this.events.emit('columnGroupsChanged', { keys: this.columnGroupList.map((g) => g.key) });
+  }
+
+  /** Add one column group. Bindings already owned by another group are dropped. */
+  addColumnGroup(def: ColumnGroupDef): void {
+    this.setColumnGroups([...this.columnGroupDefs(), def]);
+  }
+
+  /** Remove the column group with the given key. */
+  removeColumnGroup(key: string): void {
+    const next = this.columnGroupDefs().filter((g) => g.key !== key);
+    if (next.length === this.columnGroupList.length) return;
+    this.setColumnGroups(next);
+  }
+
+  /** Every group in the tree, flattened (top-level groups and all nested ones). */
+  private allGroups(): ColumnGroup[] {
+    const out: ColumnGroup[] = [];
+    for (const g of this.columnGroupList) out.push(...g.descendantGroups());
+    return out;
+  }
+
+  /**
+   * Collapse or expand a column group (at any nesting depth). Omit `collapsed`
+   * to toggle. Collapsing hides the group's descendant columns except its
+   * `collapseTo`; expanding shows them again. Cancelable through the
+   * `columnGroupCollapsing` event.
+   */
+  toggleColumnGroup(key: string, collapsed?: boolean): void {
+    const group = this.allGroups().find((g) => g.key === key);
+    if (!group || !group.collapsible) return;
+    const target = collapsed ?? !group.collapsed;
+    if (target === group.collapsed) return;
+    if (this.emitCancel('columnGroupCollapsing', { key, collapsed: target })) return;
+    group.collapsed = target;
+    this.applyColumnGroups();
+    this.events.emit('columnGroupCollapsedChanged', { key, collapsed: target });
+  }
+
+  /** Collapse every collapsible column group. */
+  collapseAllColumnGroups(): void {
+    this.setColumnGroupsCollapsed(true);
+  }
+
+  /** Expand every column group. */
+  expandAllColumnGroups(): void {
+    this.setColumnGroupsCollapsed(false);
+  }
+
+  private setColumnGroupsCollapsed(collapsed: boolean): void {
+    let changed = false;
+    for (const group of this.allGroups()) {
+      if (!group.collapsible || group.collapsed === collapsed) continue;
+      if (this.emitCancel('columnGroupCollapsing', { key: group.key, collapsed })) continue;
+      group.collapsed = collapsed;
+      changed = true;
+      this.events.emit('columnGroupCollapsedChanged', { key: group.key, collapsed });
+    }
+    if (changed) this.applyColumnGroups();
+  }
+
+  // Snapshot the current group tree back into plain defs, preserving collapse
+  // state and nesting, so add/remove can round-trip it.
+  private columnGroupDefs(): ColumnGroupDef[] {
+    return this.columnGroupList.map((g) => groupToDef(g));
+  }
+
+  // Rebuild each column's `hidden` flag from the current group collapse state and
+  // return the visible-column list. Walk the tree top-down: once inside a
+  // collapsed group, only its `collapseTo` descendant survives — every other
+  // descendant leaf is hidden. An inner collapsed group can't re-show a column
+  // its collapsed ancestor already hid.
+  private syncHiddenColumns(): Column[] {
+    const hidden = new Set<string>();
+    for (const group of this.columnGroupList) this.collectHidden(group, false, null, hidden);
+    for (const col of this.allColumns) col.hidden = hidden.has(col.binding);
+    return this.allColumns.filter((c) => !c.hidden);
+  }
+
+  // Depth-first: `keepBinding` is the one descendant leaf allowed to stay visible
+  // inside the nearest collapsed ancestor (null = none / not yet collapsed).
+  private collectHidden(
+    node: ColumnGroupNode,
+    underCollapsed: boolean,
+    keepBinding: string | null,
+    hidden: Set<string>,
+  ): void {
+    if (node.kind === 'leaf') {
+      if (underCollapsed && node.binding !== keepBinding) hidden.add(node.binding);
+      return;
+    }
+    // Entering this group: if it (or an ancestor) is collapsed, propagate that
+    // state. The outermost collapsed group owns which leaf survives, so keep the
+    // existing keepBinding when already collapsed; otherwise adopt this group's.
+    const nowCollapsed = underCollapsed || node.collapsed;
+    const keep = underCollapsed ? keepBinding : node.collapsed ? node.collapseTo : null;
+    for (const child of node.children) this.collectHidden(child, nowCollapsed, keep, hidden);
+  }
+
+  // Recompute the visible columns after a group changed, rebuild the layout,
+  // keep the active cell in range, and redraw. Parallels refreshRows() on the
+  // column axis.
+  private applyColumnGroups(): void {
+    const hadGroups = this.viewportRenderer.columnGroupInner != null;
+    this.columns = this.syncHiddenColumns();
+    this.layout.setColumns(this.columns);
+    this.clampSelectionToColumns();
+    this.syncFrozen();
+    this.renderer.resize(this.context());
+    // If the group-header band's presence changed and the scaffold can't show
+    // it, the visual gains/loses a row only after a rebuild; for v1 the band is
+    // created up front when any group exists, so just redraw.
+    void hadGroups;
+    this.draw();
+  }
+
+  // After columns shrink (a group collapsed), pull the active cell back into
+  // range so selection never points past the last visible column.
+  private clampSelectionToColumns(): void {
+    const active = this.selectionModel.getActive();
+    if (!active) return;
+    const maxCol = this.layout.colCount - 1;
+    if (maxCol < 0) return;
+    if (active.col > maxCol) {
+      this.selectionModel.moveTo({ row: active.row, col: maxCol }, false);
+      this.syncSelectionState();
+    }
+  }
+
   dispose(): void {
     this.unsubscribeData();
     const header = this.viewportRenderer.headerInner;
@@ -857,10 +1113,13 @@ export class Grid {
     this.resizeObserver?.disconnect();
     this.rowRenderer.clear();
     this.rowHeaderRenderer.clear();
+    this.columnGroupRenderer?.clear();
     this.viewportRenderer.dispose();
     this.host.removeAttribute('tabindex');
     this.host.style.removeProperty('--apg-row-height');
     this.host.style.removeProperty('--apg-header-height');
+    this.host.style.removeProperty('--apg-group-header-height');
+    this.host.classList.remove('apg-animated');
   }
 
   private context(): RenderContext {
@@ -873,6 +1132,7 @@ export class Grid {
       rowClass: this.rowClass,
       rowStyle: this.rowStyle,
       merge: this.mergeLookup(),
+      columnGroups: this.columnGroupList,
     };
   }
 

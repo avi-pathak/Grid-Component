@@ -159,6 +159,16 @@ body {
   overflow: hidden;
 }
 
+/* Conditional allocation colors used by the nested column-groups demo. */
+.apg-demo-grid .big-val {
+  color: #157347;
+  font-weight: 600;
+}
+.apg-demo-grid .small-val {
+  color: #b02a37;
+  font-style: italic;
+}
+
 .apg-demo-json {
   width: 100%;
   margin-top: 12px;

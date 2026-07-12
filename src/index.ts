@@ -15,6 +15,7 @@ export { SortDescription } from './models/SortDescription';
 export { Grid } from './core/Grid';
 export { Grid as ApGrid } from './core/Grid';
 export { Column } from './models/Column';
+export { ColumnGroup, ColumnGroupLeaf } from './models/ColumnGroup';
 export { DataMap } from './models/DataMap';
 export { DataMapEditor } from './models/DataMapEditor';
 export { PropertyGroupDescription } from './models/GroupDescription';
@@ -23,6 +24,8 @@ export { ColumnFilter } from './models/ColumnFilter';
 export { icons, iconEl } from './utils/icons';
 
 export type { ColumnDef } from './models/Column';
+export type { ColumnGroupDef } from './models/ColumnGroup';
+export type { ColumnGroupNode } from './models/ColumnGroup';
 export type {
   DataType,
   CellAlign,
@@ -52,6 +55,7 @@ export type {
   GridStateSnapshot,
   ColumnStateSnapshot,
   FilterStateSnapshot,
+  ColumnGroupStateSnapshot,
 } from './models/GridStateSnapshot';
 export type { SelectionMode } from './selection/SelectionModel';
 export type { GridEvents } from './events/GridEvents';

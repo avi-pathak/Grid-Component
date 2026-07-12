@@ -1,4 +1,5 @@
 import { Column, ColumnDef, CellStyle } from '../models/Column';
+import { ColumnGroupDef } from '../models/ColumnGroup';
 import { SelectionMode } from '../selection/SelectionModel';
 import { CollectionView } from '../data/CollectionView';
 import { GroupHeaderTemplate } from '../rendering/GroupHeader';
@@ -27,6 +28,12 @@ export interface GridOptions<T = Record<string, unknown>> {
   rowHeight?: number;
   headerHeight?: number;
   rowHeaderWidth?: number;
+  /** Multi-level column-header groups: bands that span a run of leaf columns. */
+  columnGroups?: ColumnGroupDef[];
+  /** Height of the column-group header row. Defaults to `headerHeight`. */
+  groupHeaderRowHeight?: number;
+  /** Animate column-group headers when they collapse/expand. Default false. */
+  columnGroupAnimation?: boolean;
   /** Number of leading columns kept pinned to the left while the rest scroll. Default 0. */
   frozenColumns?: number;
   /** Number of leading rows kept pinned to the top while the rest scroll. Default 0. */
@@ -73,6 +80,9 @@ export interface ResolvedOptions<T> {
   rowHeight: number;
   headerHeight: number;
   rowHeaderWidth: number;
+  columnGroups: ColumnGroupDef[];
+  groupHeaderRowHeight: number;
+  columnGroupAnimation: boolean;
   frozenColumns: number;
   frozenRows: number;
   selectionMode: SelectionMode;
@@ -115,12 +125,16 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     col.allowMerging = def.allowMerging ?? allowMerging;
     return col;
   });
+  const headerHeight = options.headerHeight ?? DEFAULT_HEADER_HEIGHT;
   return {
     columns,
     view,
     rowHeight: options.rowHeight ?? DEFAULT_ROW_HEIGHT,
-    headerHeight: options.headerHeight ?? DEFAULT_HEADER_HEIGHT,
+    headerHeight,
     rowHeaderWidth: options.rowHeaderWidth ?? DEFAULT_ROW_HEADER_WIDTH,
+    columnGroups: options.columnGroups ?? [],
+    groupHeaderRowHeight: options.groupHeaderRowHeight ?? headerHeight,
+    columnGroupAnimation: options.columnGroupAnimation ?? false,
     frozenColumns: Math.max(0, options.frozenColumns ?? 0),
     frozenRows: Math.max(0, options.frozenRows ?? 0),
     selectionMode: options.selectionMode ?? 'Cell',

@@ -1,6 +1,7 @@
 .apg {
   --apg-row-height: 28px;
   --apg-header-height: 32px;
+  --apg-group-header-height: 32px;
   --apg-col-width: 100px;
   --apg-border-color: #dde1e6;
   --apg-border: 1px solid var(--apg-border-color);
@@ -101,6 +102,82 @@
 
 .apg-header-cell.apg-sortable {
   cursor: pointer;
+}
+
+/* Multi-level column-group header band. Sits above the leaf header (.apg-header-inner),
+   pinned to the top edge; the leaf header is pushed down by its height. */
+.apg-columngroup-inner {
+  grid-area: 1 / 1;
+  align-self: start;
+  justify-self: start;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: var(--apg-header-bg);
+  border-bottom: var(--apg-border);
+}
+
+.apg-columngroup-cell {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: var(--apg-cell-padding);
+  font-weight: 600;
+  color: var(--apg-header-fg);
+  border-right: var(--apg-border);
+  border-bottom: var(--apg-border);
+  background: var(--apg-header-bg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A shallow leaf's header rendered inside the group band as one tall cell.
+   fillHeaderCell gives it .apg-header-cell styling (left-aligned, sortable);
+   the band just supplies the divider so it reads as a normal column header. */
+.apg-columngroup-cell.apg-columngroup-leaf {
+  border-right: var(--apg-border);
+  border-bottom: none;
+  background: var(--apg-header-bg);
+}
+
+.apg-columngroup-cell.apg-collapsible {
+  cursor: pointer;
+}
+
+/* Collapse/expand animation, opt-in via the `columnGroupAnimation` option
+   (adds `.apg-animated` to the host). Group header cells ease their geometry as
+   columns hide/show, mirroring Wijmo FlexGrid's `.animated` transition. */
+.apg-animated .apg-columngroup-cell {
+  transition:
+    left 0.2s ease,
+    width 0.2s ease,
+    top 0.2s ease,
+    height 0.2s ease;
+}
+
+.apg-columngroup-cell.apg-collapsible:hover {
+  background: var(--apg-group-bg-hover);
+}
+
+.apg-columngroup-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  color: var(--apg-header-fg);
+  transition: transform 0.15s ease;
+}
+
+/* Chevron points right when collapsed, down when expanded. */
+.apg-columngroup-chevron-open {
+  transform: rotate(90deg);
+}
+
+.apg-columngroup-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .apg-sort-arrow {

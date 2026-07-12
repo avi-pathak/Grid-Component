@@ -53,7 +53,8 @@ export class ViewportRenderer {
     this.canvas = createEl('div', 'apg-canvas');
 
     this.cells = createEl('div', 'apg-cells');
-    this.cells.style.left = `${this.gutterLeft}px`;
+    this.cells.style.marginLeft = `${this.gutterLeft}px`;
+    this.cells.style.marginTop = `${this.gutterTop}px`;
     this.cells.style.top = `${this.gutterTop}px`;
 
     // Spanning cells paint on top of the normal rows, so their layer lives inside
@@ -68,6 +69,7 @@ export class ViewportRenderer {
 
     this.rowHeaderInner = createEl('div', 'apg-rowheader-inner');
     this.rowHeaderInner.style.marginTop = `${this.gutterTop}px`;
+    this.rowHeaderInner.style.top = `${this.gutterTop}px`;
     this.rowHeaderInner.style.width = `${this.gutterLeft}px`;
     this.rowHeaderInner.style.display = config.showRowHeader ? '' : 'none';
 
@@ -79,6 +81,7 @@ export class ViewportRenderer {
     // Frozen bands start hidden; Grid sizes and shows them when a freeze is set.
     this.frozenCols = createEl('div', 'apg-frozen-cols');
     this.frozenCols.style.left = `${this.gutterLeft}px`;
+    this.frozenCols.style.top = `${this.gutterTop}px`;
     this.frozenCols.style.marginTop = `${this.gutterTop}px`;
 
     this.frozenColsHeader = createEl('div', 'apg-frozen-cols-header');
@@ -137,9 +140,20 @@ export class ViewportRenderer {
     this.canvas.style.width = `${this.gutterLeft + totalWidth}px`;
     this.canvas.style.height = `${this.gutterTop + totalHeight}px`;
     this.headerInner.style.width = `${totalWidth}px`;
-    this.rowHeaderInner.style.height = `${totalHeight}px`;
-    this.frozenCols.style.height = `${totalHeight}px`;
+    this.cells.style.width = `${totalWidth}px`;
     this.frozenRows.style.width = `${totalWidth}px`;
+  }
+
+  /**
+   * Size the pinned body/row-header/frozen-column panels to the visible viewport
+   * so they clip their translated content. Called on mount and on resize.
+   */
+  setViewport(width: number, height: number): void {
+    void width;
+    const bodyH = Math.max(0, height - this.gutterTop);
+    this.cells.style.height = `${bodyH}px`;
+    this.rowHeaderInner.style.height = `${bodyH}px`;
+    this.frozenCols.style.height = `${bodyH}px`;
   }
 
   /** Size and show/hide the frozen bands for the current freeze counts. */

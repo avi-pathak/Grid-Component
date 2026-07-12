@@ -23,9 +23,9 @@ describe('GridViewport', () => {
     const { state, viewport } = setup();
     viewport.update(240, 0); // row 10 at the top
 
-    // visible rows 10..29, padded by the 3-row buffer
-    expect(state.firstRow).toBe(7);
-    expect(state.lastRow).toBe(32);
+    // visible rows 10..29, padded by the row buffer
+    expect(state.firstRow).toBe(4);
+    expect(state.lastRow).toBe(35);
     expect(state.scrollTop).toBe(240);
   });
 

@@ -64,8 +64,12 @@ export class MergeRenderer {
     const item = ctx.data.item(range.topRow) as Record<string, unknown>;
     const left = ctx.layout.getColLeft(col);
     const right = ctx.layout.getColLeft(range.rightCol) + ctx.layout.getColWidth(range.rightCol);
-    const top = ctx.layout.getRowTop(range.topRow);
-    const bottom = ctx.layout.getRowTop(range.bottomRow) + ctx.layout.getRowHeight(range.bottomRow);
+    // The body panel is pinned, so spans are placed relative to the scroll.
+    const top = ctx.layout.getRowTop(range.topRow) - ctx.state.scrollTop;
+    const bottom =
+      ctx.layout.getRowTop(range.bottomRow) +
+      ctx.layout.getRowHeight(range.bottomRow) -
+      ctx.state.scrollTop;
 
     const sel = ctx.state.selection;
     const selected = sel != null && intersects(sel, range);

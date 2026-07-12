@@ -13,6 +13,8 @@ export interface EditorDeps {
   /** The scrolling cells panel. The editor lives here so it tracks the cell while scrolling. */
   cells: HTMLElement;
   layout: LayoutEngine;
+  /** Current vertical scroll offset; rows in the pinned body are placed relative to it. */
+  scrollTop: () => number;
   data: DataView;
   columns: Column[];
   undo: UndoStack;
@@ -117,13 +119,13 @@ export class EditorManager {
     return this.dropdown; // DropDownList, AutoComplete, and Menu share the in-cell dropdown
   }
 
-  // Position in cells-panel (content) coordinates. The editor is a child of that
-  // panel, so it scrolls with the row — no scroll offset to subtract, no gutter
-  // to add. The browser flips the native dropdown/calendar up or down on its own.
+  // Position in the pinned cells panel, matching how rows are placed: the row's
+  // absolute top minus the current scroll offset. The browser flips the native
+  // dropdown/calendar up or down on its own.
   private cellRect(cell: CellAddress): DOMRect {
     return new DOMRect(
       this.deps.layout.getColLeft(cell.col),
-      this.deps.layout.getRowTop(cell.row),
+      this.deps.layout.getRowTop(cell.row) - this.deps.scrollTop(),
       this.deps.layout.getColWidth(cell.col),
       this.deps.layout.getRowHeight(cell.row),
     );

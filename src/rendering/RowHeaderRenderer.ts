@@ -36,7 +36,7 @@ export class RowHeaderRenderer {
         this.active.set(row, el);
       }
       el.style.height = `${ctx.layout.getRowHeight(row)}px`;
-      setTransform(el, 0, ctx.layout.getRowTop(row));
+      setTransform(el, 0, ctx.layout.getRowTop(row) - ctx.state.scrollTop);
       const isGroup = ctx.data.rowType(row) === 'group';
       el.className = isGroup ? 'apg-rowheader-cell apg-rowheader-group' : 'apg-rowheader-cell';
       el.textContent = isGroup ? '' : String(row + 1);

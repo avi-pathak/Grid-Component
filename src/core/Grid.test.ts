@@ -344,19 +344,20 @@ describe('Grid', () => {
     ];
     const grid = new Grid(host, { columns: cols, itemsSource: makeRows(100), rowHeight: 24 });
 
+    // Unscrolled: row 40 sits at its absolute top inside the pinned body.
     grid.editCell(40, 1);
-    const before = (host.querySelector('.apg-editor') as HTMLElement).style.transform;
+    expect((host.querySelector('.apg-editor') as HTMLElement).style.transform).toBe(
+      'translate3d(80px, 960px, 0)',
+    );
     (host.querySelector('.apg-editor') as HTMLElement).dispatchEvent(new Event('blur'));
 
-    // Scroll so the same row sits at a non-zero scrollTop, then re-edit. The
-    // transform must be unchanged — the old code subtracted scrollTop here and
-    // the editor crept upward away from the cell.
+    // Scroll row 40 to the top; the body panel is pinned, so the editor follows
+    // the cell to the top of the panel (rowTop - scrollTop = 0), not off-screen.
     grid.scrollTo(40);
     grid.editCell(40, 1);
-    const after = (host.querySelector('.apg-editor') as HTMLElement).style.transform;
-
-    expect(after).toBe(before);
-    expect(after).toBe('translate3d(80px, 960px, 0)'); // 40 * 24
+    expect((host.querySelector('.apg-editor') as HTMLElement).style.transform).toBe(
+      'translate3d(80px, 0px, 0)',
+    );
   });
 
   it('opens a radio editor for a RadioButtons data-mapped column', () => {

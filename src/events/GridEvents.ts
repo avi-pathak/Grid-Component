@@ -63,4 +63,8 @@ export interface GridEvents {
   columnGroupCollapsedChanged: { key: string; collapsed: boolean };
   /** After the set of column groups changed (added, removed, or replaced). */
   columnGroupsChanged: { keys: string[] };
+  /** Before an export runs. Set `cancel` to true to abort. */
+  exporting: { format: string; fileName: string; cancel: boolean };
+  /** After an export produced its artifact (and downloaded, unless disabled). */
+  exported: { format: string; fileName: string };
 }

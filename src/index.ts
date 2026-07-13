@@ -23,6 +23,13 @@ export { CollectionViewGroup } from './data/CollectionViewGroup';
 export { ColumnFilter } from './models/ColumnFilter';
 export { icons, iconEl } from './utils/icons';
 
+// Export module
+export { ExportManager } from './export/ExportManager';
+export { ExportRegistry } from './export/registry';
+export { csvFormat } from './export/formats/csv';
+export { xlsxFormat } from './export/formats/xlsx';
+export { pdfFormat } from './export/formats/pdf';
+
 export type { ColumnDef } from './models/Column';
 export type { ColumnGroupDef } from './models/ColumnGroup';
 export type { ColumnGroupNode } from './models/ColumnGroup';
@@ -62,5 +69,16 @@ export type { GridEvents } from './events/GridEvents';
 export type { UndoableAction } from './commands/UndoableAction';
 export type { CollectionViewOptions, CollectionChange, ChangeAction } from './data/CollectionView';
 export type { ODataOptions } from './data/ODataCollectionView';
+export type {
+  ExportOptions,
+  ExportFormat,
+  ExportData,
+  ExportColumn,
+  ExportRow,
+  ExportCell,
+  CsvOptions,
+  PdfOptions,
+} from './export/types';
+export type { ExportResult, ExportDeps } from './export/ExportManager';
 
 export const VERSION = '0.1.0';

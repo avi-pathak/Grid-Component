@@ -24,6 +24,7 @@ import { columnGroups } from './columnGroups';
 import { nestedColumnGroups } from './nestedColumnGroups';
 import { merging } from './merging';
 import { stateSerialization } from './stateSerialization';
+import { exporting } from './exporting';
 import { layout } from './layout';
 
 export type { Demo };
@@ -53,6 +54,7 @@ export const demos: Demo[] = [
   columnGroups,
   nestedColumnGroups,
   merging,
+  exporting,
   stateSerialization,
   layout,
 ];

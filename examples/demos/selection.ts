@@ -66,11 +66,14 @@ export const selection: Demo = {
     showSelection();
     const off = grid.on('selectionChanged', showSelection);
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

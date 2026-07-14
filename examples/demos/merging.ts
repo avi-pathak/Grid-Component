@@ -115,10 +115,13 @@ export const merging: Demo = {
       grid = build(select.value as Mode);
     });
 
-    return () => {
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
+    return {
+      grid: () => grid,
+      dispose: () => {
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
     };
   },
 };

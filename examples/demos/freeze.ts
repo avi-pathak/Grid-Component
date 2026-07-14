@@ -62,11 +62,14 @@ export const freeze: Demo = {
       grid.freezeRows(0);
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

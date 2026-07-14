@@ -55,11 +55,14 @@ export const columnGroups: Demo = {
     collapseBtn.addEventListener('click', () => grid.collapseAllColumnGroups());
     expandBtn.addEventListener('click', () => grid.expandAllColumnGroups());
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

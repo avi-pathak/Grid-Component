@@ -36,11 +36,14 @@ export const virtualization: Demo = {
     update();
     const off = grid.on('scrollChanged', update);
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       gridHost.remove();
       badge.remove();
-    };
+    },
+  };
   },
 };

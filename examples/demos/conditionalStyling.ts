@@ -59,9 +59,12 @@ export const conditionalStyling: Demo = {
       rowClass: ({ item }) => ((item as SalesRow).active ? '' : 'demo-row-inactive'),
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

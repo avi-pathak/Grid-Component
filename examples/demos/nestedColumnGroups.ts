@@ -216,11 +216,14 @@ export const nestedColumnGroups: Demo = {
       grid.columnGroupAnimation = animToggle.input.checked;
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

@@ -17,6 +17,8 @@ and verified in the browser.
 - Undo / redo for edits and resizes (`UndoStack`, ctrl+Z / ctrl+Y)
 - Multi-level **column groups**: header bands spanning leaf columns, with
   collapse/expand (`columnGroups` option, `toggleColumnGroup`, persisted in state)
+- **Export** to CSV / Excel (.xlsx) / PDF — zero-dependency, pluggable formats
+  (`grid.export`, `registerExportFormat`)
 - Typed event bus; ResizeObserver-driven layout
 - Webpack 5 build (ESM/CJS/UMD + types), Vitest, ESLint/Prettier, CI
 

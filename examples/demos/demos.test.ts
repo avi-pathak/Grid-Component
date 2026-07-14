@@ -38,12 +38,13 @@ describe('demos', () => {
     it(`mounts and disposes "${demo.id}"`, () => {
       // Demos that poll on a timer keep their intervals; cleanup() clears them
       // right away, so nothing fires during the test.
-      const cleanup = demo.mount(host);
+      const handle = demo.mount(host);
 
       // A grid (or its toolbar + grid host) landed in the demo container.
       expect(host.querySelector('.apg, .apg-demo-grid')).not.toBeNull();
 
-      expect(() => cleanup()).not.toThrow();
+      const dispose = typeof handle === 'function' ? handle : () => handle.dispose();
+      expect(() => dispose()).not.toThrow();
     });
   }
 });

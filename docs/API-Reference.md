@@ -78,6 +78,10 @@ A recursive tree: a node is a **leaf** (`binding`) or a **group** (nested
 | `addColumnGroup(def)` / `removeColumnGroup(key)` | add / remove one group |
 | `toggleColumnGroup(key, collapsed?)` | collapse/expand a group (omit = toggle) |
 | `collapseAllColumnGroups()` / `expandAllColumnGroups()` | bulk collapse/expand |
+| `export(options?)` | export to csv/xlsx/pdf; returns artifact + metadata |
+| `exportAsync(options?)` | async export (chunked, progress, cancelable) |
+| `exportData(options?)` | build the format-agnostic export payload only |
+| `registerExportFormat(fmt)` | add a custom export format |
 | `undo()` / `redo()` | undo stack |
 | `refresh()` / `invalidate()` | recompute / redraw |
 | `on(type, handler)` | subscribe; returns unsubscribe |
@@ -87,7 +91,10 @@ A recursive tree: a node is a **leaf** (`binding`) or a **group** (nested
 
 `cellClick`, `cellDoubleClick`, `selectionChanged`, `scrollChanged`,
 `cellEditStart`, `cellEditEnd`, `undoStackChanged`,
-`columnGroupCollapsing`, `columnGroupCollapsedChanged`, `columnGroupsChanged`.
+`columnGroupCollapsing`, `columnGroupCollapsedChanged`, `columnGroupsChanged`,
+`exporting`, `exported`.
+
+See [11-Export](./11-Export.md) for the export options and architecture.
 
 ```ts
 const off = grid.on('selectionChanged', (cell) => console.log(cell));

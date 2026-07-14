@@ -1,7 +1,9 @@
 import '../src/styles/apgrid.scss';
 import './site.css';
-import { VERSION } from '../src';
+import { VERSION, Grid } from '../src';
 import { demos } from './demos';
+import { DemoHandle } from './demos/types';
+import { mountExportBar } from './exportBar';
 
 const nav = document.getElementById('nav') as HTMLElement;
 const stage = document.getElementById('stage') as HTMLElement;
@@ -26,21 +28,40 @@ themeToggle.addEventListener('click', () => {
 applyTheme(false);
 
 let dispose: (() => void) | null = null;
+const exportSlot = document.getElementById('export-slot') as HTMLElement;
 
 function show(id: string): void {
   const demo = demos.find((d) => d.id === id) ?? demos[0];
 
   dispose?.();
+  exportSlot.innerHTML = '';
   stage.innerHTML = '';
 
   demoTitle.textContent = demo.title;
   demoTagline.textContent = demo.tagline;
-  dispose = demo.mount(stage);
+
+  const handle: DemoHandle = demo.mount(stage);
+  const grid = extractGrid(handle);
+  dispose = toDispose(handle);
+
+  // Every demo that exposes its grid gets a shared Export control in the header.
+  if (grid) mountExportBar(exportSlot, grid);
 
   for (const link of nav.querySelectorAll('a')) {
     link.classList.toggle('active', link.dataset.id === demo.id);
   }
   if (location.hash !== `#${demo.id}`) location.hash = demo.id;
+}
+
+// Resolve the demo's grid to a getter (some demos rebuild their grid).
+function extractGrid(handle: DemoHandle): (() => Grid) | null {
+  if (typeof handle === 'function' || !handle.grid) return null;
+  const g = handle.grid;
+  return typeof g === 'function' ? g : () => g;
+}
+
+function toDispose(handle: DemoHandle): () => void {
+  return typeof handle === 'function' ? handle : () => handle.dispose();
 }
 
 for (const demo of demos) {

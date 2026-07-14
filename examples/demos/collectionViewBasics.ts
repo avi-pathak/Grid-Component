@@ -58,12 +58,15 @@ export const collectionViewBasics: Demo = {
         : null;
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       offCurrent();
       offChanged();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

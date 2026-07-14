@@ -57,13 +57,16 @@ export const infiniteScroll: Demo = {
     };
     viewport?.addEventListener('scroll', onScroll);
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       offLoaded();
       offLoading();
       viewport?.removeEventListener('scroll', onScroll);
       grid.dispose();
       status.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

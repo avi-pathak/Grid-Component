@@ -3,7 +3,7 @@ import { GridState } from './GridState';
 import { GridViewport } from './GridViewport';
 import { Column, ColumnDef } from '../models/Column';
 import { ColumnGroup, ColumnGroupDef, ColumnGroupNode } from '../models/ColumnGroup';
-import { buildColumnGroups } from '../data/buildColumnGroups';
+import { buildColumnGroups, buildColumnGroupLayout } from '../data/buildColumnGroups';
 import { CellAddress, CellRange } from '../models/Cell';
 import { DataView } from '../data/DataView';
 import { CollectionView } from '../data/CollectionView';
@@ -27,6 +27,8 @@ import { KeyboardHandler, NavAction } from '../events/KeyboardHandler';
 import { ColumnResizer } from '../events/ColumnResizer';
 import { ColumnDragger } from '../events/ColumnDragger';
 import { ClipboardHandler } from '../events/ClipboardHandler';
+import { ExportManager, ExportResult } from '../export/ExportManager';
+import { ExportOptions, ExportData } from '../export/types';
 import { GroupPanel, GroupChip } from '../rendering/GroupPanel';
 import { GroupHeaderTemplate } from '../rendering/GroupHeader';
 import { FilterModel } from '../data/FilterModel';
@@ -117,6 +119,7 @@ export class Grid {
   private resizer: ColumnResizer;
   private dragger?: ColumnDragger;
   private clipboard?: ClipboardHandler;
+  private exportManager: ExportManager;
   private groupPanel?: GroupPanel;
   private groupHeaderTemplate?: GroupHeaderTemplate;
   /** Active multi-level column-header groups, in authored order. Empty when none. */
@@ -298,6 +301,28 @@ export class Grid {
         applyClip: (text) => this.setClipString(text),
       });
     }
+
+    this.exportManager = new ExportManager({
+      columns: () => this.columns,
+      source: () => this.data,
+      fullSource: () => this.fullExportSource(),
+      selection: () => this.selection,
+      headerGroups: () => this.exportHeaderGroups(),
+      merge: () => this.mergeLookup(),
+      filterable: () => this.filterModel != null,
+      activeFilters: () => this.activeExportFilters(),
+      host: () => this.host,
+      onExporting: (opts) =>
+        !this.emitCancel('exporting', {
+          format: opts.format ?? 'csv',
+          fileName: `${opts.fileName ?? 'export'}.${opts.format ?? 'csv'}`,
+        }),
+      onExported: (opts) =>
+        this.events.emit('exported', {
+          format: opts.format ?? 'csv',
+          fileName: `${opts.fileName ?? 'export'}.${opts.format ?? 'csv'}`,
+        }),
+    });
 
     this.unsubscribeData = this.data.collectionView.on('collectionChanged', (e) => {
       // Edits keep the same rows, so only redraw; add/remove/reset change totals.
@@ -687,6 +712,101 @@ export class Grid {
   private parseClip(text: string): string[][] {
     const trimmed = text.replace(/\r\n/g, '\n').replace(/\n$/, '');
     return trimmed.split('\n').map((line) => line.split('\t'));
+  }
+
+  /**
+   * Export the grid to a file. `options.format` selects the output
+   * ('csv' | 'xlsx' | 'pdf', default 'csv'); other options control the file
+   * name, whether to export all rows or just the selection, which columns to
+   * include, group-header inclusion, and whether to download. Returns the
+   * artifact + metadata, or null if the `exporting` event was canceled.
+   */
+  export(options?: ExportOptions): ExportResult | null {
+    return this.exportManager.export(options);
+  }
+
+  /**
+   * Export asynchronously: rows are built in chunks that yield to the event
+   * loop so the page stays responsive on large datasets. Reports progress via
+   * `options.onProgress`, shows the built-in overlay when
+   * `options.showProgress` is true, and honors `options.signal` for
+   * cancellation. Resolves to the artifact (or null if canceled).
+   */
+  exportAsync(options?: ExportOptions): Promise<ExportResult | null> {
+    return this.exportManager.exportAsync(options);
+  }
+
+  /** Build the format-agnostic export payload without rendering or downloading. */
+  exportData(options?: ExportOptions): ExportData {
+    return this.exportManager.buildData(options);
+  }
+
+  /** Register a custom export format (id + extension + mime + render). */
+  registerExportFormat = (...args: Parameters<ExportManager['registerFormat']>): void =>
+    this.exportManager.registerFormat(...args);
+
+  /**
+   * An export source over the FULL, unfiltered, ungrouped data — every row of
+   * the collection view's source array. Used when exporting a native Excel
+   * AutoFilter so the file holds all rows for Excel to filter.
+   */
+  private fullExportSource(): {
+    length: number;
+    grouped: boolean;
+    item(i: number): Record<string, unknown> | undefined;
+    rowType(): 'group' | 'data';
+    groupRow(): null;
+  } {
+    const items = this.data.collectionView.sourceCollection as Record<string, unknown>[];
+    return {
+      length: items.length,
+      grouped: false,
+      item: (i) => items[i],
+      rowType: () => 'data',
+      groupRow: () => null,
+    };
+  }
+
+  /**
+   * Active value-based column filters as `{ binding, values }`, for the exported
+   * AutoFilter. Only checkbox (value-set) filters are carried; operator/condition
+   * filters are omitted (Excel would need custom-filter encoding).
+   */
+  private activeExportFilters(): { binding: string; values: string[] }[] {
+    if (!this.filterModel) return [];
+    const out: { binding: string; values: string[] }[] = [];
+    for (const c of this.allColumns) {
+      const f = this.filterModel.get(c);
+      if (f.isActive && f.values && f.values.size > 0) {
+        out.push({ binding: c.binding, values: [...f.values] });
+      }
+    }
+    return out;
+  }
+
+  /** Resolve the current column-group bands into export header spans. */
+  private exportHeaderGroups(): {
+    spans: {
+      header: string;
+      startCol: number;
+      endCol: number;
+      row: number;
+      rowSpan: number;
+    }[];
+    rows: number;
+  } {
+    if (this.columnGroupList.length === 0) return { spans: [], rows: 0 };
+    const layout = buildColumnGroupLayout(this.columns, this.columnGroupList);
+    const spans = layout.cells
+      .filter((c) => c.group != null)
+      .map((c) => ({
+        header: c.group!.header,
+        startCol: c.startCol,
+        endCol: c.endCol,
+        row: c.row,
+        rowSpan: c.rowSpan,
+      }));
+    return { spans, rows: layout.rows };
   }
 
   /** Resize a column. Recorded on the undo stack. */
@@ -1106,6 +1226,7 @@ export class Grid {
     this.resizer.dispose();
     this.dragger?.dispose();
     this.clipboard?.dispose();
+    this.exportManager.dispose();
     this.groupPanel?.dispose();
     this.filterEditor?.close();
     this.events.clear();

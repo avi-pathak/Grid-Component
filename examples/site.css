@@ -27,6 +27,52 @@ body.site-dark {
   gap: 16px;
 }
 
+.demo-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+.export-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.export-bar-select {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--site-border);
+  border-radius: 8px;
+  background: var(--site-panel);
+  color: var(--site-fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.export-bar-btn {
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--site-accent);
+  border-radius: 8px;
+  background: var(--site-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+
+.export-bar-btn:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.export-bar-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .theme-toggle {
   flex: none;
   height: 32px;

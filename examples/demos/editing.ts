@@ -43,12 +43,15 @@ export const editing: Demo = {
       redo.disabled = !canRedo;
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

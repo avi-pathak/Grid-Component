@@ -79,6 +79,7 @@ A recursive tree: a node is a **leaf** (`binding`) or a **group** (nested
 | `toggleColumnGroup(key, collapsed?)` | collapse/expand a group (omit = toggle) |
 | `collapseAllColumnGroups()` / `expandAllColumnGroups()` | bulk collapse/expand |
 | `export(options?)` | export to csv/xlsx/pdf; returns artifact + metadata |
+| `exportAsync(options?)` | async export (chunked, progress, cancelable) |
 | `exportData(options?)` | build the format-agnostic export payload only |
 | `registerExportFormat(fmt)` | add a custom export format |
 | `undo()` / `redo()` | undo stack |

@@ -50,9 +50,12 @@ export const customCell: Demo = {
       itemsSource: makeSales(2000) as SalesRow[],
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

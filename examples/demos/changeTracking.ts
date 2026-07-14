@@ -54,12 +54,15 @@ export const changeTracking: Demo = {
       render();
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

@@ -36,9 +36,12 @@ export const calculated: Demo = {
       itemsSource: makeSales(2000),
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

@@ -76,9 +76,12 @@ export const dataMaps: Demo = {
       itemsSource: data,
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

@@ -58,11 +58,14 @@ export const filtering: Demo = {
 
     clearBtn.addEventListener('click', () => grid.clearFilters());
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

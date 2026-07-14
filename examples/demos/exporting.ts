@@ -1,4 +1,4 @@
-import { Grid } from '../../src';
+import { Grid, CellCallback } from '../../src';
 import { makeSales } from '../data';
 import { Demo } from './types';
 
@@ -6,7 +6,7 @@ export const exporting: Demo = {
   id: 'export',
   title: 'Export',
   tagline:
-    'Export the grid to CSV, Excel (.xlsx), or PDF — all generated in the browser with zero dependencies. Choose a format and scope, then download.',
+    'Export to CSV, Excel (.xlsx), or PDF — generated in the browser with zero dependencies. Customize cells with a callback, and export large data asynchronously with a progress bar.',
   mount(host) {
     const toolbar = document.createElement('div');
     toolbar.className = 'apg-demo-toolbar';
@@ -21,10 +21,20 @@ export const exporting: Demo = {
       ['selection', 'Selection'],
     ]);
     const groupsChk = checkbox('Include group rows', false);
+    const customChk = checkbox('Custom cell styling', true);
+    const asyncChk = checkbox('Async + progress', true);
     const exportBtn = button('Download');
     const note = document.createElement('span');
     note.className = 'apg-demo-readout';
-    toolbar.append(formatSel.label, scopeSel.label, groupsChk.label, exportBtn, note);
+    toolbar.append(
+      formatSel.label,
+      scopeSel.label,
+      groupsChk.label,
+      customChk.label,
+      asyncChk.label,
+      exportBtn,
+      note,
+    );
     host.appendChild(toolbar);
 
     const gridHost = document.createElement('div');
@@ -46,7 +56,7 @@ export const exporting: Demo = {
         },
         { binding: 'joined', header: 'Joined', width: 130, dataType: 'Date' },
       ],
-      itemsSource: makeSales(2000),
+      itemsSource: makeSales(20000),
       selectionMode: 'RowRange',
       allowSorting: true,
       groupPanel: true,
@@ -56,20 +66,46 @@ export const exporting: Demo = {
       note.textContent = `Exported ${e.fileName}`;
     });
 
+    // A cellCallback like Wijmo's formatItem: bold group aggregates, and tint
+    // the Sales column green/red by sign (Excel picks up the styling; PDF too).
+    const cellCallback: CellCallback = (ctx) => {
+      if (ctx.rowKind === 'group') {
+        ctx.cell.style = { bold: true, background: '#eef2fb' };
+        return;
+      }
+      if (ctx.column.key === 'sales') {
+        const n = Number(ctx.cell.value);
+        ctx.cell.style = { color: n >= 5000 ? '#0a7d33' : '#c0392b' };
+      }
+    };
+
     exportBtn.addEventListener('click', () => {
-      grid.export({
+      const opts = {
         format: formatSel.input.value,
         rows: scopeSel.input.value as 'all' | 'selection',
         includeGroups: groupsChk.input.checked,
         fileName: 'grid-export',
         title: 'Sales Export',
-      });
+        cellCallback: customChk.input.checked ? cellCallback : undefined,
+      };
+      if (asyncChk.input.checked) {
+        exportBtn.disabled = true;
+        note.textContent = 'Exporting…';
+        grid
+          .exportAsync({ ...opts, showProgress: true })
+          .finally(() => (exportBtn.disabled = false));
+      } else {
+        grid.export(opts);
+      }
     });
 
-    return () => {
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
+    return {
+      grid,
+      dispose: () => {
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
     };
   },
 };

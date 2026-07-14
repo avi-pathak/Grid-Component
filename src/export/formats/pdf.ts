@@ -61,19 +61,20 @@ class PdfDoc {
     // Object layout: 1 catalog, 2 pages, 3 font, then per-page [pageObj, contentObj].
     const pageObjIds: number[] = [];
     const objects: string[] = [];
-    const firstPageObj = 4;
+    const firstPageObj = 5;
     for (let i = 0; i < pages.length; i++) pageObjIds.push(firstPageObj + i * 2);
 
     objects[1] = `<< /Type /Catalog /Pages 2 0 R >>`;
     objects[2] = `<< /Type /Pages /Kids [${pageObjIds.map((id) => `${id} 0 R`).join(' ')}] /Count ${pages.length} >>`;
     objects[3] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>`;
+    objects[4] = `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>`;
 
     for (let i = 0; i < pages.length; i++) {
       const pageId = firstPageObj + i * 2;
       const contentId = pageId + 1;
       objects[pageId] =
         `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${this.page.w} ${this.page.h}] ` +
-        `/Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`;
+        `/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`;
       objects[contentId] = `<< /Length ${byteLen(streams[i])} >>\nstream\n${streams[i]}\nendstream`;
     }
 
@@ -109,7 +110,7 @@ class PdfDoc {
       ops.push(rect(MARGIN, y - this.rowH, this.tableWidth, this.rowH, true));
       ops.push(`0 0 0 rg`);
       this.data.columns.forEach((c, i) => {
-        ops.push(this.cellText(c.header, i, y, c.align));
+        ops.push(this.cellText(c.header, i, y, c.align, { bold: true }));
       });
       y -= this.rowH;
     }
@@ -120,9 +121,19 @@ class PdfDoc {
         ops.push(rect(MARGIN, y - this.rowH, this.tableWidth, this.rowH, true));
         ops.push(`0 0 0 rg`);
       }
+      // Per-cell backgrounds first, so text draws on top.
       row.cells.forEach((cell, i) => {
         if (i >= this.data.columns.length) return;
-        ops.push(this.cellText(cell.text, i, y, cell.align));
+        const bg = cell.style?.background && rgb(cell.style.background);
+        if (bg) {
+          ops.push(`${bg} rg`);
+          ops.push(rect(this.colX[i], y - this.rowH, this.colX[i + 1] - this.colX[i], this.rowH, true));
+          ops.push(`0 0 0 rg`);
+        }
+      });
+      row.cells.forEach((cell, i) => {
+        if (i >= this.data.columns.length) return;
+        ops.push(this.cellText(cell.text, i, y, cell.style?.align ?? cell.align, cell.style));
       });
       y -= this.rowH;
     }
@@ -140,7 +151,13 @@ class PdfDoc {
     return ops.join('\n');
   }
 
-  private cellText(value: string, col: number, y: number, align: string): string {
+  private cellText(
+    value: string,
+    col: number,
+    y: number,
+    align: string,
+    style?: { bold?: boolean; italic?: boolean; color?: string },
+  ): string {
     const left = this.colX[col];
     const right = this.colX[col + 1];
     const cellW = right - left - 8;
@@ -149,7 +166,13 @@ class PdfDoc {
     let x = left + 4;
     if (align === 'right') x = right - 4 - textW;
     else if (align === 'center') x = left + (right - left - textW) / 2;
-    return text(x, y - this.fontSize - 3, clipped, this.fontSize);
+
+    const font = style?.bold ? 'F2' : 'F1';
+    const color = style?.color && rgb(style.color);
+    const drawn = text(x, y - this.fontSize - 3, clipped, this.fontSize, font);
+    if (!color) return drawn;
+    // Set fill color, draw, reset to black.
+    return `${color} rg\n${drawn}\n0 0 0 rg`;
   }
 
   private clip(value: string, maxWidth: number): string {
@@ -183,8 +206,34 @@ class PdfDoc {
 
 // ---- PDF content-stream helpers ---------------------------------------------
 
-function text(x: number, y: number, value: string, size: number): string {
-  return `BT /F1 ${size} Tf ${fixed(x)} ${fixed(y)} Td (${escapePdf(value)}) Tj ET`;
+function text(x: number, y: number, value: string, size: number, font = 'F1'): string {
+  return `BT /${font} ${size} Tf ${fixed(x)} ${fixed(y)} Td (${escapePdf(value)}) Tj ET`;
+}
+
+// Convert a CSS color to a PDF "r g b" fill triple (0..1), or '' if unknown.
+function rgb(color: string): string {
+  const named: Record<string, [number, number, number]> = {
+    red: [204, 0, 0],
+    green: [0, 128, 0],
+    blue: [0, 0, 204],
+    black: [0, 0, 0],
+    white: [255, 255, 255],
+    orange: [255, 165, 0],
+    gray: [128, 128, 128],
+    grey: [128, 128, 128],
+  };
+  let c = color.trim().replace(/^#/, '');
+  let r: number, g: number, b: number;
+  if (named[c.toLowerCase()]) {
+    [r, g, b] = named[c.toLowerCase()];
+  } else {
+    if (c.length === 3) c = c.replace(/(.)/g, '$1$1');
+    if (!/^[0-9a-fA-F]{6}$/.test(c)) return '';
+    r = parseInt(c.slice(0, 2), 16);
+    g = parseInt(c.slice(2, 4), 16);
+    b = parseInt(c.slice(4, 6), 16);
+  }
+  return `${(r / 255).toFixed(3)} ${(g / 255).toFixed(3)} ${(b / 255).toFixed(3)}`;
 }
 
 function rect(x: number, y: number, w: number, h: number, fill: boolean): string {

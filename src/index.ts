@@ -76,6 +76,13 @@ export type {
   ExportColumn,
   ExportRow,
   ExportCell,
+  ExportCellStyle,
+  ExportMerge,
+  ExportCellContext,
+  ExportHeaderContext,
+  CellCallback,
+  HeaderCallback,
+  ExportProgress,
   CsvOptions,
   PdfOptions,
 } from './export/types';

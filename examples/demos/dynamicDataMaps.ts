@@ -69,10 +69,13 @@ export const dynamicDataMaps: Demo = {
       if (!cities.includes(item.city)) grid.setCellValue(row, 1, cities[0]);
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

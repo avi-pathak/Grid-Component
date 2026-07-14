@@ -54,14 +54,17 @@ export const odata: Demo = {
     prev.addEventListener('click', () => view.moveToPreviousPage());
     next.addEventListener('click', () => view.moveToNextPage());
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       offLoading();
       offLoaded();
       offError();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

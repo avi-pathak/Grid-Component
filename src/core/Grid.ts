@@ -305,8 +305,13 @@ export class Grid {
     this.exportManager = new ExportManager({
       columns: () => this.columns,
       source: () => this.data,
+      fullSource: () => this.fullExportSource(),
       selection: () => this.selection,
       headerGroups: () => this.exportHeaderGroups(),
+      merge: () => this.mergeLookup(),
+      filterable: () => this.filterModel != null,
+      activeFilters: () => this.activeExportFilters(),
+      host: () => this.host,
       onExporting: (opts) =>
         !this.emitCancel('exporting', {
           format: opts.format ?? 'csv',
@@ -720,6 +725,17 @@ export class Grid {
     return this.exportManager.export(options);
   }
 
+  /**
+   * Export asynchronously: rows are built in chunks that yield to the event
+   * loop so the page stays responsive on large datasets. Reports progress via
+   * `options.onProgress`, shows the built-in overlay when
+   * `options.showProgress` is true, and honors `options.signal` for
+   * cancellation. Resolves to the artifact (or null if canceled).
+   */
+  exportAsync(options?: ExportOptions): Promise<ExportResult | null> {
+    return this.exportManager.exportAsync(options);
+  }
+
   /** Build the format-agnostic export payload without rendering or downloading. */
   exportData(options?: ExportOptions): ExportData {
     return this.exportManager.buildData(options);
@@ -728,6 +744,45 @@ export class Grid {
   /** Register a custom export format (id + extension + mime + render). */
   registerExportFormat = (...args: Parameters<ExportManager['registerFormat']>): void =>
     this.exportManager.registerFormat(...args);
+
+  /**
+   * An export source over the FULL, unfiltered, ungrouped data — every row of
+   * the collection view's source array. Used when exporting a native Excel
+   * AutoFilter so the file holds all rows for Excel to filter.
+   */
+  private fullExportSource(): {
+    length: number;
+    grouped: boolean;
+    item(i: number): Record<string, unknown> | undefined;
+    rowType(): 'group' | 'data';
+    groupRow(): null;
+  } {
+    const items = this.data.collectionView.sourceCollection as Record<string, unknown>[];
+    return {
+      length: items.length,
+      grouped: false,
+      item: (i) => items[i],
+      rowType: () => 'data',
+      groupRow: () => null,
+    };
+  }
+
+  /**
+   * Active value-based column filters as `{ binding, values }`, for the exported
+   * AutoFilter. Only checkbox (value-set) filters are carried; operator/condition
+   * filters are omitted (Excel would need custom-filter encoding).
+   */
+  private activeExportFilters(): { binding: string; values: string[] }[] {
+    if (!this.filterModel) return [];
+    const out: { binding: string; values: string[] }[] = [];
+    for (const c of this.allColumns) {
+      const f = this.filterModel.get(c);
+      if (f.isActive && f.values && f.values.size > 0) {
+        out.push({ binding: c.binding, values: [...f.values] });
+      }
+    }
+    return out;
+  }
 
   /** Resolve the current column-group bands into export header spans. */
   private exportHeaderGroups(): {

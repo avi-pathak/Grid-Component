@@ -47,10 +47,13 @@ export const layout: Demo = {
       });
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

@@ -39,11 +39,14 @@ export const clipboard: Demo = {
       hint.textContent = `Pasted ${rows} × ${cols} cell${rows * cols > 1 ? 's' : ''}. Undo with Ctrl+Z.`;
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

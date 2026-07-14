@@ -49,12 +49,15 @@ export const paging: Demo = {
     next.addEventListener('click', () => cv.moveToNextPage());
     last.addEventListener('click', () => cv.moveToLastPage());
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

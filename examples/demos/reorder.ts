@@ -36,11 +36,14 @@ export const reorder: Demo = {
       readout.textContent = `Moved column ${from} → ${to}`;
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };

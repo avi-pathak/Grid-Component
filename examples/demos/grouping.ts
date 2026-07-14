@@ -77,12 +77,15 @@ export const grouping: Demo = {
     expandBtn.addEventListener('click', () => grid.expandAllGroups());
     clearBtn.addEventListener('click', () => grid.clearGroups());
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       off();
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

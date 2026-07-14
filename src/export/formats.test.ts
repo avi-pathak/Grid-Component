@@ -121,3 +121,91 @@ describe('pdfFormat', () => {
     expect(text).toContain('a\\(b\\)c');
   });
 });
+
+describe('xlsx cell styling', () => {
+  const styled: ExportData = {
+    columns: [
+      { header: 'Name', key: 'name', type: 'String', align: 'left', width: 120 },
+      { header: 'Amt', key: 'amt', type: 'Number', align: 'right', width: 90 },
+    ],
+    rows: [
+      {
+        kind: 'data',
+        cells: [
+          {
+            value: 'A',
+            text: 'A',
+            type: 'String',
+            align: 'left',
+            style: { bold: true, color: 'red' },
+          },
+          { value: 5, text: '5', type: 'Number', align: 'right', style: { background: '#00ff00' } },
+        ],
+      },
+    ],
+  };
+
+  it('emits bold and colored fonts plus solid fills in styles.xml', () => {
+    const text = new TextDecoder('latin1').decode(xlsxFormat.render(styled, {}) as Uint8Array);
+    expect(text).toMatch(/<font><b\/><sz val="11"\/><color rgb="FFFF0000"\/>/);
+    expect(text).toContain('patternType="solid"><fgColor rgb="FF00FF00"');
+    expect(text).toMatch(/<c r="A2" s="\d+"/);
+  });
+
+  it('keeps the number cell typed while styled', () => {
+    const text = new TextDecoder('latin1').decode(xlsxFormat.render(styled, {}) as Uint8Array);
+    expect(text).toMatch(/<c r="B2" s="\d+"><v>5<\/v><\/c>/);
+  });
+
+  it('pdf includes a bold font resource', () => {
+    const text = new TextDecoder('latin1').decode(pdfFormat.render(styled, {}) as Uint8Array);
+    expect(text).toContain('/BaseFont /Helvetica-Bold');
+  });
+});
+
+describe('xlsx autofilter and row outline', () => {
+  const filtered: ExportData = {
+    columns: [
+      { header: 'A', key: 'a', type: 'String', align: 'left', width: 100 },
+      { header: 'B', key: 'b', type: 'Number', align: 'right', width: 100 },
+    ],
+    rows: [{ kind: 'data', cells: [
+      { value: 'x', text: 'x', type: 'String', align: 'left' },
+      { value: 1, text: '1', type: 'Number', align: 'right' },
+    ] }],
+    autoFilter: true,
+  };
+
+  it('emits an autoFilter over the header + data range', () => {
+    const xml = new TextDecoder('latin1').decode(xlsxFormat.render(filtered, {}) as Uint8Array);
+    expect(xml).toContain('<autoFilter ref="A1:B2"/>');
+  });
+
+  it('omits autoFilter when disabled or headers are off', () => {
+    const noFilter = new TextDecoder('latin1').decode(
+      xlsxFormat.render({ ...filtered, autoFilter: false }, {}) as Uint8Array,
+    );
+    expect(noFilter).not.toContain('<autoFilter');
+    const noHeaders = new TextDecoder('latin1').decode(
+      xlsxFormat.render(filtered, { includeHeaders: false }) as Uint8Array,
+    );
+    expect(noHeaders).not.toContain('<autoFilter');
+  });
+
+  it('emits outline levels and outlinePr for grouped rows', () => {
+    const outlined: ExportData = {
+      columns: [{ header: 'A', key: 'a', type: 'String', align: 'left', width: 100 }],
+      rows: [
+        { kind: 'group', cells: [{ value: 'G', text: 'G (2)', type: 'String', align: 'left' }], level: 0 },
+        { kind: 'data', cells: [{ value: 'x', text: 'x', type: 'String', align: 'left' }], level: 1 },
+        { kind: 'data', cells: [{ value: 'y', text: 'y', type: 'String', align: 'left' }], level: 1 },
+      ],
+      outline: true,
+      outlineLevels: 1,
+    };
+    const xml = new TextDecoder('latin1').decode(xlsxFormat.render(outlined, {}) as Uint8Array);
+    expect(xml).toContain('<outlinePr');
+    expect(xml).toContain('outlineLevelRow="1"');
+    expect(xml).toMatch(/<row r="3" outlineLevel="1">/); // first data row (after header + group)
+  });
+});

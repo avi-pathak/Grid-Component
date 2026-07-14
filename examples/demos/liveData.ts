@@ -221,14 +221,17 @@ export const liveData: Demo = {
       }
     })();
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       cancelled = true;
       window.clearInterval(timer);
       window.clearInterval(statusTimer);
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
-    };
+    },
+  };
   },
 };
 

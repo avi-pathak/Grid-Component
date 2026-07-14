@@ -74,12 +74,15 @@ export const stateSerialization: Demo = {
       showSaved();
     });
 
-    return () => {
+    return {
+    grid,
+    dispose: () => {
       grid.dispose();
       toolbar.remove();
       gridHost.remove();
       json.remove();
-    };
+    },
+  };
   },
 };
 

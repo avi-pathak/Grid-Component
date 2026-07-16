@@ -1,4 +1,4 @@
-import { Grid, SelectionMode } from '../../src';
+import { Grid, SelectionMode } from '@avi-pathak/apgrid';
 import { makeSales } from '../data';
 import { Demo } from './types';
 
@@ -67,13 +67,13 @@ export const selection: Demo = {
     const off = grid.on('selectionChanged', showSelection);
 
     return {
-    grid,
-    dispose: () => {
-      off();
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        off();
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
+    };
   },
 };

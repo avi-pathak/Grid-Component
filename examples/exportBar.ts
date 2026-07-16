@@ -1,4 +1,4 @@
-import { Grid } from '../src';
+import { Grid } from '@avi-pathak/apgrid';
 
 /**
  * A compact, reusable Export control shown in the demo header for any demo that

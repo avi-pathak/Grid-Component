@@ -1,4 +1,4 @@
-import type { Grid } from '../../src';
+import type { Grid } from '@avi-pathak/apgrid';
 
 export interface Demo {
   id: string;
@@ -13,4 +13,3 @@ export interface Demo {
 }
 
 export type DemoHandle = (() => void) | { dispose: () => void; grid?: Grid | (() => Grid) };
-

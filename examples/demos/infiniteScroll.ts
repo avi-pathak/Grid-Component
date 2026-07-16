@@ -1,4 +1,4 @@
-import { Grid, ODataVirtualCollectionView } from '../../src';
+import { Grid, ODataVirtualCollectionView } from '@avi-pathak/apgrid';
 import { Demo } from './types';
 
 const NORTHWIND = 'https://services.odata.org/V4/Northwind/Northwind.svc/';
@@ -58,15 +58,15 @@ export const infiniteScroll: Demo = {
     viewport?.addEventListener('scroll', onScroll);
 
     return {
-    grid,
-    dispose: () => {
-      offLoaded();
-      offLoading();
-      viewport?.removeEventListener('scroll', onScroll);
-      grid.dispose();
-      status.remove();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        offLoaded();
+        offLoading();
+        viewport?.removeEventListener('scroll', onScroll);
+        grid.dispose();
+        status.remove();
+        gridHost.remove();
+      },
+    };
   },
 };

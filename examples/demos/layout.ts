@@ -1,4 +1,4 @@
-import { Grid, HeadersVisibility } from '../../src';
+import { Grid, HeadersVisibility } from '@avi-pathak/apgrid';
 import { makeSales } from '../data';
 import { Demo } from './types';
 
@@ -48,12 +48,12 @@ export const layout: Demo = {
     });
 
     return {
-    grid,
-    dispose: () => {
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
+    };
   },
 };

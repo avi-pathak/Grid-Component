@@ -1,4 +1,4 @@
-import { Grid } from '../../src';
+import { Grid } from '@avi-pathak/apgrid';
 import { makeSales } from '../data';
 import { Demo } from './types';
 
@@ -56,13 +56,13 @@ export const columnGroups: Demo = {
     expandBtn.addEventListener('click', () => grid.expandAllColumnGroups());
 
     return {
-    grid,
-    dispose: () => {
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
+    };
   },
 };
 
@@ -73,7 +73,7 @@ function quarter(header: string, share: number) {
     header,
     width: 110,
     dataType: 'Number' as const,
-    valueGetter: (item: { sales: number }) => Math.round(item.sales * share),
+    valueGetter: (item: Record<string, unknown>) => Math.round((item.sales as number) * share),
   };
 }
 

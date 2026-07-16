@@ -28,9 +28,24 @@ and scrolling allocates far fewer nodes than rows scrolled.
 
 ## Browser checks
 
-`npm run dev` serves [examples/main.ts](../examples/main.ts) (200k rows). Verified
-live: virtualized scroll, all selection modes, row/column headers, full-span
-scrollbars, double-click editing, and ctrl+Z/ctrl+Y undo/redo.
+`npm run dev` builds the library and serves the example app on `:5173`. The demo
+app **consumes the built package as a real npm consumer would** — every example
+imports from `@avi-pathak/apgrid` (and `@avi-pathak/apgrid/styles.css`), which
+webpack resolves to the built `dist/` (ESM bundle + extracted CSS) via aliases,
+not to `src/`. So running the demos exercises the actual published artifacts:
+the `exports` map, the bundled JS, and the shipped stylesheet.
+
+`npm run typecheck:examples` builds the type declarations and type-checks the
+examples against the package's public `.d.ts`, catching any public-API
+regression a consumer would hit.
+
+Verified live: virtualized scroll, all selection modes, row/column headers,
+full-span scrollbars, editing, undo/redo, grouping, filtering, column groups,
+export (CSV/XLSX/PDF), and the dark theme.
+
+> The unit tests (`npm test`) resolve `@avi-pathak/apgrid` to `src/` via a Vitest
+> alias, so they stay fast and build-free. Only the browser app and
+> `typecheck:examples` go through the built package.
 
 ## Suggested next
 

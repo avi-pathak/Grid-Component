@@ -1,4 +1,4 @@
-import { Grid, DataMap } from '../../src';
+import { Grid, DataMap } from '@avi-pathak/apgrid';
 import { Demo } from './types';
 
 // Cities grouped by country. The City data map filters its choices to the row's
@@ -70,12 +70,12 @@ export const dynamicDataMaps: Demo = {
     });
 
     return {
-    grid,
-    dispose: () => {
-      off();
-      grid.dispose();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        off();
+        grid.dispose();
+        gridHost.remove();
+      },
+    };
   },
 };

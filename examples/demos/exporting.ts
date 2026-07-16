@@ -1,4 +1,4 @@
-import { Grid, CellCallback } from '../../src';
+import { Grid, CellCallback } from '@avi-pathak/apgrid';
 import { makeSales } from '../data';
 import { Demo } from './types';
 

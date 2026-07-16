@@ -1,4 +1,4 @@
-import { Grid } from '../../src';
+import { Grid } from '@avi-pathak/apgrid';
 import { makeSales } from '../data';
 import { Demo } from './types';
 
@@ -24,11 +24,11 @@ export const cellTypes: Demo = {
     });
 
     return {
-    grid,
-    dispose: () => {
-      grid.dispose();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        grid.dispose();
+        gridHost.remove();
+      },
+    };
   },
 };

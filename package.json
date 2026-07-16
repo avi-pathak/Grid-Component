@@ -1,6 +1,6 @@
 {
   "name": "@avi-pathak/apgrid",
-  "version": "0.1.2",
+  "version": "0.1.4",
   "description": "A fast, virtualized data grid for the web. Renders millions of rows with a recycled DOM.",
   "license": "MIT",
   "author": "Avi Pathak",
@@ -51,14 +51,19 @@
     "dist",
     "src/styles"
   ],
+  "workspaces": [
+    "examples"
+  ],
   "scripts": {
     "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
     "build": "npm run clean && npm run build:js && npm run build:themes && npm run build:types",
     "build:js": "webpack --config webpack.config.js",
     "build:themes": "sass --no-source-map --style=compressed src/styles/apgrid-light.scss:dist/apgrid-light.css src/styles/apgrid-dark.scss:dist/apgrid-dark.css",
     "build:types": "tsc -p tsconfig.build.json",
-    "dev": "webpack serve --config webpack.dev.js",
+    "dev": "npm run build && npm run dev --workspace apgrid-demos",
+    "dev:app": "npm run dev --workspace apgrid-demos",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck:examples": "npm run build:types && npm run typecheck --workspace apgrid-demos",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "docs": "typedoc",

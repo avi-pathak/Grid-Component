@@ -1,4 +1,4 @@
-import { Grid, ODataCollectionView } from '../../src';
+import { Grid, ODataCollectionView } from '@avi-pathak/apgrid';
 import { Demo } from './types';
 
 const NORTHWIND = 'https://services.odata.org/V4/Northwind/Northwind.svc/';
@@ -55,16 +55,16 @@ export const odata: Demo = {
     next.addEventListener('click', () => view.moveToNextPage());
 
     return {
-    grid,
-    dispose: () => {
-      offLoading();
-      offLoaded();
-      offError();
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        offLoading();
+        offLoaded();
+        offError();
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
+    };
   },
 };
 

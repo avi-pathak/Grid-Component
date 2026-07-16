@@ -1,4 +1,4 @@
-import { Grid } from '../../src';
+import { Grid } from '@avi-pathak/apgrid';
 import { Demo } from './types';
 
 // Alpha Vantage demo key. Free tier is limited (~25 requests/day), so this demo
@@ -222,16 +222,16 @@ export const liveData: Demo = {
     })();
 
     return {
-    grid,
-    dispose: () => {
-      cancelled = true;
-      window.clearInterval(timer);
-      window.clearInterval(statusTimer);
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        cancelled = true;
+        window.clearInterval(timer);
+        window.clearInterval(statusTimer);
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
+    };
   },
 };
 

@@ -1,4 +1,4 @@
-import { Grid } from '../../src';
+import { Grid } from '@avi-pathak/apgrid';
 import { makeSales, SalesRow } from '../data';
 import { Demo } from './types';
 
@@ -59,14 +59,14 @@ export const collectionViewBasics: Demo = {
     });
 
     return {
-    grid,
-    dispose: () => {
-      offCurrent();
-      offChanged();
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        offCurrent();
+        offChanged();
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
+    };
   },
 };

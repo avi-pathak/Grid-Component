@@ -25,10 +25,14 @@ const base = {
 };
 
 // Styles live in src/index.ts as a single SCSS import. Only the UMD build
-// extracts it to dist/apgrid.css; the ESM and CJS builds drop the import so they
-// don't race on the same output file. Consumers import the compiled stylesheet
-// via "@avi-pathak/apgrid/styles.css".
-const dropCss = new webpack.IgnorePlugin({ resourceRegExp: /\.s?css$/ });
+// extracts it to dist/apgrid.css; the ESM and CJS builds replace the import with
+// an empty module so the bundle has no CSS reference at all (an IgnorePlugin
+// would instead stub it to throw at runtime). Consumers load the compiled
+// stylesheet separately via "@avi-pathak/apgrid/styles.css".
+const dropCss = new webpack.NormalModuleReplacementPlugin(
+  /\.s?css$/,
+  path.resolve(__dirname, 'build/empty.js'),
+);
 
 const scssRule = {
   test: /\.scss$/,

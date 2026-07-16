@@ -1,5 +1,4 @@
-import { Grid, MergeManager } from '../../src';
-import { makeRange } from '../../src/models/Cell';
+import { Grid, MergeManager, makeRange } from '@avi-pathak/apgrid';
 import { Demo } from './types';
 
 interface Row {

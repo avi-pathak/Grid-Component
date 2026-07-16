@@ -56,6 +56,7 @@ export type {
   RowStyle,
 } from './core/GridOptions';
 export type { CellAddress, CellRange } from './models/Cell';
+export { makeRange } from './models/Cell';
 export type { MergeQuery, MergeManager } from './models/MergeManager';
 export { contentMerge } from './models/MergeManager';
 export type {

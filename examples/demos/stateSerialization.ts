@@ -1,4 +1,4 @@
-import { Grid, GridStateSnapshot } from '../../src';
+import { Grid, GridStateSnapshot } from '@avi-pathak/apgrid';
 import { makeSales } from '../data';
 import { Demo } from './types';
 
@@ -75,14 +75,14 @@ export const stateSerialization: Demo = {
     });
 
     return {
-    grid,
-    dispose: () => {
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
-      json.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+        json.remove();
+      },
+    };
   },
 };
 

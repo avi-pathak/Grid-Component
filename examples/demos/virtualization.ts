@@ -1,4 +1,4 @@
-import { Grid } from '../../src';
+import { Grid } from '@avi-pathak/apgrid';
 import { makeSales } from '../data';
 import { Demo } from './types';
 
@@ -37,13 +37,13 @@ export const virtualization: Demo = {
     const off = grid.on('scrollChanged', update);
 
     return {
-    grid,
-    dispose: () => {
-      off();
-      grid.dispose();
-      gridHost.remove();
-      badge.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        off();
+        grid.dispose();
+        gridHost.remove();
+        badge.remove();
+      },
+    };
   },
 };

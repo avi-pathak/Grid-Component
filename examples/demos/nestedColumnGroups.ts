@@ -1,4 +1,4 @@
-import { Grid } from '../../src';
+import { Grid } from '@avi-pathak/apgrid';
 import { Demo } from './types';
 
 interface Fund {
@@ -217,13 +217,13 @@ export const nestedColumnGroups: Demo = {
     });
 
     return {
-    grid,
-    dispose: () => {
-      grid.dispose();
-      toolbar.remove();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        grid.dispose();
+        toolbar.remove();
+        gridHost.remove();
+      },
+    };
   },
 };
 

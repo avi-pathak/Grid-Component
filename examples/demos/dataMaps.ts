@@ -1,4 +1,4 @@
-import { Grid, DataMap, DataMapEditor } from '../../src';
+import { Grid, DataMap, DataMapEditor } from '@avi-pathak/apgrid';
 import { makeSales } from '../data';
 import { Demo } from './types';
 
@@ -77,11 +77,11 @@ export const dataMaps: Demo = {
     });
 
     return {
-    grid,
-    dispose: () => {
-      grid.dispose();
-      gridHost.remove();
-    },
-  };
+      grid,
+      dispose: () => {
+        grid.dispose();
+        gridHost.remove();
+      },
+    };
   },
 };

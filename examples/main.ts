@@ -1,6 +1,6 @@
-import '../src/styles/apgrid.scss';
+import '@avi-pathak/apgrid/styles.css';
 import './site.css';
-import { VERSION, Grid } from '../src';
+import { VERSION, Grid } from '@avi-pathak/apgrid';
 import { demos } from './demos';
 import { DemoHandle } from './demos/types';
 import { mountExportBar } from './exportBar';

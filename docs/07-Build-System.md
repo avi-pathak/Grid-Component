@@ -102,7 +102,8 @@ keeping the stylesheet.
 
 | Script | What it does |
 | --- | --- |
-| `npm run dev` | Dev server with the example app on `:5173` |
+| `npm run dev` | Build the library, then serve the example app on `:5173` (the demos consume the built package) |
+| `npm run dev:app` | Serve the example app without rebuilding first |
 | `npm run build` | Clean, bundle the three formats, emit `.d.ts` |
 | `npm run build:js` | Webpack library build only |
 | `npm run build:types` | Type declarations only |

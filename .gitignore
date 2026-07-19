@@ -2,6 +2,7 @@ node_modules
 dist
 docs-site
 .npmrc
+*.tgz
 docs-site/.nojekyll
 docs-site/hierarchy.html
 docs-site/index.html

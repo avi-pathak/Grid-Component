@@ -76,6 +76,11 @@ export interface GridOptions<T = Record<string, unknown>> {
   isReadOnly?: boolean;
   /** Block editing for rows matching this predicate. Column `editable` still applies. */
   rowReadOnly?: (ctx: RowStyleContext<T>) => boolean;
+  /**
+   * Fall back to a column's header text as its editor placeholder when the
+   * column doesn't set its own `placeholder`. Default false.
+   */
+  showPlaceholders?: boolean;
 }
 
 export interface ResolvedOptions<T> {
@@ -106,6 +111,7 @@ export interface ResolvedOptions<T> {
   rowStyle?: RowStyle<T>;
   isReadOnly: boolean;
   rowReadOnly?: (ctx: RowStyleContext<T>) => boolean;
+  showPlaceholders: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -160,6 +166,7 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     rowStyle: options.rowStyle,
     isReadOnly: options.isReadOnly ?? false,
     rowReadOnly: options.rowReadOnly,
+    showPlaceholders: options.showPlaceholders ?? false,
   };
 }
 

@@ -53,3 +53,12 @@ keystroke (e.g. arrows navigating a candidate list) never leaks into the
 grid's own keyboard navigation. This is unconditional — there's no
 `imeEnabled` toggle, since correct composition handling has no reason to ever
 be off. `RadioEditor` has no free-text input, so it isn't affected.
+
+## PlaceHolders
+
+`column.placeholder` sets explicit placeholder text on the built-in text
+editor; `GridOptions.showPlaceholders` falls back to the column's header text
+when a column doesn't set its own. An explicit `column.placeholder` always
+wins. Scoped to `TextEditor` only — `DropDownEditor`/`RadioEditor` present a
+fixed set of choices, so there's no natural "empty state" for a placeholder to
+fill.

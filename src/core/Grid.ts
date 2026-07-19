@@ -288,6 +288,7 @@ export class Grid {
       undo: this.undoStack,
       isReadOnly: () => this._isReadOnly,
       isRowReadOnly: (row) => this.rowReadOnlyFn?.({ item: this.data.item(row), row }) ?? false,
+      showPlaceholders: resolved.showPlaceholders,
       onApplied: () => this.draw(),
       onBeginning: (cell) => !this.emitCancel('beginningEdit', { row: cell.row, col: cell.col }),
       onStart: (cell) => this.events.emit('cellEditStart', cell),

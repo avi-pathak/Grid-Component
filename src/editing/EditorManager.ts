@@ -20,6 +20,8 @@ export interface EditorDeps {
   undo: UndoStack;
   isReadOnly: () => boolean;
   isRowReadOnly: (row: number) => boolean;
+  /** Fall back to the column header as its editor placeholder when unset. */
+  showPlaceholders: boolean;
   onApplied: () => void;
   /** Return false to prevent the cell from entering edit mode. */
   onBeginning?: (cell: CellAddress) => boolean;
@@ -48,7 +50,7 @@ export class EditorManager {
   constructor(private deps: EditorDeps) {
     const commit = (value: string) => this.commit(value);
     const cancel = () => this.cancel();
-    this.text = new TextEditor(commit, cancel);
+    this.text = new TextEditor(commit, cancel, deps.showPlaceholders);
     this.dropdown = new DropDownEditor(commit, cancel);
     this.radio = new RadioEditor(commit, cancel);
   }

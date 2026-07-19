@@ -63,6 +63,8 @@ export interface ColumnDef<T = Record<string, unknown>> {
   cellClassRules?: CellClassRules<T>;
   /** Return custom cell HTML. Overrides the default text/checkbox rendering. */
   cellTemplate?: (ctx: CellTemplateContext<T>) => string;
+  /** Placeholder text shown in the built-in text editor when the cell is empty. */
+  placeholder?: string;
 }
 
 const DEFAULT_WIDTH = 100;
@@ -97,6 +99,7 @@ export class Column<T = Record<string, unknown>> {
   /** Excluded from layout/rendering/selection when true. Driven by collapsed column groups. */
   hidden = false;
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
+  readonly placeholder?: string;
 
   private readonly valueGetter?: (item: T) => unknown;
   private readonly valueFormatter?: (value: unknown, item: T) => string;
@@ -114,6 +117,7 @@ export class Column<T = Record<string, unknown>> {
     this.valueGetter = def.valueGetter;
     this.valueFormatter = def.valueFormatter;
     this.cellTemplate = def.cellTemplate;
+    this.placeholder = def.placeholder;
     this.map = def.dataMap ? toDataMap(def.dataMap) : undefined;
     this.dataMapEditor = def.dataMapEditor ?? DataMapEditor.DropDownList;
     this.aggregate = def.aggregate;

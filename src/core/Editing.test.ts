@@ -202,3 +202,53 @@ describe('IME composition safety', () => {
     input.dispatchEvent(new Event('compositionend'));
   });
 });
+
+describe('placeholders', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('uses an explicit column.placeholder', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      { binding: 'name', header: 'Name', width: 160, editable: true, placeholder: 'Enter a name' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(5) });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.placeholder).toBe('Enter a name');
+  });
+
+  it('falls back to the column header when showPlaceholders is on and no explicit placeholder is set', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), showPlaceholders: true });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.placeholder).toBe('Name');
+  });
+
+  it('has no placeholder by default', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.placeholder).toBe('');
+  });
+
+  it('an explicit column.placeholder wins over showPlaceholders', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      { binding: 'name', header: 'Name', width: 160, editable: true, placeholder: 'Custom' },
+    ];
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: makeRows(5),
+      showPlaceholders: true,
+    });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.placeholder).toBe('Custom');
+  });
+});

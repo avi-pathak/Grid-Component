@@ -12,6 +12,7 @@ export class TextEditor {
   constructor(
     private onCommit: (value: string) => void,
     private onCancel: () => void,
+    private showPlaceholders = false,
   ) {
     this.input = document.createElement('input');
     this.input.className = 'apg-editor';
@@ -43,6 +44,7 @@ export class TextEditor {
     this.input.type = inputType(column.dataType);
     this.input.className = `apg-editor apg-align-${column.align}`;
     this.input.value = editorValue(column, item);
+    this.input.placeholder = column.placeholder ?? (this.showPlaceholders ? column.header : '');
     this.input.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.input.style.width = `${rect.width}px`;
     this.input.style.height = `${rect.height}px`;

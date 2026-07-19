@@ -8,6 +8,9 @@ import { LayoutEngine } from '../virtualization/LayoutEngine';
 import { CellAddress } from '../models/Cell';
 import { UndoStack } from '../commands/UndoStack';
 import { EditAction } from '../commands/EditAction';
+import { EditorOpenOptions } from './EditorOpenOptions';
+
+export type { EditorOpenOptions };
 
 export interface EditorDeps {
   /** The scrolling cells panel. The editor lives here so it tracks the cell while scrolling. */
@@ -34,8 +37,14 @@ export interface EditorDeps {
 }
 
 /** The common shape every cell editor implements so the manager can swap them. */
-interface CellEditor {
-  open(parent: HTMLElement, column: Column, item: Record<string, unknown>, rect: DOMRect): void;
+export interface CellEditor {
+  open(
+    parent: HTMLElement,
+    column: Column,
+    item: Record<string, unknown>,
+    rect: DOMRect,
+    opts?: EditorOpenOptions,
+  ): void;
   close(): void;
 }
 
@@ -74,7 +83,7 @@ export class EditorManager {
     return true;
   }
 
-  begin(cell: CellAddress): void {
+  begin(cell: CellAddress, opts?: EditorOpenOptions): void {
     const column = this.deps.columns[cell.col];
     if (!column || !column.editable || column.dataType === 'Boolean' || this.editing) return;
     if (this.deps.isReadOnly() || this.deps.isRowReadOnly(cell.row)) return;
@@ -83,7 +92,7 @@ export class EditorManager {
     const rect = this.cellRect(cell);
     this.editing = cell;
     this.active = this.editorFor(column);
-    this.active.open(this.deps.cells, column, this.deps.data.item(cell.row), rect);
+    this.active.open(this.deps.cells, column, this.deps.data.item(cell.row), rect, opts);
     this.deps.onStart(cell);
   }
 

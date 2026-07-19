@@ -1,5 +1,6 @@
 import { Column } from '../models/Column';
 import { DataMapEditor } from '../models/DataMapEditor';
+import { EditorOpenOptions } from './EditorOpenOptions';
 
 /**
  * An in-cell editable dropdown for data-mapped columns. The input sits exactly
@@ -61,19 +62,34 @@ export class DropDownEditor {
     });
   }
 
-  open(parent: HTMLElement, column: Column, item: Record<string, unknown>, rect: DOMRect): void {
+  open(
+    parent: HTMLElement,
+    column: Column,
+    item: Record<string, unknown>,
+    rect: DOMRect,
+    opts?: EditorOpenOptions,
+  ): void {
     const map = column.dataMap;
     this.editable = map?.isEditable ?? false;
     this.options = map ? map.getDisplayValues(item) : [];
     this.input.readOnly = column.dataMapEditor === DataMapEditor.Menu;
-    this.input.value = map ? map.getDisplayValue(column.getValue(item)) : '';
     this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.root.style.width = `${rect.width}px`;
     this.root.style.height = `${rect.height}px`;
     parent.appendChild(this.root);
-    this.renderList(this.options);
     this.input.focus();
-    if (!this.input.readOnly) this.input.select();
+
+    if (opts?.mode === 'quick' && opts.initialChar && !this.input.readOnly) {
+      // Quick edit: seed the typed character and filter the list by it.
+      this.input.value = opts.initialChar;
+      const pos = this.input.value.length;
+      this.input.setSelectionRange(pos, pos);
+      this.filter(this.input.value);
+    } else {
+      this.input.value = map ? map.getDisplayValue(column.getValue(item)) : '';
+      this.renderList(this.options);
+      if (!this.input.readOnly) this.input.select();
+    }
   }
 
   close(): void {

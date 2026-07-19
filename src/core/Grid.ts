@@ -291,7 +291,14 @@ export class Grid {
       showPlaceholders: resolved.showPlaceholders,
       onApplied: () => this.draw(),
       onBeginning: (cell) => !this.emitCancel('beginningEdit', { row: cell.row, col: cell.col }),
-      onStart: (cell) => this.events.emit('cellEditStart', cell),
+      onStart: (cell) => {
+        this.events.emit('cellEditStart', cell);
+        this.events.emit('cellEditPreparing', {
+          row: cell.row,
+          col: cell.col,
+          column: this.columns[cell.col],
+        });
+      },
       onEnding: (cell, value) =>
         !this.emitCancel('cellEditEnding', { row: cell.row, col: cell.col, value }),
       onEnded: (cell, value) =>

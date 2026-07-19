@@ -62,3 +62,18 @@ when a column doesn't set its own. An explicit `column.placeholder` always
 wins. Scoped to `TextEditor` only — `DropDownEditor`/`RadioEditor` present a
 fixed set of choices, so there's no natural "empty state" for a placeholder to
 fill.
+
+## Editing Events
+
+The lifecycle: `beginningEdit` → `cellEditStart` → `cellEditPreparing` →
+(user edits) → `cellEditEnding` → `cellEditEnded` → `cellEditEnd`.
+`cellEditPreparing` fires right after the editor is positioned and open,
+informationally — `{ row, col, column }`, no `cancel` flag. Unlike Wijmo's
+`prepareCellForEdit`, it doesn't hand out the live editor instance: apgrid's
+editors are shared, recycled internals (one `TextEditor` instance reused
+across every text-editable cell), and reaching into one from app code would
+break that model. It exists mainly as a hook for Quick Editing internally —
+`EditorManager.begin(cell, { mode, initialChar })` and each editor's
+`open(..., opts?: EditorOpenOptions)` are how a caller distinguishes "F2/
+double-click, show the existing value selected" from "typed a character,
+seed the editor with just that."

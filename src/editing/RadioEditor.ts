@@ -1,4 +1,5 @@
 import { Column } from '../models/Column';
+import { EditorOpenOptions } from './EditorOpenOptions';
 
 let nextId = 0;
 
@@ -31,7 +32,13 @@ export class RadioEditor {
     });
   }
 
-  open(parent: HTMLElement, column: Column, item: Record<string, unknown>, rect: DOMRect): void {
+  open(
+    parent: HTMLElement,
+    column: Column,
+    item: Record<string, unknown>,
+    rect: DOMRect,
+    _opts?: EditorOpenOptions,
+  ): void {
     const map = column.dataMap;
     const current = map ? map.getDisplayValue(column.getValue(item)) : '';
     this.root.innerHTML = '';

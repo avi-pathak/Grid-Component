@@ -252,3 +252,45 @@ describe('placeholders', () => {
     expect(input.placeholder).toBe('Custom');
   });
 });
+
+describe('cellEditPreparing', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('fires once per begin(), after cellEditStart, with the right row/col/column', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    const order: string[] = [];
+    let payload: { row: number; col: number; column: { binding: string } } | undefined;
+
+    grid.on('cellEditStart', () => order.push('cellEditStart'));
+    grid.on('cellEditPreparing', (e) => {
+      order.push('cellEditPreparing');
+      payload = e;
+    });
+
+    grid.editCell(1, 1);
+
+    expect(order).toEqual(['cellEditStart', 'cellEditPreparing']);
+    expect(payload).toEqual({
+      row: 1,
+      col: 1,
+      column: expect.objectContaining({ binding: 'name' }),
+    });
+  });
+
+  it('does not fire when the edit is rejected before it starts', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    let fired = false;
+    grid.on('beginningEdit', (e) => (e.cancel = true));
+    grid.on('cellEditPreparing', () => (fired = true));
+
+    grid.editCell(0, 1);
+
+    expect(fired).toBe(false);
+  });
+});

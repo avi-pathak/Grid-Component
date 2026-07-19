@@ -1,5 +1,6 @@
 import { CellAddress, CellRange } from '../models/Cell';
 import { ChangeAction } from '../data/CollectionView';
+import { Column } from '../models/Column';
 
 export interface GridEvents {
   cellClick: CellAddress;
@@ -12,6 +13,8 @@ export interface GridEvents {
   beginningEdit: { row: number; col: number; cancel: boolean };
   /** After the editor opened for a cell. */
   cellEditStart: CellAddress;
+  /** After the editor is positioned and ready. Informational only — not cancelable. */
+  cellEditPreparing: { row: number; col: number; column: Column };
   /** Before the edited value is committed. Set `cancel` to true to reject it (validation). */
   cellEditEnding: { row: number; col: number; value: unknown; cancel: boolean };
   /** After an edited value was committed to the row. */

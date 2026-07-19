@@ -1,4 +1,5 @@
 import { Column } from '../models/Column';
+import { EditorOpenOptions } from './EditorOpenOptions';
 
 /**
  * A plain text input overlay for editing one cell. Positioned over the active
@@ -40,17 +41,34 @@ export class TextEditor {
     this.input.addEventListener('blur', () => this.onCommit(this.input.value));
   }
 
-  open(parent: HTMLElement, column: Column, item: Record<string, unknown>, rect: DOMRect): void {
+  open(
+    parent: HTMLElement,
+    column: Column,
+    item: Record<string, unknown>,
+    rect: DOMRect,
+    opts?: EditorOpenOptions,
+  ): void {
     this.input.type = inputType(column.dataType);
     this.input.className = `apg-editor apg-align-${column.align}`;
-    this.input.value = editorValue(column, item);
     this.input.placeholder = column.placeholder ?? (this.showPlaceholders ? column.header : '');
     this.input.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.input.style.width = `${rect.width}px`;
     this.input.style.height = `${rect.height}px`;
     parent.appendChild(this.input);
     this.input.focus();
-    if (this.input.type === 'text') this.input.select();
+
+    if (opts?.mode === 'quick' && opts.initialChar) {
+      // Quick edit: the typed character replaces the value outright, cursor after it.
+      this.input.value = opts.initialChar;
+      // setSelectionRange throws on non-text input types (e.g. number/date).
+      if (this.input.type === 'text') {
+        const pos = this.input.value.length;
+        this.input.setSelectionRange(pos, pos);
+      }
+    } else {
+      this.input.value = editorValue(column, item);
+      if (this.input.type === 'text') this.input.select();
+    }
   }
 
   close(): void {

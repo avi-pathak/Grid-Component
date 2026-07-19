@@ -31,6 +31,8 @@ export interface EditorDeps {
   onStart: (cell: CellAddress) => void;
   /** Return false to reject the new value before it is committed. */
   onEnding?: (cell: CellAddress, value: unknown) => boolean;
+  /** Consulted only right after onEnding rejects a value: keep the editor open with the rejected text instead of reverting and closing it. */
+  stayOpenOnReject?: (cell: CellAddress, value: unknown) => boolean;
   /** Called after a new value was committed to the row. */
   onEnded?: (cell: CellAddress, value: unknown) => void;
   onEnd: (cell: CellAddress) => void;
@@ -111,29 +113,46 @@ export class EditorManager {
   private commit(value: string): void {
     const cell = this.editing;
     if (!cell) return;
-    this.editing = null;
-    this.active?.close();
-    this.active = null;
 
     const column = this.deps.columns[cell.col];
     const item = this.deps.data.item(cell.row);
     const oldValue = column.getValue(item);
     const newValue = column.parse(value);
-    // Commit only when the value changed and no handler rejects it.
-    if (newValue !== oldValue && (!this.deps.onEnding || this.deps.onEnding(cell, newValue))) {
-      this.deps.undo.push(
-        new EditAction(this.deps.data, column, cell.row, oldValue, newValue, this.deps.onApplied),
-      );
-      this.deps.data.applyEdit(item, () => column.setValue(item, newValue));
-      this.deps.onApplied();
-      this.deps.onEnded?.(cell, newValue);
+
+    if (newValue === oldValue) {
+      this.closeEditing(cell);
+      return;
     }
+    if (this.deps.onEnding && !this.deps.onEnding(cell, newValue)) {
+      // A handler rejected the value. Normally that just reverts and closes
+      // like any other rejection; stayOpenOnReject lets it keep the editor
+      // open with the rejected text instead, so the user can fix it in place.
+      if (this.deps.stayOpenOnReject?.(cell, newValue)) return;
+      this.closeEditing(cell);
+      return;
+    }
+    this.deps.undo.push(
+      new EditAction(this.deps.data, column, cell.row, oldValue, newValue, this.deps.onApplied),
+    );
+    this.deps.data.applyEdit(item, () => column.setValue(item, newValue));
+    this.deps.onApplied();
+    this.deps.onEnded?.(cell, newValue);
+    this.closeEditing(cell);
+  }
+
+  private closeEditing(cell: CellAddress): void {
+    this.editing = null;
+    this.active?.close();
+    this.active = null;
     this.deps.onEnd(cell);
   }
 
   private commitAndMove(value: string, direction: 'up' | 'down' | 'left' | 'right'): void {
     this.commit(value);
-    this.deps.onMove?.(direction);
+    // Don't move if the commit was rejected and stayed open (stayOpenOnReject)
+    // — the editor is still anchored to this cell, so the selection shouldn't
+    // wander off while the user fixes the rejected value.
+    if (!this.editing) this.deps.onMove?.(direction);
   }
 
   private cancel(): void {

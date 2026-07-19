@@ -15,8 +15,18 @@ export interface GridEvents {
   cellEditStart: CellAddress;
   /** After the editor is positioned and ready. Informational only — not cancelable. */
   cellEditPreparing: { row: number; col: number; column: Column };
-  /** Before the edited value is committed. Set `cancel` to true to reject it (validation). */
-  cellEditEnding: { row: number; col: number; value: unknown; cancel: boolean };
+  /**
+   * Before the edited value is committed. Set `cancel` to true to reject it
+   * (validation). With `cancel` also set `stayInEditMode` to true to keep the
+   * editor open with the rejected text instead of reverting and closing it.
+   */
+  cellEditEnding: {
+    row: number;
+    col: number;
+    value: unknown;
+    cancel: boolean;
+    stayInEditMode?: boolean;
+  };
   /** After an edited value was committed to the row. */
   cellEditEnded: { row: number; col: number; value: unknown };
   /** After the editor closed (whether or not a value was committed). */

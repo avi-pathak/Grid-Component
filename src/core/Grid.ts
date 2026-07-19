@@ -136,6 +136,9 @@ export class Grid {
   private highlightEdits = false;
   /** Per-item snapshot of a binding's value the first time it's edited, keyed by item reference. */
   private editSnapshots = new WeakMap<Row, Record<string, unknown>>();
+  // Set by the onEnding closure just before EditorManager.commit() consults
+  // stayOpenOnReject — both calls happen synchronously within the same commit.
+  private pendingStayInEditMode = false;
   private mergeManager?: MergeManager;
   private anyMergeable = false;
   private filterModel?: FilterModel;
@@ -310,8 +313,18 @@ export class Grid {
           column: this.columns[cell.col],
         });
       },
-      onEnding: (cell, value) =>
-        !this.emitCancel('cellEditEnding', { row: cell.row, col: cell.col, value }),
+      onEnding: (cell, value) => {
+        const e: GridEvents['cellEditEnding'] = {
+          row: cell.row,
+          col: cell.col,
+          value,
+          cancel: false,
+        };
+        this.events.emit('cellEditEnding', e);
+        this.pendingStayInEditMode = e.cancel && !!e.stayInEditMode;
+        return !e.cancel;
+      },
+      stayOpenOnReject: () => this.pendingStayInEditMode,
       onEnded: (cell, value) =>
         this.events.emit('cellEditEnded', { row: cell.row, col: cell.col, value }),
       onEnd: (cell) => this.events.emit('cellEditEnd', cell),

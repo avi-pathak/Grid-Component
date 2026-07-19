@@ -138,3 +138,22 @@ back in, clears the highlight for free, with no special-case hook into
 and redraws. Composes with the existing `cellClassRules`/`cellClass` system
 rather than replacing it, and layers under cell selection so a selected +
 edited cell shows the selection color, not both.
+
+## Validation — event-based
+
+`cellEditEnding` already had `cancel`; it now also takes `stayInEditMode`
+(only meaningful alongside `cancel = true`). Plain `cancel` behaves as
+before — the editor closes and the value reverts. `cancel` +
+`stayInEditMode` instead leaves the editor open with the rejected text still
+in it, so the user fixes it in place rather than losing what they typed;
+pressing Enter/blurring again re-runs the same validation.
+
+Internally this meant reordering `EditorManager.commit()` — it used to close
+the editor unconditionally before checking whether the value should commit,
+which doesn't work if closing has to become conditional. It now only closes
+once it knows the outcome (no-op, rejected-and-closing, or committed).
+
+Building Quick Editing's arrow-commit-and-move on top of this surfaced a
+second interaction: an arrow key during a rejected-and-stayed-open commit
+must not also move the active cell away from the editor that's still open —
+`commitAndMove` now only calls `onMove` when the commit actually closed.

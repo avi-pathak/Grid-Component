@@ -568,3 +568,86 @@ describe('highlight edits', () => {
     expect(host.querySelector('.apg-cell-edited')).toBeNull();
   });
 });
+
+describe('event-based validation (cellEditEnding.stayInEditMode)', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('cancel alone still closes and reverts, unchanged (regression)', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.on('cellEditEnding', (e) => (e.cancel = true));
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'rejected';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(host.querySelector('.apg-editor')).toBeNull();
+    expect(grid.collectionView.items[0].name).toBe('n0');
+  });
+
+  it('cancel + stayInEditMode keeps the editor open with the rejected text', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    let ended = 0;
+    grid.on('cellEditEnding', (e) => {
+      e.cancel = true;
+      e.stayInEditMode = true;
+    });
+    grid.on('cellEditEnded', () => ended++);
+    grid.on('cellEditEnd', () => ended++);
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'rejected';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(host.querySelector('.apg-editor')).not.toBeNull(); // still open
+    expect(input.value).toBe('rejected'); // rejected text preserved
+    expect(grid.collectionView.items[0].name).toBe('n0'); // not committed
+    expect(ended).toBe(0); // no cellEditEnded/cellEditEnd until a valid commit
+  });
+
+  it('a subsequent valid value commits normally after a stay-open rejection', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.on('cellEditEnding', (e) => {
+      if (e.value === 'bad') {
+        e.cancel = true;
+        e.stayInEditMode = true;
+      }
+    });
+
+    grid.editCell(0, 1);
+    let input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'bad';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(host.querySelector('.apg-editor')).not.toBeNull();
+
+    input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'good';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(host.querySelector('.apg-editor')).toBeNull();
+    expect(grid.collectionView.items[0].name).toBe('good');
+  });
+
+  it('a quick-edit arrow key does not move the selection when the commit stays open', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.on('cellEditEnding', (e) => {
+      e.cancel = true;
+      e.stayInEditMode = true;
+    });
+    grid.select(0, 1);
+
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+
+    expect(host.querySelector('.apg-editor')).not.toBeNull(); // still editing cell (0,1)
+    expect(grid.selectedCell).toEqual({ row: 0, col: 1 }); // selection did not move
+  });
+});

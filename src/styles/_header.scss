@@ -181,6 +181,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
   font-size: 0.85em;
   color: var(--apg-fg-muted);
   border-bottom: var(--apg-border);
@@ -189,4 +190,34 @@
 
 .apg-rowheader-group {
   background: var(--apg-group-bg);
+}
+
+// ---- Row-popup-editor pencil button ----------------------------------------
+.apg-rowheader-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: var(--apg-radius-sm);
+  background: transparent;
+  color: var(--apg-header-fg);
+  opacity: 0.5;
+  cursor: pointer;
+  flex: none;
+  transition:
+    background-color 0.12s ease,
+    opacity 0.12s ease;
+
+  .apg-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  &:hover {
+    background: var(--apg-control-hover);
+    opacity: 1;
+  }
 }

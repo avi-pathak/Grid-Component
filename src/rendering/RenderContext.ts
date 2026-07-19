@@ -29,6 +29,8 @@ export interface RenderContext {
   merge?: MergeLookup;
   /** True when the cell's value differs from its pre-edit snapshot. Present only when highlightEdits is on. */
   isCellEdited?: (row: number, col: number) => boolean;
+  /** Show a pencil button in each data row's row-header cell. Consumed by RowHeaderRenderer. */
+  popupEditors?: boolean;
   /** Active column-header groups. Consumed by the ColumnGroupRenderer. */
   columnGroups?: ColumnGroup[];
 }

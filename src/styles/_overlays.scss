@@ -6,7 +6,8 @@
 
 .apg-drag-ghost,
 .apg-context-menu,
-.apg-filter-dialog {
+.apg-filter-dialog,
+.apg-edit-popup {
   @include tokens($light);
 }
 
@@ -266,6 +267,92 @@
 }
 
 .apg-filter-apply {
+  border: 1px solid var(--apg-active-border);
+  background: var(--apg-active-border);
+  color: var(--apg-accent-contrast);
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+}
+
+// Row popup editor: one labeled field per editable column, Save/Cancel footer.
+.apg-edit-popup {
+  position: fixed;
+  z-index: 2000;
+  width: 260px;
+  padding: 10px;
+  background: var(--apg-cell-bg);
+  border: 1px solid var(--apg-border-color);
+  border-radius: 8px;
+  box-shadow: var(--apg-shadow-lg);
+  font: var(--apg-font);
+  color: var(--apg-cell-fg);
+}
+
+.apg-edit-popup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.apg-edit-popup-label {
+  font-size: 0.85em;
+  font-weight: 600;
+  color: var(--apg-fg-muted);
+}
+
+.apg-edit-popup-field input,
+.apg-edit-popup-field select {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--apg-border-color);
+  border-radius: 5px;
+  font: inherit;
+  color: inherit;
+  background: var(--apg-cell-bg);
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--apg-active-border);
+  }
+}
+
+.apg-edit-popup-field input[type='checkbox'] {
+  height: auto;
+  width: 18px;
+  align-self: flex-start;
+}
+
+.apg-edit-popup-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.apg-edit-popup-cancel,
+.apg-edit-popup-save {
+  height: 30px;
+  padding: 0 14px;
+  border-radius: var(--apg-radius);
+  font: inherit;
+  cursor: pointer;
+}
+
+.apg-edit-popup-cancel {
+  border: 1px solid var(--apg-border-color);
+  background: var(--apg-cell-bg);
+  color: var(--apg-cell-fg);
+
+  &:hover {
+    border-color: var(--apg-active-border);
+  }
+}
+
+.apg-edit-popup-save {
   border: 1px solid var(--apg-active-border);
   background: var(--apg-active-border);
   color: var(--apg-accent-contrast);

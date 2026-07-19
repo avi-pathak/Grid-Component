@@ -907,3 +907,150 @@ describe('custom editors', () => {
     expect(editor!.closeCalls).toBe(1);
   });
 });
+
+describe('popup editors', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  function openPopup(host: HTMLElement, row: number): void {
+    const btn = host.querySelector(`.apg-rowheader-edit[data-popup-row="${row}"]`) as HTMLElement;
+    btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+  }
+
+  it('shows a pencil button per data row only when popupEditors is on', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    expect(host.querySelectorAll('.apg-rowheader-edit').length).toBe(3);
+    void grid;
+  });
+
+  it('does not show a pencil button by default', () => {
+    new Grid(host, { columns, itemsSource: makeRows(3) });
+    expect(host.querySelectorAll('.apg-rowheader-edit').length).toBe(0);
+  });
+
+  it('opens the popup with the row current values and the full lifecycle event order', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    const order: string[] = [];
+    grid.on('rowEditStarting', () => order.push('rowEditStarting'));
+    grid.on('rowEditStarted', () => order.push('rowEditStarted'));
+    grid.on('rowEditEnding', () => order.push('rowEditEnding'));
+    grid.on('rowEditEnded', () => order.push('rowEditEnded'));
+
+    openPopup(host, 1);
+
+    const dialog = document.querySelector('.apg-edit-popup') as HTMLElement;
+    expect(dialog).not.toBeNull();
+    const input = dialog.querySelector('input') as HTMLInputElement;
+    expect(input.value).toBe('n1');
+
+    const saveBtn = dialog.querySelector('.apg-edit-popup-save') as HTMLButtonElement;
+    input.value = 'edited';
+    saveBtn.click();
+
+    expect(grid.collectionView.items[1].name).toBe('edited');
+    expect(document.querySelector('.apg-edit-popup')).toBeNull();
+    expect(order).toEqual(['rowEditStarting', 'rowEditStarted', 'rowEditEnding', 'rowEditEnded']);
+  });
+
+  it('Cancel restores the original values and does not commit', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    openPopup(host, 0);
+
+    const dialog = document.querySelector('.apg-edit-popup') as HTMLElement;
+    const input = dialog.querySelector('input') as HTMLInputElement;
+    input.value = 'should not stick';
+    (dialog.querySelector('.apg-edit-popup-cancel') as HTMLButtonElement).click();
+
+    expect(grid.collectionView.items[0].name).toBe('n0');
+    expect(document.querySelector('.apg-edit-popup')).toBeNull();
+  });
+
+  it('Escape also cancels', async () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    openPopup(host, 0);
+    const dialog = document.querySelector('.apg-edit-popup') as HTMLElement;
+    (dialog.querySelector('input') as HTMLInputElement).value = 'nope';
+
+    // The outside-click/Escape/scroll listeners attach on a deferred timeout
+    // (so the same click that opened the popup doesn't also close it).
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+
+    expect(grid.collectionView.items[0].name).toBe('n0');
+    expect(document.querySelector('.apg-edit-popup')).toBeNull();
+  });
+
+  it('one Ctrl+Z after Save reverts every field changed in that save', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      { binding: 'name', header: 'Name', width: 160, editable: true },
+      { binding: 'extra', header: 'Extra', width: 120, editable: true },
+    ];
+    const data = [{ id: 0, name: 'n0', extra: 'e0' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data, popupEditors: true });
+
+    openPopup(host, 0);
+    const dialog = document.querySelector('.apg-edit-popup') as HTMLElement;
+    const inputs = dialog.querySelectorAll('input');
+    (inputs[0] as HTMLInputElement).value = 'name2';
+    (inputs[1] as HTMLInputElement).value = 'extra2';
+    (dialog.querySelector('.apg-edit-popup-save') as HTMLButtonElement).click();
+
+    expect(data[0].name).toBe('name2');
+    expect(data[0].extra).toBe('extra2');
+    expect(grid.canUndo).toBe(true);
+
+    grid.undo();
+
+    expect(data[0].name).toBe('n0');
+    expect(data[0].extra).toBe('e0');
+  });
+
+  it('rowEditStarting can be cancelled to block opening the popup', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    grid.on('rowEditStarting', (e) => (e.cancel = true));
+
+    openPopup(host, 0);
+
+    expect(document.querySelector('.apg-edit-popup')).toBeNull();
+  });
+
+  it('rowEditEnding can be cancelled to reject the save (cancels the edit transaction instead)', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    grid.on('rowEditEnding', (e) => (e.cancel = true));
+
+    openPopup(host, 0);
+    const dialog = document.querySelector('.apg-edit-popup') as HTMLElement;
+    (dialog.querySelector('input') as HTMLInputElement).value = 'blocked';
+    (dialog.querySelector('.apg-edit-popup-save') as HTMLButtonElement).click();
+
+    expect(grid.collectionView.items[0].name).toBe('n0');
+    expect(document.querySelector('.apg-edit-popup')).toBeNull();
+  });
+
+  it('scrolling the grid while the popup is open closes it', async () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    openPopup(host, 0);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const vp = host.querySelector('.apg-viewport') as HTMLElement;
+    vp.dispatchEvent(new Event('scroll', { bubbles: true }));
+
+    expect(document.querySelector('.apg-edit-popup')).toBeNull();
+    expect(grid.collectionView.items[0].name).toBe('n0');
+  });
+
+  it('does not commit unchanged fields (no EditAction pushed when nothing changed)', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    openPopup(host, 0);
+    const dialog = document.querySelector('.apg-edit-popup') as HTMLElement;
+    (dialog.querySelector('.apg-edit-popup-save') as HTMLButtonElement).click(); // no field touched
+
+    expect(grid.canUndo).toBe(false);
+  });
+});

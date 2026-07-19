@@ -216,3 +216,44 @@ No built-in commit/cancel UI is prescribed beyond that — a custom editor
 decides its own interaction (a date picker's calendar click, a color
 swatch's confirm button, etc.) and calls `commit(value)`/`cancel()` itself,
 same as `TextEditor` calling its own `onCommit` on Enter/blur.
+
+## Popup Editors
+
+`GridOptions.popupEditors` adds a pencil button (always rendered at reduced
+opacity, full opacity on hover — matching the header filter button's actual
+convention, not a hide-until-hover one) to each data row's row-header cell.
+Clicking it opens `EditPopup` (`src/rendering/EditPopup.ts`): one labeled
+field per editable column, Save/Cancel footer.
+
+Two things this phase deliberately does differently from the original plan,
+found while implementing:
+
+- **The popup builds its own plain inputs/selects per field, not the
+  `TextEditor`/`DropDownEditor`/custom-editor instances.** Those are
+  singletons sized and positioned for exactly one cell via
+  `translate3d`/`cellRect()` — a poor fit for a vertical multi-field form.
+  The popup instead reads `column.dataType`/`column.dataMap` directly
+  (mirroring what those editors render) and commits through
+  `column.tryParse()`, the same parser `EditorManager` uses.
+- **It's a `document.body`-appended fixed overlay**, positioned via
+  `getBoundingClientRect()` and closing on outside-click/Escape/scroll —
+  exactly `FilterEditor`'s proven pattern, not the transform-positioned
+  `.apg-cells` panel the in-cell editors live in (which is `overflow:
+  hidden` and sized to one row; a multi-field form is usually taller).
+  Because of this placement, `MouseHandler`'s existing `closest('.apg-editor')`
+  guard and `ClipboardHandler`'s `isEditing` guard don't need a matching
+  "is a popup open" check — the popup's clicks/keydowns never reach the
+  `.apg-viewport`/host listeners those guards protect, since it isn't a
+  descendant of either.
+
+Wiring: pencil click → `rowEditStarting` (cancelable) →
+`collectionView.editItem(item)` (previously unused by cell editing — this is
+where it's finally exercised) → open `EditPopup` → `rowEditStarted`. Save →
+`rowEditEnding` (cancelable; a reject calls `cancelEdit()` instead of
+committing) → one `EditAction` per changed field, wrapped in a single
+`BatchAction` (already existed, used by paste) and pushed once, so **one**
+`Ctrl+Z` undoes every field changed in that save → `collectionView.commitEdit()`
+→ `rowEditEnded`. Cancel (button, outside click, Escape, or scroll) →
+`collectionView.cancelEdit()` (already restores the pre-edit snapshot) →
+`rowEditEnded`. Unchanged fields are diffed out before Save, so saving
+without touching anything pushes no undo entry at all.

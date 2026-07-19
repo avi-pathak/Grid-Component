@@ -98,6 +98,12 @@ export interface GridOptions<T = Record<string, unknown>> {
    * (the editor stays open with the rejected text), or null/undefined if valid.
    */
   getError?: (ctx: CellTemplateContext<T>, parsing: boolean) => string | null | undefined;
+  /**
+   * Show a pencil button in the row header that opens a floating form with
+   * one field per editable column, editing the whole row as one transaction
+   * (Save/Cancel) instead of one cell at a time. Default false.
+   */
+  popupEditors?: boolean;
 }
 
 export interface ResolvedOptions<T> {
@@ -132,6 +138,7 @@ export interface ResolvedOptions<T> {
   alwaysEdit: boolean;
   highlightEdits: boolean;
   getError?: (ctx: CellTemplateContext<T>, parsing: boolean) => string | null | undefined;
+  popupEditors: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -190,6 +197,7 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     alwaysEdit: options.alwaysEdit ?? false,
     highlightEdits: options.highlightEdits ?? false,
     getError: options.getError,
+    popupEditors: options.popupEditors ?? false,
   };
 }
 

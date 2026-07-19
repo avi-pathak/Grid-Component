@@ -1,5 +1,6 @@
 import { RenderContext } from './RenderContext';
 import { createEl, setTransform } from '../utils/DOM';
+import { iconEl } from '../utils/icons';
 import { ObjectPool } from '../utils/ObjectPool';
 
 /** Renders the row-header cells (1-based row numbers) for the visible rows, pooled. */
@@ -40,6 +41,14 @@ export class RowHeaderRenderer {
       const isGroup = ctx.data.rowType(row) === 'group';
       el.className = isGroup ? 'apg-rowheader-cell apg-rowheader-group' : 'apg-rowheader-cell';
       el.textContent = isGroup ? '' : String(row + 1);
+      if (ctx.popupEditors && !isGroup) {
+        const btn = createEl('button', 'apg-rowheader-edit');
+        btn.type = 'button';
+        btn.dataset.popupRow = String(row);
+        btn.title = 'Edit row';
+        btn.appendChild(iconEl('edit'));
+        el.appendChild(btn);
+      }
     }
   }
 

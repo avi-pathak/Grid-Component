@@ -33,6 +33,7 @@ import { GroupPanel, GroupChip } from '../rendering/GroupPanel';
 import { GroupHeaderTemplate } from '../rendering/GroupHeader';
 import { FilterModel } from '../data/FilterModel';
 import { FilterEditor } from '../rendering/FilterEditor';
+import { EditPopup } from '../rendering/EditPopup';
 import { UndoStack } from '../commands/UndoStack';
 import { ResizeColumnAction } from '../commands/ResizeColumnAction';
 import { EditAction } from '../commands/EditAction';
@@ -143,6 +144,8 @@ export class Grid {
   private anyMergeable = false;
   private filterModel?: FilterModel;
   private filterEditor?: FilterEditor;
+  private editPopup?: EditPopup;
+  private popupEditors = false;
   private maxGroups: number;
   private allowSorting: boolean;
   private headerDownX = -1;
@@ -171,6 +174,7 @@ export class Grid {
     this._isReadOnly = resolved.isReadOnly;
     this.alwaysEdit = resolved.alwaysEdit;
     this.highlightEdits = resolved.highlightEdits;
+    this.popupEditors = resolved.popupEditors;
     this.mergeManager = resolved.mergeManager;
     this.anyMergeable = this.allColumns.some((c) => c.allowMerging);
     this.selectionModel = new SelectionModel(resolved.selectionMode);
@@ -287,6 +291,11 @@ export class Grid {
     if (this.columns.some((c) => c.filterable)) {
       this.filterModel = new FilterModel(this.data.collectionView);
       this.filterEditor = new FilterEditor();
+    }
+
+    if (this.popupEditors) {
+      this.editPopup = new EditPopup();
+      this.viewportRenderer.rowHeaderInner.addEventListener('click', this.onRowHeaderClick);
     }
 
     this.editor = new EditorManager({
@@ -1269,6 +1278,7 @@ export class Grid {
     const header = this.viewportRenderer.headerInner;
     header.removeEventListener('mousedown', this.onHeaderMouseDown);
     header.removeEventListener('click', this.onHeaderClick);
+    this.viewportRenderer.rowHeaderInner.removeEventListener('click', this.onRowHeaderClick);
     this.scroll.dispose();
     this.mouse.dispose();
     this.keyboard.dispose();
@@ -1278,6 +1288,7 @@ export class Grid {
     this.exportManager.dispose();
     this.groupPanel?.dispose();
     this.filterEditor?.close();
+    this.editPopup?.close();
     this.events.clear();
     this.undoStack.clear();
     this.resizeObserver?.disconnect();
@@ -1304,6 +1315,7 @@ export class Grid {
       merge: this.mergeLookup(),
       columnGroups: this.columnGroupList,
       isCellEdited: this.highlightEdits ? (row, col) => this.isCellEdited(row, col) : undefined,
+      popupEditors: this.popupEditors,
     };
   }
 
@@ -1394,6 +1406,50 @@ export class Grid {
     if (Math.abs(x - right) <= 5) return; // resize edge belongs to the resizer
     this.sortByColumn(col);
   };
+
+  private readonly onRowHeaderClick = (e: MouseEvent): void => {
+    const btn = (e.target as HTMLElement).closest('.apg-rowheader-edit') as HTMLElement | null;
+    if (btn) this.openEditPopup(Number(btn.dataset.popupRow), btn.getBoundingClientRect());
+  };
+
+  // Open the row popup editor, anchored to its row-header pencil button.
+  private openEditPopup(row: number, anchor: DOMRect): void {
+    if (!this.editPopup || this.data.rowType(row) !== 'data') return;
+    if (this.emitCancel('rowEditStarting', { row })) return;
+    const item = this.data.item(row);
+    this.data.collectionView.editItem(item);
+    this.events.emit('rowEditStarted', { row });
+    this.editPopup.open(anchor, {
+      columns: this.columns,
+      item,
+      onSave: (changes) => this.saveEditPopup(row, item, changes),
+      onCancel: () => this.cancelEditPopup(row),
+    });
+  }
+
+  private saveEditPopup(row: number, item: Row, changes: Map<Column, unknown>): void {
+    if (this.emitCancel('rowEditEnding', { row })) {
+      this.data.collectionView.cancelEdit();
+      this.events.emit('rowEditEnded', { row });
+      return;
+    }
+    if (changes.size > 0) {
+      const edits: EditAction[] = [];
+      for (const [column, value] of changes) {
+        edits.push(new EditAction(this.data, column, row, column.getValue(item), value, () => {}));
+      }
+      const batch = new BatchAction(edits, () => this.draw());
+      this.undoStack.push(batch);
+      batch.redo(); // apply every field change and redraw once
+    }
+    this.data.collectionView.commitEdit();
+    this.events.emit('rowEditEnded', { row });
+  }
+
+  private cancelEditPopup(row: number): void {
+    this.data.collectionView.cancelEdit();
+    this.events.emit('rowEditEnded', { row });
+  }
 
   private onDoubleClick(cell: CellAddress): void {
     if (this.data.rowType(cell.row) === 'group') return;

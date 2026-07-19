@@ -17,6 +17,7 @@
 .apg,
 .apg-drag-ghost,
 .apg-context-menu,
-.apg-filter-dialog {
+.apg-filter-dialog,
+.apg-edit-popup {
   @include tokens($dark);
 }

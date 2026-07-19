@@ -31,6 +31,14 @@ export interface GridEvents {
   cellEditEnded: { row: number; col: number; value: unknown };
   /** After the editor closed (whether or not a value was committed). */
   cellEditEnd: CellAddress;
+  /** Before a row's popup editor opens. Set `cancel` to true to prevent it. */
+  rowEditStarting: { row: number; cancel: boolean };
+  /** After a row's popup editor opened. */
+  rowEditStarted: { row: number };
+  /** Before a row's popup-edited changes are committed. Set `cancel` to true to reject them. */
+  rowEditEnding: { row: number; cancel: boolean };
+  /** After a row's popup editor closed (whether saved or cancelled). */
+  rowEditEnded: { row: number };
   undoStackChanged: { canUndo: boolean; canRedo: boolean };
   /** Before a column is sorted. `ascending` is the target direction (null = clearing). Cancelable. */
   sortingColumn: { col: number; binding: string; ascending: boolean | null; cancel: boolean };

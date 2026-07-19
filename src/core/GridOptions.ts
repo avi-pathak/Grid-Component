@@ -72,6 +72,10 @@ export interface GridOptions<T = Record<string, unknown>> {
   rowStyle?: RowStyle<T>;
   /** Track added/removed/edited rows on the collection view. Default false. */
   trackChanges?: boolean;
+  /** Block all editing grid-wide, regardless of column/row settings. Default false. */
+  isReadOnly?: boolean;
+  /** Block editing for rows matching this predicate. Column `editable` still applies. */
+  rowReadOnly?: (ctx: RowStyleContext<T>) => boolean;
 }
 
 export interface ResolvedOptions<T> {
@@ -100,6 +104,8 @@ export interface ResolvedOptions<T> {
   groupHeaderTemplate?: GroupHeaderTemplate<T>;
   rowClass?: RowClass<T>;
   rowStyle?: RowStyle<T>;
+  isReadOnly: boolean;
+  rowReadOnly?: (ctx: RowStyleContext<T>) => boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -152,6 +158,8 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     groupHeaderTemplate: options.groupHeaderTemplate,
     rowClass: options.rowClass,
     rowStyle: options.rowStyle,
+    isReadOnly: options.isReadOnly ?? false,
+    rowReadOnly: options.rowReadOnly,
   };
 }
 

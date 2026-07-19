@@ -130,6 +130,8 @@ export class Grid {
   private groupHeaderRowHeight: number;
   private rowClass?: RenderContext['rowClass'];
   private rowStyle?: RenderContext['rowStyle'];
+  private rowReadOnlyFn?: (ctx: { item: Row; row: number }) => boolean;
+  private _isReadOnly = false;
   private mergeManager?: MergeManager;
   private anyMergeable = false;
   private filterModel?: FilterModel;
@@ -158,6 +160,8 @@ export class Grid {
     this.groupHeaderTemplate = resolved.groupHeaderTemplate;
     this.rowClass = resolved.rowClass;
     this.rowStyle = resolved.rowStyle;
+    this.rowReadOnlyFn = resolved.rowReadOnly;
+    this._isReadOnly = resolved.isReadOnly;
     this.mergeManager = resolved.mergeManager;
     this.anyMergeable = this.allColumns.some((c) => c.allowMerging);
     this.selectionModel = new SelectionModel(resolved.selectionMode);
@@ -282,6 +286,8 @@ export class Grid {
       data: this.data,
       columns: this.columns,
       undo: this.undoStack,
+      isReadOnly: () => this._isReadOnly,
+      isRowReadOnly: (row) => this.rowReadOnlyFn?.({ item: this.data.item(row), row }) ?? false,
       onApplied: () => this.draw(),
       onBeginning: (cell) => !this.emitCancel('beginningEdit', { row: cell.row, col: cell.col }),
       onStart: (cell) => this.events.emit('cellEditStart', cell),
@@ -369,6 +375,15 @@ export class Grid {
     this.syncSelectionState();
     this.draw();
     this.events.emit('selectionChanged', this.selectionModel.getActive());
+  }
+
+  /** Blocks all editing grid-wide when true, regardless of column/row settings. */
+  get isReadOnly(): boolean {
+    return this._isReadOnly;
+  }
+
+  set isReadOnly(value: boolean) {
+    this._isReadOnly = value;
   }
 
   select(row: number, col: number, extend = false): void {

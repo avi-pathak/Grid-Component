@@ -12,6 +12,11 @@ const columns = [
   { binding: 'name', header: 'Name', width: 160, editable: true },
 ];
 
+const boolColumns = [
+  { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+  { binding: 'active', header: 'Active', width: 80, editable: true, dataType: 'Boolean' as const },
+];
+
 describe('editing position', () => {
   let host: HTMLElement;
 
@@ -46,5 +51,80 @@ describe('editing position', () => {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
 
     expect(grid.collectionView.items[2].name).toBe('edited');
+  });
+});
+
+describe('read-only levels', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('blocks editing grid-wide via the isReadOnly option', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), isReadOnly: true });
+    grid.editCell(0, 1);
+    expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+
+  it('blocks editing grid-wide via the isReadOnly property at runtime', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.isReadOnly = true;
+    grid.editCell(0, 1);
+    expect(host.querySelector('.apg-editor')).toBeNull();
+
+    grid.isReadOnly = false;
+    grid.editCell(0, 1);
+    expect(host.querySelector('.apg-editor')).not.toBeNull();
+  });
+
+  it('blocks Boolean toggling grid-wide via isReadOnly', () => {
+    const data = [{ id: 0, active: false }];
+    const grid = new Grid(host, { columns: boolColumns, itemsSource: data, isReadOnly: true });
+    grid.select(0, 1);
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(data[0].active).toBe(false);
+  });
+
+  it('blocks editing on rows matched by rowReadOnly, but not other rows', () => {
+    const grid = new Grid(host, {
+      columns,
+      itemsSource: makeRows(5),
+      rowReadOnly: ({ item }) => (item as { id: number }).id === 0,
+    });
+
+    grid.editCell(0, 1);
+    expect(host.querySelector('.apg-editor')).toBeNull();
+
+    grid.editCell(1, 1);
+    expect(host.querySelector('.apg-editor')).not.toBeNull();
+  });
+
+  it('blocks Boolean toggling on rows matched by rowReadOnly', () => {
+    const data = [
+      { id: 0, active: false },
+      { id: 1, active: false },
+    ];
+    const grid = new Grid(host, {
+      columns: boolColumns,
+      itemsSource: data,
+      rowReadOnly: ({ row }) => row === 0,
+    });
+
+    grid.select(0, 1);
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(data[0].active).toBe(false);
+
+    grid.select(1, 1);
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }));
+    expect(data[1].active).toBe(true);
+  });
+
+  it('still respects column.editable === false unchanged', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.editCell(0, 0); // 'id' column is not editable
+    expect(host.querySelector('.apg-editor')).toBeNull();
   });
 });

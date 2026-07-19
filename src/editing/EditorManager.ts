@@ -18,6 +18,8 @@ export interface EditorDeps {
   data: DataView;
   columns: Column[];
   undo: UndoStack;
+  isReadOnly: () => boolean;
+  isRowReadOnly: (row: number) => boolean;
   onApplied: () => void;
   /** Return false to prevent the cell from entering edit mode. */
   onBeginning?: (cell: CellAddress) => boolean;
@@ -59,6 +61,7 @@ export class EditorManager {
   toggleBoolean(cell: CellAddress): boolean {
     const column = this.deps.columns[cell.col];
     if (!column || !column.editable || column.dataType !== 'Boolean') return false;
+    if (this.deps.isReadOnly() || this.deps.isRowReadOnly(cell.row)) return false;
     const item = this.deps.data.item(cell.row);
     const oldValue = column.getValue(item) === true;
     this.deps.undo.push(
@@ -72,6 +75,7 @@ export class EditorManager {
   begin(cell: CellAddress): void {
     const column = this.deps.columns[cell.col];
     if (!column || !column.editable || column.dataType === 'Boolean' || this.editing) return;
+    if (this.deps.isReadOnly() || this.deps.isRowReadOnly(cell.row)) return;
     if (this.deps.onBeginning && !this.deps.onBeginning(cell)) return; // a handler canceled it
 
     const rect = this.cellRect(cell);

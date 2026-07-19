@@ -6,14 +6,23 @@ import { EditorOpenOptions } from './EditorOpenOptions';
  * cell, it commits on Enter/blur and cancels on Escape, reporting the result
  * through callbacks so the EditorManager stays in charge of the lifecycle.
  */
+const ARROW_DIRECTIONS: Record<string, 'up' | 'down' | 'left' | 'right'> = {
+  ArrowUp: 'up',
+  ArrowDown: 'down',
+  ArrowLeft: 'left',
+  ArrowRight: 'right',
+};
+
 export class TextEditor {
   private input: HTMLInputElement;
   private composing = false;
+  private mode: 'quick' | 'full' = 'full';
 
   constructor(
     private onCommit: (value: string) => void,
     private onCancel: () => void,
     private showPlaceholders = false,
+    private onCommitAndMove?: (value: string, direction: 'up' | 'down' | 'left' | 'right') => void,
   ) {
     this.input = document.createElement('input');
     this.input.className = 'apg-editor';
@@ -26,6 +35,17 @@ export class TextEditor {
       // keyboard nav never sees composition keystrokes (e.g. arrows used to
       // move a candidate list).
       if (this.composing || e.isComposing || e.keyCode === 229) {
+        e.stopPropagation();
+        return;
+      }
+      // Quick edit (typed over a selected cell): arrow keys commit and move
+      // the active cell instead of moving the caret through the text, like
+      // typing straight into an Excel cell. Full edit (F2/double-click)
+      // keeps the caret moving through the text as usual.
+      const direction = this.mode === 'quick' ? ARROW_DIRECTIONS[e.key] : undefined;
+      if (direction) {
+        e.preventDefault();
+        this.onCommitAndMove?.(this.input.value, direction);
         e.stopPropagation();
         return;
       }
@@ -48,6 +68,7 @@ export class TextEditor {
     rect: DOMRect,
     opts?: EditorOpenOptions,
   ): void {
+    this.mode = opts?.mode ?? 'full';
     this.input.type = inputType(column.dataType);
     this.input.className = `apg-editor apg-align-${column.align}`;
     this.input.placeholder = column.placeholder ?? (this.showPlaceholders ? column.header : '');

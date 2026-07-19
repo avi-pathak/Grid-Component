@@ -230,6 +230,7 @@ export class Grid {
       (action, extend) => this.onNav(action, extend),
       (action) => (action === 'undo' ? this.undo() : this.redo()),
       () => this.onActivate(),
+      (key) => this.onType(key),
     );
     this.resizer = new ColumnResizer(
       this.viewportRenderer.headerInner,
@@ -304,6 +305,7 @@ export class Grid {
       onEnded: (cell, value) =>
         this.events.emit('cellEditEnded', { row: cell.row, col: cell.col, value }),
       onEnd: (cell) => this.events.emit('cellEditEnd', cell),
+      onMove: (direction) => this.onNav(direction, false),
     });
     this.undoStack.onStateChanged = () =>
       this.events.emit('undoStackChanged', { canUndo: this.canUndo, canRedo: this.canRedo });
@@ -1379,6 +1381,17 @@ export class Grid {
     if (!cell) return;
     if (this.editor.toggleBoolean(cell)) return; // Space toggles checkbox cells
     this.editor.begin(cell);
+  }
+
+  // Typing a printable character over a selected cell starts a quick edit
+  // seeded with that character (Excel-style), unless already editing.
+  private onType(key: string): void {
+    if (this.editor.isEditing) return;
+    const cell = this.selectionModel.getActive();
+    if (!cell || this.data.rowType(cell.row) === 'group') return;
+    const column = this.columns[cell.col];
+    if (!column || column.dataType === 'Boolean') return; // Boolean toggles via Space, not typing
+    this.editor.begin(cell, { mode: 'quick', initialChar: key });
   }
 
   private bounds(): GridBounds {

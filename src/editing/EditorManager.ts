@@ -34,6 +34,8 @@ export interface EditorDeps {
   /** Called after a new value was committed to the row. */
   onEnded?: (cell: CellAddress, value: unknown) => void;
   onEnd: (cell: CellAddress) => void;
+  /** Quick-edit arrow keys commit then move the active cell this way instead of moving the caret. */
+  onMove?: (direction: 'up' | 'down' | 'left' | 'right') => void;
 }
 
 /** The common shape every cell editor implements so the manager can swap them. */
@@ -59,7 +61,9 @@ export class EditorManager {
   constructor(private deps: EditorDeps) {
     const commit = (value: string) => this.commit(value);
     const cancel = () => this.cancel();
-    this.text = new TextEditor(commit, cancel, deps.showPlaceholders);
+    const commitAndMove = (value: string, direction: 'up' | 'down' | 'left' | 'right') =>
+      this.commitAndMove(value, direction);
+    this.text = new TextEditor(commit, cancel, deps.showPlaceholders, commitAndMove);
     this.dropdown = new DropDownEditor(commit, cancel);
     this.radio = new RadioEditor(commit, cancel);
   }
@@ -117,6 +121,11 @@ export class EditorManager {
       this.deps.onEnded?.(cell, newValue);
     }
     this.deps.onEnd(cell);
+  }
+
+  private commitAndMove(value: string, direction: 'up' | 'down' | 'left' | 'right'): void {
+    this.commit(value);
+    this.deps.onMove?.(direction);
   }
 
   private cancel(): void {

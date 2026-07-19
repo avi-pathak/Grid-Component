@@ -23,9 +23,16 @@ export class KeyboardHandler {
       return;
     }
     const action = toAction(e.key);
-    if (!action) return;
-    e.preventDefault();
-    this.onNav(action, e.shiftKey);
+    if (action) {
+      e.preventDefault();
+      this.onNav(action, e.shiftKey);
+      return;
+    }
+    // Typing a plain printable character over a selected (not yet editing)
+    // cell starts a quick edit seeded with that character, Excel-style. Only
+    // reached while no editor has focus — once one opens, its own keydown
+    // handler stops propagation before this listener ever sees the keystroke.
+    if (!e.altKey && e.key.length === 1) this.onType(e.key);
   };
 
   constructor(
@@ -33,6 +40,7 @@ export class KeyboardHandler {
     private onNav: (action: NavAction, extend: boolean) => void,
     private onUndoRedo: (action: 'undo' | 'redo') => void,
     private onActivate: () => void,
+    private onType: (key: string) => void,
   ) {
     this.host.addEventListener('keydown', this.onKeyDown);
   }

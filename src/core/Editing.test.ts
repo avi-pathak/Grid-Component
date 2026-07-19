@@ -294,3 +294,100 @@ describe('cellEditPreparing', () => {
     expect(fired).toBe(false);
   });
 });
+
+describe('quick editing', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('typing over a selected cell opens the editor seeded with just that character', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.select(0, 1);
+
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    expect(input.value).toBe('x');
+    // the original 'n0' value is gone, not just appended to
+    expect(input.value).not.toContain('n0');
+  });
+
+  it('Arrow-Left during a quick edit commits the value and moves the active cell left', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.select(0, 1); // 'name' column, the only editable one
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+
+    expect(grid.collectionView.items[0].name).toBe('x');
+    expect(grid.selectedCell).toEqual({ row: 0, col: 0 });
+    expect(host.querySelector('.apg-editor')).toBeNull(); // editor closed after commit
+  });
+
+  it('F2 still enters full mode: existing value shown and selected, not replaced', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.select(0, 1);
+
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'F2', bubbles: true }));
+
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.value).toBe('n0');
+  });
+
+  it('double-click still enters full mode unchanged', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.editCell(0, 1); // exercises the same 'full' path onDoubleClick uses
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.value).toBe('n0');
+  });
+
+  it('arrow keys in full mode move the caret, not the active cell', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.select(0, 1);
+    grid.editCell(0, 1); // F2/double-click path: full mode
+
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+
+    expect(host.querySelector('.apg-editor')).not.toBeNull(); // still editing
+    expect(grid.selectedCell).toEqual({ row: 0, col: 1 }); // selection did not move
+  });
+
+  it('does not quick-edit a read-only cell', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), isReadOnly: true });
+    grid.select(0, 1);
+
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+
+    expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+
+  it('does not quick-edit a Boolean column (still toggles via Space only)', () => {
+    const data = [{ id: 0, active: false }];
+    const grid = new Grid(host, { columns: boolColumns, itemsSource: data });
+    grid.select(0, 1);
+
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+
+    expect(host.querySelector('.apg-editor')).toBeNull();
+    expect(data[0].active).toBe(false);
+  });
+
+  it('does not quick-edit while a cell is already being edited', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.value).toBe('n0'); // full mode, unchanged by a stray host-level keydown
+
+    // A keydown dispatched directly on host (bypassing the input) must not
+    // reset the open editor back into quick mode.
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'z', bubbles: true }));
+    expect(input.value).toBe('n0');
+  });
+});

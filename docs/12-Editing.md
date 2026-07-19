@@ -77,3 +77,27 @@ break that model. It exists mainly as a hook for Quick Editing internally —
 `open(..., opts?: EditorOpenOptions)` are how a caller distinguishes "F2/
 double-click, show the existing value selected" from "typed a character,
 seed the editor with just that."
+
+## Quick Editing
+
+Typing a plain printable character over a selected (not yet editing) cell
+starts an edit seeded with just that character, Excel-style — the previous
+value is replaced outright rather than appended to. `KeyboardHandler`'s new
+`onType` callback fires for any unmodified single-character keydown (no
+Ctrl/Alt/Meta) that isn't otherwise a nav key or Space/F2/Enter; `Grid.onType`
+skips Boolean columns (still Space-only) and defers the rest — read-only,
+non-editable, already-editing — to `EditorManager.begin()`'s existing checks.
+
+While quick-editing, arrow keys commit the value and move the active cell in
+that direction instead of moving the caret through the text — reusing the
+same `onNav()` path regular keyboard navigation uses, so bounds-clamping and
+group-row skipping come for free. F2 and double-click still enter **full**
+mode: the existing value shown and fully selected, arrow keys moving the
+caret as normal. `DropDownEditor` also honors quick mode (seeds the typed
+character and filters the option list by it) but keeps its own arrow-key
+behavior (list navigation) — commit-and-move is TextEditor-only, since a
+dropdown's arrows are already spoken for.
+
+Deferred (not built): Wijmo's "F2 toggles quick↔full mode for the cell
+currently being edited." Fiddly enough to be its own follow-up rather than
+part of this pass.

@@ -651,3 +651,111 @@ describe('event-based validation (cellEditEnding.stayInEditMode)', () => {
     expect(grid.selectedCell).toEqual({ row: 0, col: 1 }); // selection did not move
   });
 });
+
+describe('CollectionView-style validation (getError)', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  const numberColumns = [
+    { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+    { binding: 'sales', header: 'Sales', width: 120, dataType: 'Number' as const, editable: true },
+  ];
+
+  function commit(input: HTMLInputElement, value: string): void {
+    input.value = value;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  }
+
+  it('rejects with parsing=true when the text fails to coerce, and stays open', () => {
+    // A native <input type="number"> sanitizes non-numeric text to '' before
+    // it's ever read (real browsers and jsdom both do this), so a genuine
+    // coercion failure can't be typed through the built-in Number editor in
+    // this harness — Column.tryParse's ok:false branch is covered directly
+    // in Column.test.ts. This exercises the same getError/parsing wiring
+    // through a text column instead, where invalid text really does reach it.
+    const calls: Array<{ value: unknown; parsing: boolean }> = [];
+    const dateColumns = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      { binding: 'due', header: 'Due', width: 120, dataType: 'Date' as const, editable: true },
+    ];
+    const grid = new Grid(host, {
+      columns: dateColumns,
+      itemsSource: [{ id: 0, due: new Date('2024-01-01') }],
+      getError: (ctx, parsing) => {
+        calls.push({ value: ctx.value, parsing });
+        return parsing ? 'Not a date' : null;
+      },
+    });
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    // <input type="date"> also sanitizes, so set the value directly (bypassing
+    // the sanitizer) to simulate text that reaches the parser as malformed —
+    // this exercises tryParse's ok:false path through EditorManager.commit().
+    Object.defineProperty(input, 'value', { value: 'not-a-date', writable: true });
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(calls).toEqual([{ value: 'not-a-date', parsing: true }]);
+    expect(host.querySelector('.apg-editor')).not.toBeNull();
+    expect(grid.collectionView.items[0].due).toEqual(new Date('2024-01-01'));
+  });
+
+  it('rejects with parsing=false for a value that parses fine but fails a business rule', () => {
+    const calls: Array<{ value: unknown; parsing: boolean }> = [];
+    const grid = new Grid(host, {
+      columns: numberColumns,
+      itemsSource: [{ id: 0, sales: 10 }],
+      getError: (ctx, parsing) => {
+        calls.push({ value: ctx.value, parsing });
+        return typeof ctx.value === 'number' && ctx.value < 0 ? 'Must be positive' : null;
+      },
+    });
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    commit(input, '-5');
+
+    expect(calls).toEqual([{ value: -5, parsing: false }]);
+    expect(host.querySelector('.apg-editor')).not.toBeNull();
+    expect(grid.collectionView.items[0].sales).toBe(10);
+  });
+
+  it('commits normally when getError returns null', () => {
+    const grid = new Grid(host, {
+      columns: numberColumns,
+      itemsSource: [{ id: 0, sales: 10 }],
+      getError: () => null,
+    });
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    commit(input, '20');
+
+    expect(host.querySelector('.apg-editor')).toBeNull();
+    expect(grid.collectionView.items[0].sales).toBe(20);
+  });
+
+  it('does not call getError when the value did not change (regression guard)', () => {
+    let called = false;
+    const grid = new Grid(host, {
+      columns: numberColumns,
+      itemsSource: [{ id: 0, sales: 10 }],
+      getError: () => {
+        called = true;
+        return null;
+      },
+    });
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    commit(input, '10'); // same as the original value
+
+    expect(called).toBe(false);
+    expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+});

@@ -325,6 +325,7 @@ export class Grid {
         return !e.cancel;
       },
       stayOpenOnReject: () => this.pendingStayInEditMode,
+      getError: resolved.getError,
       onEnded: (cell, value) =>
         this.events.emit('cellEditEnded', { row: cell.row, col: cell.col, value }),
       onEnd: (cell) => this.events.emit('cellEditEnd', cell),

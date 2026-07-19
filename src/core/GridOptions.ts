@@ -1,4 +1,4 @@
-import { Column, ColumnDef, CellStyle } from '../models/Column';
+import { Column, ColumnDef, CellStyle, CellTemplateContext } from '../models/Column';
 import { ColumnGroupDef } from '../models/ColumnGroup';
 import { SelectionMode } from '../selection/SelectionModel';
 import { CollectionView } from '../data/CollectionView';
@@ -91,6 +91,13 @@ export interface GridOptions<T = Record<string, unknown>> {
    * while its current value differs from it. Default false.
    */
   highlightEdits?: boolean;
+  /**
+   * Validate a committed edit. `parsing` is true when the typed text failed
+   * to coerce to the column's type (e.g. "abc" in a Number column) — `ctx.value`
+   * is the raw text in that case. Return an error message to reject the value
+   * (the editor stays open with the rejected text), or null/undefined if valid.
+   */
+  getError?: (ctx: CellTemplateContext<T>, parsing: boolean) => string | null | undefined;
 }
 
 export interface ResolvedOptions<T> {
@@ -124,6 +131,7 @@ export interface ResolvedOptions<T> {
   showPlaceholders: boolean;
   alwaysEdit: boolean;
   highlightEdits: boolean;
+  getError?: (ctx: CellTemplateContext<T>, parsing: boolean) => string | null | undefined;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -181,6 +189,7 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     showPlaceholders: options.showPlaceholders ?? false,
     alwaysEdit: options.alwaysEdit ?? false,
     highlightEdits: options.highlightEdits ?? false,
+    getError: options.getError,
   };
 }
 

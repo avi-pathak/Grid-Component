@@ -157,3 +157,33 @@ Building Quick Editing's arrow-commit-and-move on top of this surfaced a
 second interaction: an arrow key during a rejected-and-stayed-open commit
 must not also move the active cell away from the editor that's still open —
 `commitAndMove` now only calls `onMove` when the commit actually closed.
+
+## Validation — CollectionView-style
+
+Wijmo's `collectionView.getError(item, prop, parsing)` doesn't have a home on
+this repo's `CollectionView` — it's a lean, grid-agnostic data layer reused
+by `ODataCollectionView`/`ODataVirtualCollectionView` with no dependency on
+`Column`, so the hook lives on `GridOptions` instead, following the existing
+`cellClassRules`/`rowClass` convention (already grid-level for the same
+layering reason): `getError?: (ctx: CellTemplateContext, parsing: boolean) =>
+string | null | undefined`.
+
+`Column.tryParse(text)` is the new prerequisite `parse()` couldn't provide:
+`parse()` returns `null` both for "the user cleared the cell" and for
+"the text failed to coerce" (e.g. `Number('abc')`), which `getError` needs
+to tell apart. `tryParse` returns `{ value, ok }`, `ok: false` only for a
+genuine coercion failure. `parsing` is `true` in that case (`ctx.value` is
+the raw text); `false` once it parsed fine, for a business-rule check
+against the parsed value. A non-null return from either uses the same
+stay-open path as `stayInEditMode` — no separate built-in error-tooltip UI,
+matching both Wijmo's and AG Grid's confirmed lack of one; apps surface the
+message however they like from inside `getError` itself or a
+`cellEditEnding` handler.
+
+One real-world caveat surfaced while testing this: a native `<input
+type="number">` (or `type="date"`) sanitizes non-numeric/non-date text to
+`''` before it's ever read — by the browser and by jsdom alike — so
+`parsing: true` can never actually be triggered by *typing* through the
+built-in Number/Date editor. It's still reachable through `tryParse()` itself
+(unit-tested directly in `Column.test.ts`) and would be reachable through any
+future paste/programmatic-set path or a custom text-based editor (Phase 10).

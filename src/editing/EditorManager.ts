@@ -1,7 +1,7 @@
 import { TextEditor } from './TextEditor';
 import { DropDownEditor } from './DropDownEditor';
 import { RadioEditor } from './RadioEditor';
-import { Column } from '../models/Column';
+import { Column, CellTemplateContext } from '../models/Column';
 import { DataMapEditor } from '../models/DataMapEditor';
 import { DataView } from '../data/DataView';
 import { LayoutEngine } from '../virtualization/LayoutEngine';
@@ -33,6 +33,8 @@ export interface EditorDeps {
   onEnding?: (cell: CellAddress, value: unknown) => boolean;
   /** Consulted only right after onEnding rejects a value: keep the editor open with the rejected text instead of reverting and closing it. */
   stayOpenOnReject?: (cell: CellAddress, value: unknown) => boolean;
+  /** Return a message to reject a value after parsing; a non-null result always keeps the editor open. */
+  getError?: (ctx: CellTemplateContext, parsing: boolean) => string | null | undefined;
   /** Called after a new value was committed to the row. */
   onEnded?: (cell: CellAddress, value: unknown) => void;
   onEnd: (cell: CellAddress) => void;
@@ -117,7 +119,7 @@ export class EditorManager {
     const column = this.deps.columns[cell.col];
     const item = this.deps.data.item(cell.row);
     const oldValue = column.getValue(item);
-    const newValue = column.parse(value);
+    const { value: newValue, ok } = column.tryParse(value);
 
     if (newValue === oldValue) {
       this.closeEditing(cell);
@@ -130,6 +132,16 @@ export class EditorManager {
       if (this.deps.stayOpenOnReject?.(cell, newValue)) return;
       this.closeEditing(cell);
       return;
+    }
+    if (this.deps.getError) {
+      const parsing = !ok;
+      const ctx: CellTemplateContext = {
+        value: parsing ? value : newValue,
+        item,
+        row: cell.row,
+        column,
+      };
+      if (this.deps.getError(ctx, parsing) != null) return; // stays open, like stayOpenOnReject
     }
     this.deps.undo.push(
       new EditAction(this.deps.data, column, cell.row, oldValue, newValue, this.deps.onApplied),

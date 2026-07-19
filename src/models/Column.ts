@@ -169,6 +169,35 @@ export class Column<T = Record<string, unknown>> {
     }
   }
 
+  /**
+   * Like {@link parse}, but reports whether the text failed type coercion
+   * (`ok: false`) rather than just returning `null` — which `parse` also
+   * returns for an intentionally cleared cell. Lets a validation hook tell
+   * "invalid input" apart from "the user cleared this".
+   */
+  tryParse(text: string): { value: unknown; ok: boolean } {
+    if (this.map) {
+      const key = this.map.getKeyValue(text);
+      return { value: key != null ? key : text, ok: true };
+    }
+    switch (this.dataType) {
+      case 'Number': {
+        if (text.trim() === '') return { value: null, ok: true };
+        const n = Number(text);
+        return Number.isNaN(n) ? { value: null, ok: false } : { value: n, ok: true };
+      }
+      case 'Boolean':
+        return { value: text === 'true' || text === '1', ok: true };
+      case 'Date': {
+        if (text.trim() === '') return { value: null, ok: true };
+        const d = new Date(text);
+        return Number.isNaN(d.getTime()) ? { value: null, ok: false } : { value: d, ok: true };
+      }
+      default:
+        return { value: text, ok: true };
+    }
+  }
+
   format(item: T): string {
     return this.formatValue(this.getValue(item), item);
   }

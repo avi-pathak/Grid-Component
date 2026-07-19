@@ -13,9 +13,11 @@ import { dynamicDataMaps } from './dynamicDataMaps';
 import { customCell } from './customCell';
 import { reorder } from './reorder';
 import { editing } from './editing';
+import { editingEvents } from './editingEvents';
 import { readOnly } from './readOnly';
 import { placeholders } from './placeholders';
 import { quickEditing } from './quickEditing';
+import { ime } from './ime';
 import { alwaysEditing } from './alwaysEditing';
 import { highlightEdits } from './highlightEdits';
 import { validation } from './validation';
@@ -52,9 +54,11 @@ export const demos: Demo[] = [
   customCell,
   reorder,
   editing,
+  editingEvents,
   readOnly,
   placeholders,
   quickEditing,
+  ime,
   alwaysEditing,
   highlightEdits,
   validation,

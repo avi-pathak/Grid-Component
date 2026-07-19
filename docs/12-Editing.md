@@ -101,3 +101,20 @@ dropdown's arrows are already spoken for.
 Deferred (not built): Wijmo's "F2 toggles quick↔full mode for the cell
 currently being edited." Fiddly enough to be its own follow-up rather than
 part of this pass.
+
+## Always Editing
+
+`GridOptions.alwaysEdit` opens an editor at the active cell automatically
+after every selection move — no F2/double-click/typing needed — mirroring
+Wijmo's `startEditing()`-from-`selectionChanged` recipe rather than adding a
+distinct "always editing" engine mode. Boolean, read-only, and non-editable
+columns are excluded the same way every other entry point already is:
+`EditorManager.begin()`'s existing checks, not a separate code path.
+
+This exposed a real gap `begin()` had regardless of `alwaysEdit`: calling it
+for a *different* cell while one was already open used to silently no-op,
+leaving the first cell's edit dangling. `begin()` now settles the previous
+edit first — by blurring whatever element currently has focus, which runs
+that editor's own existing commit/cancel-on-blur handling — before opening
+the new one. Calling `begin()`/`editCell()` again on the *same* cell that's
+already open is still a no-op, so it doesn't reset an in-progress edit.

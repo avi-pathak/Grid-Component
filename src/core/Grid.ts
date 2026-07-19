@@ -132,6 +132,7 @@ export class Grid {
   private rowStyle?: RenderContext['rowStyle'];
   private rowReadOnlyFn?: (ctx: { item: Row; row: number }) => boolean;
   private _isReadOnly = false;
+  private alwaysEdit = false;
   private mergeManager?: MergeManager;
   private anyMergeable = false;
   private filterModel?: FilterModel;
@@ -162,6 +163,7 @@ export class Grid {
     this.rowStyle = resolved.rowStyle;
     this.rowReadOnlyFn = resolved.rowReadOnly;
     this._isReadOnly = resolved.isReadOnly;
+    this.alwaysEdit = resolved.alwaysEdit;
     this.mergeManager = resolved.mergeManager;
     this.anyMergeable = this.allColumns.some((c) => c.allowMerging);
     this.selectionModel = new SelectionModel(resolved.selectionMode);
@@ -1405,7 +1407,10 @@ export class Grid {
     this.data.collectionView.moveCurrentToPosition(this.data.dataIndexAt(cell.row)); // currency follows selection
     this.syncSelectionState();
     this.draw();
-    this.events.emit('selectionChanged', this.selectionModel.getActive());
+    const active = this.selectionModel.getActive();
+    this.events.emit('selectionChanged', active);
+    // toggleBoolean/isReadOnly/rowReadOnly/editable are all re-checked inside begin().
+    if (this.alwaysEdit && active) this.editor.begin(active);
   }
 
   private syncSelectionState(): void {

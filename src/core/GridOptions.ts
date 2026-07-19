@@ -81,6 +81,11 @@ export interface GridOptions<T = Record<string, unknown>> {
    * column doesn't set its own `placeholder`. Default false.
    */
   showPlaceholders?: boolean;
+  /**
+   * Open an editor at the active cell automatically after every selection
+   * move (Boolean/read-only/non-editable columns excluded). Default false.
+   */
+  alwaysEdit?: boolean;
 }
 
 export interface ResolvedOptions<T> {
@@ -112,6 +117,7 @@ export interface ResolvedOptions<T> {
   isReadOnly: boolean;
   rowReadOnly?: (ctx: RowStyleContext<T>) => boolean;
   showPlaceholders: boolean;
+  alwaysEdit: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -167,6 +173,7 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     isReadOnly: options.isReadOnly ?? false,
     rowReadOnly: options.rowReadOnly,
     showPlaceholders: options.showPlaceholders ?? false,
+    alwaysEdit: options.alwaysEdit ?? false,
   };
 }
 

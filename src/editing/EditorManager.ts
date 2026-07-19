@@ -89,7 +89,15 @@ export class EditorManager {
 
   begin(cell: CellAddress, opts?: EditorOpenOptions): void {
     const column = this.deps.columns[cell.col];
-    if (!column || !column.editable || column.dataType === 'Boolean' || this.editing) return;
+    if (!column || !column.editable || column.dataType === 'Boolean') return;
+    if (this.editing) {
+      if (this.editing.row === cell.row && this.editing.col === cell.col) return; // already editing this cell
+      // Settle the previous edit (its own blur handler commits or cancels it)
+      // before moving on — needed for alwaysEdit, where selection can move to
+      // a new cell while the old one is still open.
+      (document.activeElement as HTMLElement | null)?.blur();
+      if (this.editing) return; // still open after blur (unexpected, but don't clobber it)
+    }
     if (this.deps.isReadOnly() || this.deps.isRowReadOnly(cell.row)) return;
     if (this.deps.onBeginning && !this.deps.onBeginning(cell)) return; // a handler canceled it
 

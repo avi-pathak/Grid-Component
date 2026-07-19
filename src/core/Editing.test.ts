@@ -391,3 +391,113 @@ describe('quick editing', () => {
     expect(input.value).toBe('n0');
   });
 });
+
+describe('always editing', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('opens an editor at the active cell automatically after a selection move', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), alwaysEdit: true });
+    grid.select(0, 1);
+    expect(host.querySelector('.apg-cells input')).not.toBeNull();
+  });
+
+  it('does not auto-open an editor without alwaysEdit (regression)', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.select(0, 1);
+    expect(host.querySelector('.apg-cells input')).toBeNull();
+  });
+
+  it('excludes Boolean columns (still click/Space toggle only)', () => {
+    const data = [{ id: 0, active: false }];
+    const grid = new Grid(host, { columns: boolColumns, itemsSource: data, alwaysEdit: true });
+    grid.select(0, 1);
+    expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+
+  it('excludes read-only cells', () => {
+    const grid = new Grid(host, {
+      columns,
+      itemsSource: makeRows(5),
+      alwaysEdit: true,
+      isReadOnly: true,
+    });
+    grid.select(0, 1);
+    expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+
+  it('excludes non-editable columns', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), alwaysEdit: true });
+    grid.select(0, 0); // 'id' is not editable
+    expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+
+  it('re-opens the editor at the new cell after moving again', () => {
+    const grid = new Grid(host, {
+      columns: [
+        { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+        { binding: 'name', header: 'Name', width: 160, editable: true },
+        { binding: 'extra', header: 'Extra', width: 120, editable: true },
+      ],
+      itemsSource: makeRows(5).map((r) => ({ ...r, extra: 'e' })),
+      alwaysEdit: true,
+    });
+    grid.select(0, 1);
+    let input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.value).toBe('n0');
+
+    grid.select(0, 2);
+    input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.value).toBe('e');
+  });
+});
+
+describe('editing a second cell while one is already open', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('commits the first cell and transfers editing to the new one', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      { binding: 'name', header: 'Name', width: 160, editable: true },
+      { binding: 'extra', header: 'Extra', width: 120, editable: true },
+    ];
+    const data = [
+      { id: 0, name: 'n0', extra: 'e0' },
+      { id: 1, name: 'n1', extra: 'e1' },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1);
+    let input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'changed';
+
+    grid.editCell(0, 2); // moves on without an explicit blur/Enter first
+
+    expect(data[0].name).toBe('changed'); // first cell committed
+    input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.value).toBe('e0'); // now editing the second cell
+  });
+
+  it('calling editCell on the same cell again is a no-op', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'not yet committed';
+
+    grid.editCell(0, 1);
+
+    expect(host.querySelector('.apg-cells input')).toBe(input); // same editor instance, untouched
+    expect(input.value).toBe('not yet committed');
+  });
+});

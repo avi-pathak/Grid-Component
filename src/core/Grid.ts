@@ -133,6 +133,9 @@ export class Grid {
   private rowReadOnlyFn?: (ctx: { item: Row; row: number }) => boolean;
   private _isReadOnly = false;
   private alwaysEdit = false;
+  private highlightEdits = false;
+  /** Per-item snapshot of a binding's value the first time it's edited, keyed by item reference. */
+  private editSnapshots = new WeakMap<Row, Record<string, unknown>>();
   private mergeManager?: MergeManager;
   private anyMergeable = false;
   private filterModel?: FilterModel;
@@ -164,6 +167,7 @@ export class Grid {
     this.rowReadOnlyFn = resolved.rowReadOnly;
     this._isReadOnly = resolved.isReadOnly;
     this.alwaysEdit = resolved.alwaysEdit;
+    this.highlightEdits = resolved.highlightEdits;
     this.mergeManager = resolved.mergeManager;
     this.anyMergeable = this.allColumns.some((c) => c.allowMerging);
     this.selectionModel = new SelectionModel(resolved.selectionMode);
@@ -293,7 +297,11 @@ export class Grid {
       isRowReadOnly: (row) => this.rowReadOnlyFn?.({ item: this.data.item(row), row }) ?? false,
       showPlaceholders: resolved.showPlaceholders,
       onApplied: () => this.draw(),
-      onBeginning: (cell) => !this.emitCancel('beginningEdit', { row: cell.row, col: cell.col }),
+      onBeginning: (cell) => {
+        if (this.emitCancel('beginningEdit', { row: cell.row, col: cell.col })) return false;
+        if (this.highlightEdits) this.captureEditSnapshot(cell);
+        return true;
+      },
       onStart: (cell) => {
         this.events.emit('cellEditStart', cell);
         this.events.emit('cellEditPreparing', {
@@ -1281,6 +1289,7 @@ export class Grid {
       rowStyle: this.rowStyle,
       merge: this.mergeLookup(),
       columnGroups: this.columnGroupList,
+      isCellEdited: this.highlightEdits ? (row, col) => this.isCellEdited(row, col) : undefined,
     };
   }
 
@@ -1383,6 +1392,37 @@ export class Grid {
     if (!cell) return;
     if (this.editor.toggleBoolean(cell)) return; // Space toggles checkbox cells
     this.editor.begin(cell);
+  }
+
+  /** True when highlightEdits is on and the cell's value differs from its pre-edit snapshot. */
+  isCellEdited(row: number, col: number): boolean {
+    if (!this.highlightEdits) return false;
+    const column = this.columns[col];
+    const item = this.data.item(row) as Row;
+    const snap = this.editSnapshots.get(item);
+    if (!snap || !(column.binding in snap)) return false;
+    return column.getValue(item) !== snap[column.binding];
+  }
+
+  /** Drop all highlightEdits tracking, clearing every `.apg-cell-edited` mark. */
+  clearEditHighlights(): void {
+    this.editSnapshots = new WeakMap();
+    this.draw();
+  }
+
+  // Record a binding's value the first time it's edited, so isCellEdited can
+  // compare against the original later. Recomputed from this snapshot on
+  // every render (not a sticky flag), so undoing an edit — or typing the
+  // original value back in — clears the highlight for free.
+  private captureEditSnapshot(cell: CellAddress): void {
+    const column = this.columns[cell.col];
+    const item = this.data.item(cell.row) as Row;
+    let snap = this.editSnapshots.get(item);
+    if (!snap) {
+      snap = {};
+      this.editSnapshots.set(item, snap);
+    }
+    if (!(column.binding in snap)) snap[column.binding] = column.getValue(item);
   }
 
   // Typing a printable character over a selected cell starts a quick edit

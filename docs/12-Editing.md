@@ -118,3 +118,23 @@ edit first — by blurring whatever element currently has focus, which runs
 that editor's own existing commit/cancel-on-blur handling — before opening
 the new one. Calling `begin()`/`editCell()` again on the *same* cell that's
 already open is still a no-op, so it doesn't reset an in-progress edit.
+
+## Highlight Edits
+
+Not a first-class FlexGrid API in Wijmo either — a recipe there (external
+map + `formatItem` + explicit clear), so apgrid follows the same shape.
+`GridOptions.highlightEdits` turns it on; when it does, `Grid` captures each
+edited binding's **original** value the first time it's touched (in the
+`beginningEdit` hook, one snapshot per item, lazily — only for bindings
+actually edited) into a `WeakMap<item, Record<binding, originalValue>>`, so
+removed rows don't leak memory once nothing else references them.
+
+`.apg-cell-edited` is **recomputed on every render** — `column.getValue(item)
+!== snapshot[binding]` — rather than a sticky "was edited" flag. That's a
+deliberate choice: it means `Ctrl+Z`, or manually typing the original value
+back in, clears the highlight for free, with no special-case hook into
+`EditAction`/`UndoStack`. `grid.isCellEdited(row, col)` reads it directly;
+`grid.clearEditHighlights()` drops all tracked snapshots (a fresh `WeakMap`)
+and redraws. Composes with the existing `cellClassRules`/`cellClass` system
+rather than replacing it, and layers under cell selection so a selected +
+edited cell shows the selection color, not both.

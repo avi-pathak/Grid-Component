@@ -41,6 +41,16 @@
     box-shadow: inset 0 0 0 2px var(--apg-active-border);
     border-radius: 1px;
   }
+
+  // A cell whose value differs from what it held when GridOptions.highlightEdits
+  // was turned on. Layers under selection/active rather than replacing them.
+  &.apg-cell-edited {
+    background: var(--apg-edited-bg);
+  }
+
+  &.apg-cell-edited.apg-cell-selected {
+    background: var(--apg-selected-bg);
+  }
 }
 
 // Merge layer: spanning cells paint here, above the normal rows.

@@ -501,3 +501,70 @@ describe('editing a second cell while one is already open', () => {
     expect(input.value).toBe('not yet committed');
   });
 });
+
+describe('highlight edits', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  function commitViaEnter(host: HTMLElement, value: string): void {
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = value;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+  }
+
+  it('does not mark a cell edited by default (highlightEdits off)', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.editCell(0, 1);
+    commitViaEnter(host, 'changed');
+    grid.editCell(1, 1); // force a redraw pass in case update batches
+    expect(host.querySelector('.apg-cell-edited')).toBeNull();
+  });
+
+  it('marks a cell edited once its value differs from the original', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), highlightEdits: true });
+    expect(grid.isCellEdited(0, 1)).toBe(false);
+
+    grid.editCell(0, 1);
+    commitViaEnter(host, 'changed');
+
+    expect(grid.isCellEdited(0, 1)).toBe(true);
+    expect(host.querySelector('.apg-cell-edited')).not.toBeNull();
+  });
+
+  it('unmarks a cell when its value is edited back to the original', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), highlightEdits: true });
+    grid.editCell(0, 1);
+    commitViaEnter(host, 'changed');
+    expect(grid.isCellEdited(0, 1)).toBe(true);
+
+    grid.editCell(0, 1);
+    commitViaEnter(host, 'n0'); // back to the original value
+    expect(grid.isCellEdited(0, 1)).toBe(false);
+  });
+
+  it('clears the highlight on undo (recomputed from the snapshot, not a sticky flag)', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), highlightEdits: true });
+    grid.editCell(0, 1);
+    commitViaEnter(host, 'changed');
+    expect(grid.isCellEdited(0, 1)).toBe(true);
+
+    grid.undo();
+    expect(grid.isCellEdited(0, 1)).toBe(false);
+  });
+
+  it('clearEditHighlights() drops all tracked edits', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5), highlightEdits: true });
+    grid.editCell(0, 1);
+    commitViaEnter(host, 'changed');
+    expect(grid.isCellEdited(0, 1)).toBe(true);
+
+    grid.clearEditHighlights();
+    expect(grid.isCellEdited(0, 1)).toBe(false);
+    expect(host.querySelector('.apg-cell-edited')).toBeNull();
+  });
+});

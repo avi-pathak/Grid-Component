@@ -219,6 +219,7 @@ export class RowRenderer {
         ctx.layout.getColWidth(col),
         selected,
         col === activeCol,
+        ctx.isCellEdited?.(row, col) ?? false,
       );
     }
   }

@@ -86,6 +86,7 @@ export class MergeRenderer {
       right - left,
       selected,
       active,
+      ctx.isCellEdited?.(range.topRow, col) ?? false,
     );
     el.classList.add('apg-cell-merged');
     el.style.top = `${top}px`;

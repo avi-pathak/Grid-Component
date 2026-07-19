@@ -86,6 +86,11 @@ export interface GridOptions<T = Record<string, unknown>> {
    * move (Boolean/read-only/non-editable columns excluded). Default false.
    */
   alwaysEdit?: boolean;
+  /**
+   * Track each edited cell's original value and apply `.apg-cell-edited`
+   * while its current value differs from it. Default false.
+   */
+  highlightEdits?: boolean;
 }
 
 export interface ResolvedOptions<T> {
@@ -118,6 +123,7 @@ export interface ResolvedOptions<T> {
   rowReadOnly?: (ctx: RowStyleContext<T>) => boolean;
   showPlaceholders: boolean;
   alwaysEdit: boolean;
+  highlightEdits: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -174,6 +180,7 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     rowReadOnly: options.rowReadOnly,
     showPlaceholders: options.showPlaceholders ?? false,
     alwaysEdit: options.alwaysEdit ?? false,
+    highlightEdits: options.highlightEdits ?? false,
   };
 }
 

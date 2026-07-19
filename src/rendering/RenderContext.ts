@@ -27,6 +27,8 @@ export interface RenderContext {
   rowStyle?: RowStyle;
   /** Optional cell-merge lookup. Present only when merging is enabled. */
   merge?: MergeLookup;
+  /** True when the cell's value differs from its pre-edit snapshot. Present only when highlightEdits is on. */
+  isCellEdited?: (row: number, col: number) => boolean;
   /** Active column-header groups. Consumed by the ColumnGroupRenderer. */
   columnGroups?: ColumnGroup[];
 }

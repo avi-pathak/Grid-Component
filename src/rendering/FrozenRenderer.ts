@@ -115,6 +115,7 @@ class CellBand {
         ctx.layout.getColWidth(col),
         selected,
         col === activeCol,
+        ctx.isCellEdited?.(row, col) ?? false,
       );
       // update() rewrites className, so tag the frozen cell afterwards.
       cellEl.classList.add('apg-frozen-cell', this.cellClass);

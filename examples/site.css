@@ -322,6 +322,33 @@ body {
   font-size: 0.85em;
 }
 
+/* Custom-editors demo: a 5-star rating picker used in place of a text input. */
+.demo-star-editor {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+}
+
+.demo-star-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--site-border);
+  cursor: pointer;
+}
+
+.demo-star-btn:hover,
+.demo-star-btn:focus-visible {
+  color: var(--site-accent);
+}
+
+.demo-star-filled {
+  color: #f5a623;
+}
+
 /* Classes used by the conditional-styling demo (cellClass / cellClassRules / rowClass). */
 .demo-sales-high {
   background: #d7f2dd;

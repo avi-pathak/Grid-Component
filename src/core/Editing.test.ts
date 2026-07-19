@@ -128,3 +128,77 @@ describe('read-only levels', () => {
     expect(host.querySelector('.apg-editor')).toBeNull();
   });
 });
+
+describe('IME composition safety', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  it('does not commit or cancel a text edit on Enter/Escape mid-composition', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+
+    input.dispatchEvent(new Event('compositionstart'));
+    input.value = 'かな';
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true }),
+    );
+    expect(host.querySelector('.apg-editor')).not.toBeNull(); // still open
+    expect(grid.collectionView.items[0].name).not.toBe('かな'); // not committed
+
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Escape', isComposing: true, bubbles: true }),
+    );
+    expect(host.querySelector('.apg-editor')).not.toBeNull(); // not cancelled either
+
+    input.dispatchEvent(new Event('compositionend'));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(host.querySelector('.apg-editor')).toBeNull(); // now commits
+    expect(grid.collectionView.items[0].name).toBe('かな');
+  });
+
+  it('treats keyCode 229 as composing even without isComposing (Chrome/Android quirk)', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+
+    input.value = 'partial';
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', keyCode: 229, bubbles: true }),
+    );
+    expect(host.querySelector('.apg-editor')).not.toBeNull();
+    expect(grid.collectionView.items[0].name).not.toBe('partial');
+  });
+
+  it('does not commit or cancel a dropdown edit on Enter/Escape mid-composition', () => {
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80 },
+      {
+        binding: 'status',
+        header: 'Status',
+        width: 120,
+        editable: true,
+        dataMap: ['Open', 'Closed'],
+      },
+    ];
+    const data = [{ id: 0, status: 'Open' }];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-editor-dropdown .apg-dd-input') as HTMLInputElement;
+
+    input.dispatchEvent(new Event('compositionstart'));
+    input.dispatchEvent(
+      new KeyboardEvent('keydown', { key: 'Enter', isComposing: true, bubbles: true }),
+    );
+    expect(host.querySelector('.apg-editor-dropdown')).not.toBeNull();
+    expect(data[0].status).toBe('Open');
+
+    input.dispatchEvent(new Event('compositionend'));
+  });
+});

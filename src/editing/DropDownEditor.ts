@@ -20,6 +20,7 @@ export class DropDownEditor {
   private options: string[] = [];
   private highlight = -1;
   private editable = false;
+  private composing = false;
 
   constructor(
     private onCommit: (value: string) => void,
@@ -42,6 +43,8 @@ export class DropDownEditor {
     this.root.append(this.input, this.arrow, this.listEl);
 
     this.input.addEventListener('input', () => this.filter(this.input.value));
+    this.input.addEventListener('compositionstart', () => (this.composing = true));
+    this.input.addEventListener('compositionend', () => (this.composing = false));
     this.input.addEventListener('keydown', (e) => this.onKeyDown(e));
     this.input.addEventListener('blur', () => this.commitInput());
     // Commit on mousedown (before the input blurs) so the click isn't lost.
@@ -115,6 +118,13 @@ export class DropDownEditor {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    // Same IME-safety rule as TextEditor: don't let a composition-confirming
+    // Enter/Escape commit or cancel the cell, but still keep the keystroke
+    // from leaking to the grid's own keyboard nav.
+    if (this.composing || e.isComposing || e.keyCode === 229) {
+      e.stopPropagation();
+      return;
+    }
     const options = [...this.listEl.children] as HTMLElement[];
     if (e.key === 'ArrowDown') {
       e.preventDefault();

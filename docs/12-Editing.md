@@ -41,3 +41,15 @@ grid.isReadOnly = true; // lock everything at runtime
 Boolean columns are gated the same way: `toggleBoolean()` checks grid- and
 row-level read-only before flipping the value, in addition to the existing
 `column.editable` check.
+
+## IME (CJK composition safety)
+
+`TextEditor` and `DropDownEditor` track `compositionstart`/`compositionend` on
+their input and, while composing (or on a `keyCode === 229` keydown — the
+Chrome/Android quirk where the composition-confirming Enter reports
+`isComposing: false`), Enter/Escape are left alone instead of committing or
+cancelling the cell. Propagation is still stopped either way, so a composition
+keystroke (e.g. arrows navigating a candidate list) never leaks into the
+grid's own keyboard navigation. This is unconditional — there's no
+`imeEnabled` toggle, since correct composition handling has no reason to ever
+be off. `RadioEditor` has no free-text input, so it isn't affected.

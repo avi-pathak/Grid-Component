@@ -7,6 +7,7 @@ import { Column } from '../models/Column';
  */
 export class TextEditor {
   private input: HTMLInputElement;
+  private composing = false;
 
   constructor(
     private onCommit: (value: string) => void,
@@ -14,7 +15,18 @@ export class TextEditor {
   ) {
     this.input = document.createElement('input');
     this.input.className = 'apg-editor';
+    this.input.addEventListener('compositionstart', () => (this.composing = true));
+    this.input.addEventListener('compositionend', () => (this.composing = false));
     this.input.addEventListener('keydown', (e) => {
+      // While an IME composition is in progress, Enter/Escape confirm or
+      // cancel the composition itself — they must reach the input, not commit
+      // or cancel the cell edit. Still stop propagation so the grid's own
+      // keyboard nav never sees composition keystrokes (e.g. arrows used to
+      // move a candidate list).
+      if (this.composing || e.isComposing || e.keyCode === 229) {
+        e.stopPropagation();
+        return;
+      }
       if (e.key === 'Enter') {
         e.preventDefault();
         this.onCommit(this.input.value);

@@ -68,6 +68,8 @@ export type {
 export type { SelectionMode } from './selection/SelectionModel';
 export type { GridEvents } from './events/GridEvents';
 export type { UndoableAction } from './commands/UndoableAction';
+export type { CellEditor } from './editing/CellEditor';
+export type { EditorOpenOptions } from './editing/EditorOpenOptions';
 export type { CollectionViewOptions, CollectionChange, ChangeAction } from './data/CollectionView';
 export type { ODataOptions } from './data/ODataCollectionView';
 export type {

@@ -186,4 +186,33 @@ type="number">` (or `type="date"`) sanitizes non-numeric/non-date text to
 `parsing: true` can never actually be triggered by *typing* through the
 built-in Number/Date editor. It's still reachable through `tryParse()` itself
 (unit-tested directly in `Column.test.ts`) and would be reachable through any
-future paste/programmatic-set path or a custom text-based editor (Phase 10).
+future paste/programmatic-set path or a custom text-based editor (below).
+
+## Custom Editors
+
+`ColumnDef.editor?: CellEditorFactory` — a factory called once, lazily, the
+first time that column is edited: `(commit: (value: string) => void, cancel:
+() => void) => CellEditor`. The returned instance is cached per column and
+reused across every subsequent edit, matching how the built-in editors are
+each one shared instance.
+
+The `CellEditor` interface (`open(parent, column, item, rect, opts?)`,
+`close()`) is exactly what `TextEditor`/`DropDownEditor`/`RadioEditor`
+already implement — promoted from a private interface in `EditorManager.ts`
+to its own file (`src/editing/CellEditor.ts`) and exported publicly, no
+redesign needed. `open()`'s `rect` already comes through the same
+`cellRect()`/`translate3d` mechanism every other editor uses, so a custom
+editor participates in DOM recycling automatically.
+
+The factory shape is the one thing this pass changed from the original plan:
+a plain `CellEditor | (() => CellEditor)` looked simpler but doesn't work — a
+custom editor has no way to actually commit a value back into the grid's
+undo/edit lifecycle unless it receives the same `commit`/`cancel` callbacks
+the built-ins get at construction. So the factory takes those two callbacks,
+mirroring `new TextEditor(commit, cancel, ...)` exactly; a "pass an
+already-built instance" form was dropped since it can't be functional.
+
+No built-in commit/cancel UI is prescribed beyond that — a custom editor
+decides its own interaction (a date picker's calendar click, a color
+swatch's confirm button, etc.) and calls `commit(value)`/`cancel()` itself,
+same as `TextEditor` calling its own `onCommit` on Enter/blur.

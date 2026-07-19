@@ -9,8 +9,9 @@ import { CellAddress } from '../models/Cell';
 import { UndoStack } from '../commands/UndoStack';
 import { EditAction } from '../commands/EditAction';
 import { EditorOpenOptions } from './EditorOpenOptions';
+import { CellEditor } from './CellEditor';
 
-export type { EditorOpenOptions };
+export type { EditorOpenOptions, CellEditor };
 
 export interface EditorDeps {
   /** The scrolling cells panel. The editor lives here so it tracks the cell while scrolling. */
@@ -42,34 +43,25 @@ export interface EditorDeps {
   onMove?: (direction: 'up' | 'down' | 'left' | 'right') => void;
 }
 
-/** The common shape every cell editor implements so the manager can swap them. */
-export interface CellEditor {
-  open(
-    parent: HTMLElement,
-    column: Column,
-    item: Record<string, unknown>,
-    rect: DOMRect,
-    opts?: EditorOpenOptions,
-  ): void;
-  close(): void;
-}
-
 /** Begins, commits, and cancels cell edits; commits run through the undo stack. */
 export class EditorManager {
   private text: TextEditor;
   private dropdown: DropDownEditor;
   private radio: RadioEditor;
+  private customEditors = new Map<Column, CellEditor>();
+  private commit: (value: string) => void;
+  private cancel: () => void;
   private active: CellEditor | null = null;
   private editing: CellAddress | null = null;
 
   constructor(private deps: EditorDeps) {
-    const commit = (value: string) => this.commit(value);
-    const cancel = () => this.cancel();
+    this.commit = (value: string) => this.commitValue(value);
+    this.cancel = () => this.cancelEditing();
     const commitAndMove = (value: string, direction: 'up' | 'down' | 'left' | 'right') =>
       this.commitAndMove(value, direction);
-    this.text = new TextEditor(commit, cancel, deps.showPlaceholders, commitAndMove);
-    this.dropdown = new DropDownEditor(commit, cancel);
-    this.radio = new RadioEditor(commit, cancel);
+    this.text = new TextEditor(this.commit, this.cancel, deps.showPlaceholders, commitAndMove);
+    this.dropdown = new DropDownEditor(this.commit, this.cancel);
+    this.radio = new RadioEditor(this.commit, this.cancel);
   }
 
   get isEditing(): boolean {
@@ -112,7 +104,7 @@ export class EditorManager {
     this.deps.onStart(cell);
   }
 
-  private commit(value: string): void {
+  private commitValue(value: string): void {
     const cell = this.editing;
     if (!cell) return;
 
@@ -160,14 +152,14 @@ export class EditorManager {
   }
 
   private commitAndMove(value: string, direction: 'up' | 'down' | 'left' | 'right'): void {
-    this.commit(value);
+    this.commitValue(value);
     // Don't move if the commit was rejected and stayed open (stayOpenOnReject)
     // — the editor is still anchored to this cell, so the selection shouldn't
     // wander off while the user fixes the rejected value.
     if (!this.editing) this.deps.onMove?.(direction);
   }
 
-  private cancel(): void {
+  private cancelEditing(): void {
     const cell = this.editing;
     if (!cell) return;
     this.editing = null;
@@ -177,6 +169,14 @@ export class EditorManager {
   }
 
   private editorFor(column: Column): CellEditor {
+    if (column.editorFactory) {
+      let editor = this.customEditors.get(column);
+      if (!editor) {
+        editor = column.editorFactory(this.commit, this.cancel);
+        this.customEditors.set(column, editor);
+      }
+      return editor;
+    }
     if (!column.dataMap) return this.text;
     if (column.dataMapEditor === DataMapEditor.RadioButtons) return this.radio;
     return this.dropdown; // DropDownList, AutoComplete, and Menu share the in-cell dropdown

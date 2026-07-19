@@ -1,5 +1,6 @@
 import { DataMap } from './DataMap';
 import { DataMapEditor } from './DataMapEditor';
+import type { CellEditorFactory } from '../editing/CellEditor';
 
 export type DataType = 'String' | 'Number' | 'Boolean' | 'Date';
 export type CellAlign = 'left' | 'center' | 'right';
@@ -65,6 +66,13 @@ export interface ColumnDef<T = Record<string, unknown>> {
   cellTemplate?: (ctx: CellTemplateContext<T>) => string;
   /** Placeholder text shown in the built-in text editor when the cell is empty. */
   placeholder?: string;
+  /**
+   * A custom editor for this column, replacing the built-in text/dropdown/
+   * radio editors. Called once (lazily, on first edit) with the same
+   * commit/cancel callbacks the built-in editors receive; the returned
+   * instance is then reused across every edit on this column.
+   */
+  editor?: CellEditorFactory<T>;
 }
 
 const DEFAULT_WIDTH = 100;
@@ -100,6 +108,7 @@ export class Column<T = Record<string, unknown>> {
   hidden = false;
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
   readonly placeholder?: string;
+  readonly editorFactory?: CellEditorFactory<T>;
 
   private readonly valueGetter?: (item: T) => unknown;
   private readonly valueFormatter?: (value: unknown, item: T) => string;
@@ -118,6 +127,7 @@ export class Column<T = Record<string, unknown>> {
     this.valueFormatter = def.valueFormatter;
     this.cellTemplate = def.cellTemplate;
     this.placeholder = def.placeholder;
+    this.editorFactory = def.editor;
     this.map = def.dataMap ? toDataMap(def.dataMap) : undefined;
     this.dataMapEditor = def.dataMapEditor ?? DataMapEditor.DropDownList;
     this.aggregate = def.aggregate;

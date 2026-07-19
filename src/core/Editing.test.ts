@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Grid } from './Grid';
+import { CellEditor } from '../editing/CellEditor';
 
 function makeRows(n: number) {
   const rows = [];
@@ -757,5 +758,152 @@ describe('CollectionView-style validation (getError)', () => {
 
     expect(called).toBe(false);
     expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+});
+
+describe('custom editors', () => {
+  let host: HTMLElement;
+
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    host = document.createElement('div');
+    document.body.appendChild(host);
+  });
+
+  // A minimal custom editor: takes the commit/cancel callbacks EditorManager
+  // hands every editor (same contract the built-ins use), and exposes them so
+  // the test can drive a commit/cancel directly instead of simulating DOM input.
+  class FakeEditor implements CellEditor {
+    openCalls: Array<{ rect: DOMRect }> = [];
+    closeCalls = 0;
+
+    constructor(
+      private onCommit: (value: string) => void,
+      private onCancel: () => void,
+    ) {}
+
+    open(_parent: HTMLElement, _column: unknown, _item: unknown, rect: DOMRect): void {
+      this.openCalls.push({ rect });
+    }
+
+    close(): void {
+      this.closeCalls++;
+    }
+
+    commit(value: string): void {
+      this.onCommit(value);
+    }
+
+    cancel(): void {
+      this.onCancel();
+    }
+  }
+
+  it('uses the column.editor factory instead of the built-in text editor', () => {
+    let editor: FakeEditor | undefined;
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      {
+        binding: 'name',
+        header: 'Name',
+        width: 160,
+        editable: true,
+        editor: (commit: (v: string) => void, cancel: () => void) => {
+          editor = new FakeEditor(commit, cancel);
+          return editor;
+        },
+      },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(5) });
+
+    grid.editCell(0, 1);
+
+    expect(editor).toBeDefined();
+    expect(editor!.openCalls.length).toBe(1);
+    expect(host.querySelector('.apg-editor')).toBeNull(); // no built-in TextEditor rendered
+  });
+
+  it('receives the correct cell rect, and its commit runs through undo/redo', () => {
+    let editor: FakeEditor | undefined;
+    const data = [{ id: 0, name: 'n0' }];
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      {
+        binding: 'name',
+        header: 'Name',
+        width: 160,
+        editable: true,
+        editor: (commit: (v: string) => void, cancel: () => void) => {
+          editor = new FakeEditor(commit, cancel);
+          return editor;
+        },
+      },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1);
+    const rect = editor!.openCalls[0].rect;
+    expect(rect.left).toBe(80); // after the 80px id column
+    expect(rect.top).toBe(0);
+
+    editor!.commit('edited');
+
+    expect(data[0].name).toBe('edited');
+    expect(editor!.closeCalls).toBe(1);
+    expect(grid.canUndo).toBe(true);
+
+    grid.undo();
+    expect(data[0].name).toBe('n0');
+  });
+
+  it('reuses the same custom editor instance across edits (one per column)', () => {
+    const instances: FakeEditor[] = [];
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      {
+        binding: 'name',
+        header: 'Name',
+        width: 160,
+        editable: true,
+        editor: (commit: (v: string) => void, cancel: () => void) => {
+          const e = new FakeEditor(commit, cancel);
+          instances.push(e);
+          return e;
+        },
+      },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(5) });
+
+    grid.editCell(0, 1);
+    instances[0].commit('a');
+    grid.editCell(1, 1);
+    instances[0].commit('b');
+
+    expect(instances.length).toBe(1); // factory only called once
+  });
+
+  it('cancel does not commit a value', () => {
+    let editor: FakeEditor | undefined;
+    const data = [{ id: 0, name: 'n0' }];
+    const cols = [
+      { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+      {
+        binding: 'name',
+        header: 'Name',
+        width: 160,
+        editable: true,
+        editor: (commit: (v: string) => void, cancel: () => void) => {
+          editor = new FakeEditor(commit, cancel);
+          return editor;
+        },
+      },
+    ];
+    const grid = new Grid(host, { columns: cols, itemsSource: data });
+
+    grid.editCell(0, 1);
+    editor!.cancel();
+
+    expect(data[0].name).toBe('n0');
+    expect(editor!.closeCalls).toBe(1);
   });
 });

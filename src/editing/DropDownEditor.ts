@@ -73,6 +73,7 @@ export class DropDownEditor {
     this.editable = map?.isEditable ?? false;
     this.options = map ? map.getDisplayValues(item) : [];
     this.input.readOnly = column.dataMapEditor === DataMapEditor.Menu;
+    this.setInvalid(null); // clear any leftover invalid state from a prior edit
     this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.root.style.width = `${rect.width}px`;
     this.root.style.height = `${rect.height}px`;
@@ -94,6 +95,12 @@ export class DropDownEditor {
 
   close(): void {
     this.root.remove();
+  }
+
+  setInvalid(message: string | null): void {
+    this.input.classList.toggle('apg-editor-invalid', message != null);
+    if (message) this.input.title = message;
+    else this.input.removeAttribute('title');
   }
 
   private filter(text: string): void {

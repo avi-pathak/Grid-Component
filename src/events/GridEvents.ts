@@ -18,7 +18,8 @@ export interface GridEvents {
   /**
    * Before the edited value is committed. Set `cancel` to true to reject it
    * (validation). With `cancel` also set `stayInEditMode` to true to keep the
-   * editor open with the rejected text instead of reverting and closing it.
+   * editor open with the rejected text instead of reverting and closing it,
+   * optionally with `errorMessage` shown as a tooltip on the still-open editor.
    */
   cellEditEnding: {
     row: number;
@@ -26,6 +27,7 @@ export interface GridEvents {
     value: unknown;
     cancel: boolean;
     stayInEditMode?: boolean;
+    errorMessage?: string;
   };
   /** After an edited value was committed to the row. */
   cellEditEnded: { row: number; col: number; value: unknown };

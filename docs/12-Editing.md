@@ -175,10 +175,9 @@ to tell apart. `tryParse` returns `{ value, ok }`, `ok: false` only for a
 genuine coercion failure. `parsing` is `true` in that case (`ctx.value` is
 the raw text); `false` once it parsed fine, for a business-rule check
 against the parsed value. A non-null return from either uses the same
-stay-open path as `stayInEditMode` — no separate built-in error-tooltip UI,
-matching both Wijmo's and AG Grid's confirmed lack of one; apps surface the
-message however they like from inside `getError` itself or a
-`cellEditEnding` handler.
+stay-open path as `stayInEditMode`; apps can also surface the message
+however else they like from inside `getError` itself or a `cellEditEnding`
+handler — see "Validation feedback" below for the built-in visual treatment.
 
 One real-world caveat surfaced while testing this: a native `<input
 type="number">` (or `type="date"`) sanitizes non-numeric/non-date text to
@@ -187,6 +186,35 @@ type="number">` (or `type="date"`) sanitizes non-numeric/non-date text to
 built-in Number/Date editor. It's still reachable through `tryParse()` itself
 (unit-tested directly in `Column.test.ts`) and would be reachable through any
 future paste/programmatic-set path or a custom text-based editor (below).
+
+## Validation feedback (invalid marking)
+
+Checking the actual Wijmo CollectionViewValidation demo and AG Grid's docs
+directly (rather than relying on the earlier research pass) turned up a
+correction: AG Grid *does* ship a built-in visual treatment for a rejected
+value — an `invalid` class on the validation element plus a tooltip shown
+while hovering the still-open editor (`getValidationErrors`/
+`getValidationElement`, `invalidEditValueMode: 'revert' | 'block'`). The
+original "no built-in error-tooltip UI" note above was wrong for AG Grid
+(Wijmo's demo still doesn't document a specific visual treatment beyond
+"the grid displays the error").
+
+apgrid now has the same idea, wired through the mechanism that already
+existed rather than a new one: `CellEditor.setInvalid?(message: string |
+null): void`, an optional method on the editor interface. `EditorManager`
+calls it whenever a commit stays open — from `stayOpenOnReject`
+(`cellEditEnding.stayInEditMode`, now also carrying an optional
+`errorMessage`) or from a non-null `getError` result — and clears it
+(`setInvalid(null)`) right before a successful commit. `TextEditor` and
+`DropDownEditor` implement it: `.apg-editor-invalid` (a red border, new
+`--apg-error-border` token) plus the message set as the input's native
+`title` (a real tooltip on hover, no custom tooltip component needed).
+Resets automatically the next time that shared editor instance opens on a
+new cell — `TextEditor.open()` already rebuilds `className` from scratch
+each time; `DropDownEditor.open()` explicitly clears it since its root's
+class isn't rebuilt per-open. `RadioEditor` and custom editors don't need to
+implement it (no free-text concept to mark), so `setInvalid` is optional on
+the interface rather than required.
 
 ## Custom Editors
 

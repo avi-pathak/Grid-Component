@@ -71,6 +71,7 @@ export class TextEditor {
     this.mode = opts?.mode ?? 'full';
     this.input.type = inputType(column.dataType);
     this.input.className = `apg-editor apg-align-${column.align}`;
+    this.input.removeAttribute('title'); // clear any leftover invalid tooltip from a prior edit
     this.input.placeholder = column.placeholder ?? (this.showPlaceholders ? column.header : '');
     this.input.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.input.style.width = `${rect.width}px`;
@@ -94,6 +95,12 @@ export class TextEditor {
 
   close(): void {
     this.input.remove();
+  }
+
+  setInvalid(message: string | null): void {
+    this.input.classList.toggle('apg-editor-invalid', message != null);
+    if (message) this.input.title = message;
+    else this.input.removeAttribute('title');
   }
 }
 

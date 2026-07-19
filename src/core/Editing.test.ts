@@ -651,6 +651,48 @@ describe('event-based validation (cellEditEnding.stayInEditMode)', () => {
     expect(host.querySelector('.apg-editor')).not.toBeNull(); // still editing cell (0,1)
     expect(grid.selectedCell).toEqual({ row: 0, col: 1 }); // selection did not move
   });
+
+  it('marks the editor invalid with a tooltip when errorMessage is set alongside stayInEditMode', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.on('cellEditEnding', (e) => {
+      e.cancel = true;
+      e.stayInEditMode = true;
+      e.errorMessage = 'That value is not allowed';
+    });
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'rejected';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    expect(input.classList.contains('apg-editor-invalid')).toBe(true);
+    expect(input.title).toBe('That value is not allowed');
+  });
+
+  it('clears the invalid mark once a subsequent value commits', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(5) });
+    grid.on('cellEditEnding', (e) => {
+      if (e.value === 'bad') {
+        e.cancel = true;
+        e.stayInEditMode = true;
+        e.errorMessage = 'Bad value';
+      }
+    });
+
+    grid.editCell(0, 1);
+    let input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'bad';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    expect(input.classList.contains('apg-editor-invalid')).toBe(true);
+
+    input.value = 'good';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+    grid.editCell(1, 1); // reopen the same shared TextEditor instance on a new cell
+    input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.classList.contains('apg-editor-invalid')).toBe(false);
+    expect(input.title).toBe('');
+  });
 });
 
 describe('CollectionView-style validation (getError)', () => {
@@ -758,6 +800,22 @@ describe('CollectionView-style validation (getError)', () => {
 
     expect(called).toBe(false);
     expect(host.querySelector('.apg-editor')).toBeNull();
+  });
+
+  it('marks the editor invalid with the getError message as a tooltip', () => {
+    const grid = new Grid(host, {
+      columns: numberColumns,
+      itemsSource: [{ id: 0, sales: 10 }],
+      getError: (ctx) =>
+        typeof ctx.value === 'number' && ctx.value < 0 ? 'Must be positive' : null,
+    });
+
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    commit(input, '-5');
+
+    expect(input.classList.contains('apg-editor-invalid')).toBe(true);
+    expect(input.title).toBe('Must be positive');
   });
 });
 

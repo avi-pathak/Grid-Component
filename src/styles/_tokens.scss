@@ -53,6 +53,7 @@ $light: (
   'hover-bg': rgba(37, 99, 235, 0.055),
   'focus-ring': rgba(37, 99, 235, 0.4),
   'edited-bg': rgba(217, 119, 6, 0.14),
+  'error-border': #dc2626,
   // grouping
   'group-bg': #eef2fb,
   'group-bg-hover': #e4eaf7,
@@ -84,6 +85,7 @@ $dark: (
   'hover-bg': rgba(75, 139, 255, 0.12),
   'focus-ring': rgba(75, 139, 255, 0.55),
   'edited-bg': rgba(245, 158, 11, 0.22),
+  'error-border': #f87171,
   'group-bg': #262c37,
   'group-bg-hover': #2d3540,
   'panel-bg': #1f242d,

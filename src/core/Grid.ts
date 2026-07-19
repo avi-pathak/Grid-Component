@@ -140,6 +140,7 @@ export class Grid {
   // Set by the onEnding closure just before EditorManager.commit() consults
   // stayOpenOnReject — both calls happen synchronously within the same commit.
   private pendingStayInEditMode = false;
+  private pendingErrorMessage: string | undefined;
   private mergeManager?: MergeManager;
   private anyMergeable = false;
   private filterModel?: FilterModel;
@@ -331,9 +332,11 @@ export class Grid {
         };
         this.events.emit('cellEditEnding', e);
         this.pendingStayInEditMode = e.cancel && !!e.stayInEditMode;
+        this.pendingErrorMessage = e.errorMessage;
         return !e.cancel;
       },
       stayOpenOnReject: () => this.pendingStayInEditMode,
+      rejectMessage: () => this.pendingErrorMessage,
       getError: resolved.getError,
       onEnded: (cell, value) =>
         this.events.emit('cellEditEnded', { row: cell.row, col: cell.col, value }),

@@ -19,6 +19,12 @@ export interface CellEditor<T = Record<string, unknown>> {
     opts?: EditorOpenOptions,
   ): void;
   close(): void;
+  /**
+   * Mark the editor invalid with a message (shown as a native tooltip), or
+   * clear it with `null`. Optional — only the built-in text/dropdown editors
+   * implement it; a custom editor that wants the same treatment can too.
+   */
+  setInvalid?(message: string | null): void;
 }
 
 /** Builds a column's custom editor, given the commit/cancel callbacks EditorManager wires to every editor. */

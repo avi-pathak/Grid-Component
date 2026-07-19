@@ -34,6 +34,8 @@ export interface EditorDeps {
   onEnding?: (cell: CellAddress, value: unknown) => boolean;
   /** Consulted only right after onEnding rejects a value: keep the editor open with the rejected text instead of reverting and closing it. */
   stayOpenOnReject?: (cell: CellAddress, value: unknown) => boolean;
+  /** Message to show on the editor when onEnding rejects with stayOpenOnReject. */
+  rejectMessage?: () => string | undefined;
   /** Return a message to reject a value after parsing; a non-null result always keeps the editor open. */
   getError?: (ctx: CellTemplateContext, parsing: boolean) => string | null | undefined;
   /** Called after a new value was committed to the row. */
@@ -121,7 +123,10 @@ export class EditorManager {
       // A handler rejected the value. Normally that just reverts and closes
       // like any other rejection; stayOpenOnReject lets it keep the editor
       // open with the rejected text instead, so the user can fix it in place.
-      if (this.deps.stayOpenOnReject?.(cell, newValue)) return;
+      if (this.deps.stayOpenOnReject?.(cell, newValue)) {
+        this.active?.setInvalid?.(this.deps.rejectMessage?.() ?? null);
+        return;
+      }
       this.closeEditing(cell);
       return;
     }
@@ -133,8 +138,13 @@ export class EditorManager {
         row: cell.row,
         column,
       };
-      if (this.deps.getError(ctx, parsing) != null) return; // stays open, like stayOpenOnReject
+      const error = this.deps.getError(ctx, parsing);
+      if (error != null) {
+        this.active?.setInvalid?.(error); // stays open, like stayOpenOnReject
+        return;
+      }
     }
+    this.active?.setInvalid?.(null);
     this.deps.undo.push(
       new EditAction(this.deps.data, column, cell.row, oldValue, newValue, this.deps.onApplied),
     );

@@ -12,7 +12,13 @@ and verified in the browser.
 - `headersVisibility` (None / Column / Row / All)
 - Selection modes: None, Cell, CellRange, Row, RowRange, Column, ColumnRange
 - Mouse + keyboard navigation, drag/shift range extend
-- Cell editing (TextEditor) gated by `column.editable`
+- Full **editing** feature set (see [`12-Editing.md`](12-Editing.md)): grid/row/
+  column/cell read-only levels, IME-safe composition handling, placeholders,
+  Quick Editing (type-to-start, arrow-commits-and-moves), Always Editing,
+  Highlight Edits, event-based (`stayInEditMode`) and CollectionView-style
+  (`getError`) validation, pluggable Custom Editors, and row-level Popup
+  Editors — on top of the original inline TextEditor/DropDownEditor/
+  RadioEditor gated by `column.editable`
 - Column resize by dragging the header edge
 - Undo / redo for edits and resizes (`UndoStack`, ctrl+Z / ctrl+Y)
 - Multi-level **column groups**: header bands spanning leaf columns, with

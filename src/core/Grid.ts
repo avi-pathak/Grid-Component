@@ -341,7 +341,17 @@ export class Grid {
       onEnded: (cell, value) =>
         this.events.emit('cellEditEnded', { row: cell.row, col: cell.col, value }),
       onEnd: (cell) => this.events.emit('cellEditEnd', cell),
-      onMove: (direction) => this.onNav(direction, false),
+      onMove: (direction) => {
+        this.onNav(direction, false);
+        // At the first/last row or column the move clamps to the same cell, so
+        // applyMove bails out before re-opening the editor. Restore always-edit's
+        // invariant here instead of leaving the cell stranded out of edit mode.
+        const active = this.selectionModel.getActive();
+        if (this.alwaysEdit && active && !this.editor.isEditing) {
+          this.editor.begin(active, { mode: 'quick' });
+        }
+      },
+      restoreFocus: () => this.host.focus(),
     });
     this.undoStack.onStateChanged = () =>
       this.events.emit('undoStackChanged', { canUndo: this.canUndo, canRedo: this.canRedo });

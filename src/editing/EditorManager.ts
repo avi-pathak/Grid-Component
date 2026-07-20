@@ -43,6 +43,8 @@ export interface EditorDeps {
   onEnd: (cell: CellAddress) => void;
   /** Quick-edit arrow keys commit then move the active cell this way instead of moving the caret. */
   onMove?: (direction: 'up' | 'down' | 'left' | 'right') => void;
+  /** Put focus back on the grid after a keyboard-driven edit ends without another editor opening. */
+  restoreFocus?: () => void;
 }
 
 /** Begins, commits, and cancels cell edits; commits run through the undo stack. */
@@ -177,7 +179,13 @@ export class EditorManager {
     // Don't move if the commit was rejected and stayed open (stayOpenOnReject)
     // — the editor is still anchored to this cell, so the selection shouldn't
     // wander off while the user fixes the rejected value.
-    if (!this.editing) this.deps.onMove?.(direction);
+    if (this.editing) return;
+    this.deps.onMove?.(direction);
+    // Committing removed the input from the DOM, which orphans focus on
+    // <body>. If the move didn't open another editor (an edge row/column, or
+    // a target that isn't editable) the grid would stop receiving keys
+    // entirely and the *page* would scroll on the next arrow press.
+    if (!this.editing) this.deps.restoreFocus?.();
   }
 
   private cancelEditing(): void {

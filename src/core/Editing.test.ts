@@ -494,6 +494,37 @@ describe('always editing', () => {
     expect(input.value).toBe('n1');
   });
 
+  it('stays in edit mode when an arrow key hits the first row', () => {
+    // Regression: ArrowUp on row 0 committed and closed the editor, but the
+    // move clamped to the same cell so applyMove bailed out and nothing
+    // re-opened it — the cell was left stranded out of edit mode.
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), alwaysEdit: true });
+    grid.select(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+
+    expect(grid.selectedCell).toEqual({ row: 0, col: 1 }); // clamped, didn't move
+    expect(host.querySelector('.apg-cells input')).not.toBeNull(); // still editing
+  });
+
+  it('keeps keyboard focus on the grid when an edge move ends the edit', () => {
+    // Regression: committing removes the input from the DOM, orphaning focus
+    // on <body>. Without alwaysEdit re-opening an editor, the grid stopped
+    // receiving keys and the page scrolled on the next arrow press instead.
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3) });
+    grid.select(0, 1);
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'x', bubbles: true }));
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+
+    expect(host.querySelector('.apg-cells input')).toBeNull(); // edit ended
+    expect(document.activeElement).toBe(host); // but the grid can still be driven
+
+    // And the grid really does still respond to the keyboard.
+    host.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(grid.selectedCell).toEqual({ row: 1, col: 1 });
+  });
+
   it('re-opens the editor at the new cell after moving again', () => {
     const grid = new Grid(host, {
       columns: [

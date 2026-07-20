@@ -32,6 +32,7 @@ Throws if a string selector matches nothing.
 | `columnGroupAnimation` | `boolean` | `false` | animate group headers on collapse/expand |
 | `selectionMode` | `SelectionMode` | `'Cell'` | |
 | `headersVisibility` | `HeadersVisibility` | `'All'` | None / Column / Row / All |
+| `rowNumbers` | `boolean` | `false` | number the row headers 1, 2, 3… (blank otherwise) |
 
 ### ColumnDef
 

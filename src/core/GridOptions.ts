@@ -104,6 +104,16 @@ export interface GridOptions<T = Record<string, unknown>> {
    * (Save/Cancel) instead of one cell at a time. Default false.
    */
   popupEditors?: boolean;
+  /**
+   * Number the row headers 1, 2, 3… Default false, leaving them blank — the
+   * row header is still shown (that's `headersVisibility`), it just carries no
+   * text. Matches FlexGrid, whose row headers are empty until you template
+   * them, and AG Grid's opt-in `rowNumbers`.
+   *
+   * The number is the row's position in the current view, so it renumbers as
+   * sorting, filtering, and paging change what's on screen.
+   */
+  rowNumbers?: boolean;
 }
 
 export interface ResolvedOptions<T> {
@@ -139,6 +149,7 @@ export interface ResolvedOptions<T> {
   highlightEdits: boolean;
   getError?: (ctx: CellTemplateContext<T>, parsing: boolean) => string | null | undefined;
   popupEditors: boolean;
+  rowNumbers: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -198,6 +209,7 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     highlightEdits: options.highlightEdits ?? false,
     getError: options.getError,
     popupEditors: options.popupEditors ?? false,
+    rowNumbers: options.rowNumbers ?? false,
   };
 }
 

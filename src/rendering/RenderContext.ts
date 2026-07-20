@@ -31,6 +31,7 @@ export interface RenderContext {
   isCellEdited?: (row: number, col: number) => boolean;
   /** Show a pencil button in each data row's row-header cell. Consumed by RowHeaderRenderer. */
   popupEditors?: boolean;
+  rowNumbers?: boolean;
   /** Active column-header groups. Consumed by the ColumnGroupRenderer. */
   columnGroups?: ColumnGroup[];
 }

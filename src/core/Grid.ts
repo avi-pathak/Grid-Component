@@ -147,6 +147,7 @@ export class Grid {
   private filterEditor?: FilterEditor;
   private editPopup?: EditPopup;
   private popupEditors = false;
+  private rowNumbers = false;
   private maxGroups: number;
   private allowSorting: boolean;
   private headerDownX = -1;
@@ -176,6 +177,7 @@ export class Grid {
     this.alwaysEdit = resolved.alwaysEdit;
     this.highlightEdits = resolved.highlightEdits;
     this.popupEditors = resolved.popupEditors;
+    this.rowNumbers = resolved.rowNumbers;
     this.mergeManager = resolved.mergeManager;
     this.anyMergeable = this.allColumns.some((c) => c.allowMerging);
     this.selectionModel = new SelectionModel(resolved.selectionMode);
@@ -1329,6 +1331,7 @@ export class Grid {
       columnGroups: this.columnGroupList,
       isCellEdited: this.highlightEdits ? (row, col) => this.isCellEdited(row, col) : undefined,
       popupEditors: this.popupEditors,
+      rowNumbers: this.rowNumbers,
     };
   }
 

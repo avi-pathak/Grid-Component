@@ -1,37 +1,113 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Live, editable demos of apgrid — a fast, framework-free virtualized data grid for the web."
+    />
     <title>apgrid — virtualized data grid demos</title>
-  </head>
-  <body>
-    <aside class="sidebar">
-      <div class="brand">
-        <h1>apgrid</h1>
-        <span class="tag">Virtualized data grid for the web</span>
-        <span class="ver" id="version"></span>
-      </div>
-      <nav class="nav" id="nav">
-        <div class="nav-head">Feature demos</div>
-      </nav>
-      <div class="sidebar-foot">Built with TypeScript · zero runtime deps</div>
-    </aside>
 
-    <main class="main">
-      <header class="demo-head">
-        <div class="demo-head-row">
-          <h2 id="demo-title"></h2>
-          <div class="demo-head-actions">
-            <span id="export-slot"></span>
-            <button class="theme-toggle" id="theme-toggle" type="button" title="Toggle dark theme">
-              Dark
-            </button>
-          </div>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    />
+
+    <script>
+      // Apply the saved theme before first paint so the page never flashes the
+      // wrong one. `apg-theme-dark` is the grid's own theme class.
+      (function () {
+        try {
+          var saved = localStorage.getItem('apgrid-theme');
+          var dark = saved ? saved === 'dark' : true;
+          document.documentElement.classList.toggle('apg-theme-dark', dark);
+          document.documentElement.classList.toggle('site-dark', dark);
+        } catch (e) {
+          document.documentElement.classList.add('apg-theme-dark', 'site-dark');
+        }
+      })();
+    </script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="app">
+      <aside class="sidebar" id="sidebar" aria-label="Demo navigation">
+        <div class="sidebar-head">
+          <a class="brand" href="#" id="brand">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-text">
+              <strong>apgrid</strong>
+              <small>demo gallery</small>
+            </span>
+          </a>
+          <button
+            class="icon-btn sidebar-close"
+            id="sidebar-close"
+            type="button"
+            aria-label="Close navigation"
+          ></button>
         </div>
-        <p id="demo-tagline"></p>
-      </header>
-      <section class="stage" id="stage"></section>
-    </main>
+
+        <div class="search">
+          <span class="search-icon" aria-hidden="true"></span>
+          <input
+            class="search-input"
+            id="search"
+            type="search"
+            placeholder="Search demos"
+            aria-label="Search demos"
+            autocomplete="off"
+          />
+          <kbd class="search-key" aria-hidden="true">/</kbd>
+        </div>
+
+        <nav class="nav" id="nav"></nav>
+
+        <div class="sidebar-foot">
+          <span class="ver" id="version"></span>
+          <a
+            class="foot-link"
+            id="repo-link"
+            href="https://github.com/avi-pathak/Grid-Component"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            GitHub
+          </a>
+        </div>
+      </aside>
+
+      <div class="backdrop" id="backdrop" hidden></div>
+
+      <div class="main-col">
+        <header class="topbar">
+          <button
+            class="icon-btn menu-btn"
+            id="menu-btn"
+            type="button"
+            aria-label="Open navigation"
+            aria-expanded="false"
+          ></button>
+          <nav class="crumbs" id="crumbs" aria-label="Breadcrumb"></nav>
+          <div class="topbar-actions">
+            <span id="export-slot"></span>
+            <button
+              class="icon-btn"
+              id="theme-toggle"
+              type="button"
+              aria-label="Toggle dark theme"
+              aria-pressed="false"
+            ></button>
+          </div>
+        </header>
+
+        <main class="main" id="main" tabindex="-1"></main>
+      </div>
+    </div>
   </body>
 </html>

@@ -1,0 +1,456 @@
+/* =============================================================================
+   demo.css — the styles the feature demos themselves depend on.
+
+   Deliberately standalone: it defines its own tokens and keys dark mode off
+   `.apg-theme-dark` (the grid's own theme class) rather than any site chrome,
+   so it can be shipped verbatim into a StackBlitz sandbox and still look right.
+   Site shell styling lives in site.css.
+   ========================================================================== */
+
+:root {
+  --apgd-panel: #ffffff;
+  --apgd-border: #e3e7ee;
+  --apgd-accent: #3b6fe0;
+  --apgd-fg: #1f2937;
+  --apgd-muted: #6b7280;
+  --apgd-subtle: #f8fafc;
+  --apgd-radius: 8px;
+}
+
+.apg-theme-dark {
+  --apgd-panel: #171b22;
+  --apgd-border: #2a313c;
+  --apgd-accent: #7aa2f7;
+  --apgd-fg: #e6e9ee;
+  --apgd-muted: #9aa4b2;
+  --apgd-subtle: #12151b;
+}
+
+/* ---- The grid host every demo mounts into ------------------------------- */
+
+.apg-demo-grid {
+  height: 460px;
+  width: 100%;
+  border: 1px solid var(--apgd-border);
+  border-radius: var(--apgd-radius);
+  overflow: hidden;
+}
+
+/* ---- Demo toolbars and controls ----------------------------------------- */
+
+.apg-demo-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.apg-demo-toolbar label {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--apgd-fg);
+}
+
+.apg-demo-toolbar select,
+.apg-demo-input {
+  font: inherit;
+  padding: 6px 9px;
+  color: var(--apgd-fg);
+  background: var(--apgd-panel);
+  border: 1px solid var(--apgd-border);
+  border-radius: 7px;
+}
+
+.apg-demo-input {
+  width: 76px;
+}
+
+.apg-demo-toolbar select:focus-visible,
+.apg-demo-input:focus-visible,
+.apg-demo-btn:focus-visible {
+  outline: 2px solid var(--apgd-accent);
+  outline-offset: 2px;
+}
+
+.apg-demo-btn {
+  font: inherit;
+  font-weight: 500;
+  min-height: 32px;
+  padding: 6px 13px;
+  color: var(--apgd-fg);
+  background: var(--apgd-panel);
+  border: 1px solid var(--apgd-border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.apg-demo-btn:hover:not(:disabled) {
+  border-color: var(--apgd-accent);
+  color: var(--apgd-accent);
+}
+
+.apg-demo-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.apg-demo-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--apgd-fg);
+}
+
+.apg-demo-check {
+  cursor: pointer;
+}
+
+.apg-demo-readout {
+  font-size: 13px;
+  color: var(--apgd-muted);
+}
+
+.apg-demo-badge {
+  margin-top: 12px;
+  display: inline-block;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--apgd-accent);
+  background: color-mix(in srgb, var(--apgd-accent) 12%, transparent);
+  border-radius: 7px;
+}
+
+.apg-demo-json {
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px;
+  font:
+    12px/1.5 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  color: var(--apgd-fg);
+  background: var(--apgd-subtle);
+  border: 1px solid var(--apgd-border);
+  border-radius: var(--apgd-radius);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+/* ---- Grouping demo: extra text in the custom group-header template ------- */
+
+.demo-group-total {
+  color: var(--apgd-muted);
+  font-size: 0.85em;
+}
+
+/* ---- Custom-editors demo: a 5-star rating picker ------------------------- */
+
+.demo-star-editor {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+}
+
+.demo-star-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--apgd-border);
+  cursor: pointer;
+}
+
+.demo-star-btn:hover,
+.demo-star-btn:focus-visible {
+  color: var(--apgd-accent);
+}
+
+.demo-star-filled {
+  color: #f5a623;
+}
+
+/* ---- Conditional-styling demo (cellClass / cellClassRules / rowClass) ---- */
+
+.demo-sales-high {
+  background: #d7f2dd;
+  color: #05603a;
+  font-weight: 600;
+}
+
+.demo-sales-mid {
+  background: #eafaef;
+  color: #087443;
+}
+
+.demo-cell-high {
+  background: #fde2e1;
+  color: #b42318;
+  font-weight: 600;
+}
+
+.demo-cell-low {
+  background: #e7f0ff;
+  color: #1849a9;
+}
+
+.demo-neg {
+  color: #b42318;
+  font-weight: 600;
+}
+
+.demo-pos {
+  color: #067647;
+}
+
+.demo-row-inactive {
+  background: #f4f4f5;
+  color: #9aa0a6;
+  font-style: italic;
+}
+
+/* ---- Nested column-groups demo: allocation size ------------------------- */
+
+.apg-demo-grid .big-val {
+  color: #157347;
+  font-weight: 600;
+}
+
+.apg-demo-grid .small-val {
+  color: #b02a37;
+  font-style: italic;
+}
+
+/* ---- Live-data demo: flashing price cells and a market ticker ----------- */
+
+.demo-num {
+  font-variant-numeric: tabular-nums;
+  transition: background 0.6s ease;
+}
+
+.demo-flash-up {
+  background: #b6ecc4;
+}
+
+.demo-flash-down {
+  background: #fcccc8;
+}
+
+.demo-tick {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.demo-tick.demo-up {
+  color: #067647;
+}
+
+.demo-tick.demo-down {
+  color: #d92d20;
+}
+
+.demo-tick.demo-flat {
+  color: #98a2b3;
+}
+
+.apg-cell.demo-q {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.apg-cell.demo-q-up {
+  background: #d3f4dd;
+}
+
+.apg-cell.demo-q-down {
+  background: #fcd6d3;
+}
+
+.apg-cell.demo-q-flat {
+  background: transparent;
+}
+
+.demo-q-val {
+  font-weight: 600;
+}
+
+.demo-q-pct {
+  font-size: 11px;
+  color: #475467;
+}
+
+.demo-q-arrow.demo-q-up {
+  color: #067647;
+}
+
+.demo-q-arrow.demo-q-down {
+  color: #d92d20;
+}
+
+.demo-q-arrow.demo-q-flat {
+  color: #98a2b3;
+}
+
+.demo-q-spark {
+  margin-left: auto;
+  overflow: visible;
+}
+
+.demo-q-spark polyline {
+  fill: none;
+  stroke: #475467;
+  stroke-width: 1.25;
+}
+
+.demo-q-up .demo-q-spark polyline {
+  stroke: #067647;
+}
+
+.demo-q-down .demo-q-spark polyline {
+  stroke: #d92d20;
+}
+
+.apg-cell.demo-q-sym {
+  font-weight: 700;
+  background: #f2f4f7;
+}
+
+/* ---- Custom-cell demo: status dot and progress bar templates ------------ */
+
+.apg-cell .badge {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-right: 7px;
+  flex: none;
+}
+
+.apg-cell .bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: #e7ebf1;
+  overflow: hidden;
+  margin-right: 8px;
+}
+
+.apg-cell .bar i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #22c55e);
+}
+
+.apg-cell .bar-num {
+  font-variant-numeric: tabular-nums;
+  color: var(--apgd-muted);
+  font-size: 12px;
+}
+
+/* =============================================================================
+   Dark-theme overrides.
+
+   The grid core themes itself through `--apg-*` tokens, but the classes above
+   are demo markup with baked-in light values. These give them dark-appropriate
+   tints — translucent, so the dark row background shows through and text stays
+   legible at AA contrast.
+   ========================================================================== */
+
+.apg-theme-dark {
+  .demo-sales-high {
+    background: rgba(34, 197, 94, 0.2);
+    color: #6ee7a8;
+  }
+  .demo-sales-mid {
+    background: rgba(34, 197, 94, 0.12);
+    color: #8ff0bd;
+  }
+  .demo-cell-high {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ff9d95;
+  }
+  .demo-cell-low {
+    background: rgba(59, 130, 246, 0.2);
+    color: #9dc0ff;
+  }
+  .demo-neg {
+    color: #ff9d95;
+  }
+  .demo-pos {
+    color: #6ee7a8;
+  }
+  .demo-row-inactive {
+    background: rgba(255, 255, 255, 0.04);
+    color: #8b93a1;
+  }
+
+  .apg-demo-grid .big-val {
+    color: #6ee7a8;
+  }
+  .apg-demo-grid .small-val {
+    color: #ff9d95;
+  }
+
+  .demo-flash-up {
+    background: rgba(34, 197, 94, 0.28);
+  }
+  .demo-flash-down {
+    background: rgba(239, 68, 68, 0.28);
+  }
+  .demo-tick.demo-up {
+    color: #6ee7a8;
+  }
+  .demo-tick.demo-down {
+    color: #ff9d95;
+  }
+  .demo-tick.demo-flat {
+    color: #8b93a1;
+  }
+  .apg-cell.demo-q-up {
+    background: rgba(34, 197, 94, 0.18);
+  }
+  .apg-cell.demo-q-down {
+    background: rgba(239, 68, 68, 0.18);
+  }
+  .demo-q-pct {
+    color: #9aa4b2;
+  }
+  .demo-q-arrow.demo-q-up {
+    color: #6ee7a8;
+  }
+  .demo-q-arrow.demo-q-down {
+    color: #ff9d95;
+  }
+  .demo-q-arrow.demo-q-flat {
+    color: #8b93a1;
+  }
+  .demo-q-spark polyline {
+    stroke: #9aa4b2;
+  }
+  .demo-q-up .demo-q-spark polyline {
+    stroke: #6ee7a8;
+  }
+  .demo-q-down .demo-q-spark polyline {
+    stroke: #ff9d95;
+  }
+  .apg-cell.demo-q-sym {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .apg-cell .bar {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}

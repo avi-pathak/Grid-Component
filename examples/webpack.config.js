@@ -17,13 +17,23 @@ module.exports = {
   resolve: { extensions: ['.ts', '.js'] },
   module: {
     rules: [
+      // `import src from './x.ts?raw'` yields the file's text instead of its
+      // exports — that's how the site shows each demo's real source and ships
+      // it to StackBlitz. This rule must win over the loaders below, which
+      // therefore opt out of the `?raw` query.
+      { resourceQuery: /raw/, type: 'asset/source' },
       {
         test: /\.ts$/,
         loader: 'ts-loader',
         options: { transpileOnly: true },
         exclude: /node_modules/,
+        resourceQuery: { not: [/raw/] },
       },
-      { test: /\.css$/, use: ['style-loader', 'css-loader'] },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader'],
+        resourceQuery: { not: [/raw/] },
+      },
       { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader'] },
     ],
   },

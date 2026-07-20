@@ -90,11 +90,11 @@ export class EditorManager {
     if (!column || !column.editable || column.dataType === 'Boolean') return;
     if (this.editing) {
       if (this.editing.row === cell.row && this.editing.col === cell.col) return; // already editing this cell
-      // Settle the previous edit (its own blur handler commits or cancels it)
-      // before moving on — needed for alwaysEdit, where selection can move to
-      // a new cell while the old one is still open.
-      (document.activeElement as HTMLElement | null)?.blur();
-      if (this.editing) return; // still open after blur (unexpected, but don't clobber it)
+      this.settle();
+      // Only a validation handler that deliberately kept the editor open (via
+      // stayInEditMode/getError) should still be editing here; leave it alone
+      // rather than dropping the user's rejected value.
+      if (this.editing) return;
     }
     if (this.deps.isReadOnly() || this.deps.isRowReadOnly(cell.row)) return;
     if (this.deps.onBeginning && !this.deps.onBeginning(cell)) return; // a handler canceled it
@@ -152,6 +152,17 @@ export class EditorManager {
     this.deps.onApplied();
     this.deps.onEnded?.(cell, newValue);
     this.closeEditing(cell);
+  }
+
+  // Finish an edit that's still open because focus moved to another cell.
+  // Asking the editor directly rather than blurring document.activeElement:
+  // focus isn't reliably inside the editor (a toolbar click, a programmatic
+  // move, or a window that lost focus all leave it elsewhere), and a blur that
+  // lands nowhere used to leave the old editor open — which silently blocked
+  // the next cell from opening at all.
+  private settle(): void {
+    if (this.active?.finishEdit) this.active.finishEdit();
+    else this.cancelEditing(); // no way to ask for its value; close it cleanly
   }
 
   private closeEditing(cell: CellAddress): void {

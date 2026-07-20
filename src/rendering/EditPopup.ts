@@ -1,4 +1,5 @@
 import { createEl } from '../utils/DOM';
+import { clamp } from '../utils/Math';
 import { Column } from '../models/Column';
 
 export interface EditPopupOptions<T = Record<string, unknown>> {
@@ -10,10 +11,17 @@ export interface EditPopupOptions<T = Record<string, unknown>> {
 
 /**
  * A floating form with one field per editable column, for row-level editing.
- * Floats near the row-header pencil button (same fixed-overlay pattern as
- * {@link FilterEditor}, appended to `document.body` rather than the
- * transform-positioned cells panel — a multi-field form is typically taller
- * than one row and would be clipped by that panel's `overflow: hidden`).
+ * Uses the same fixed-overlay pattern as {@link FilterEditor}, appended to
+ * `document.body` rather than the transform-positioned cells panel — a
+ * multi-field form is typically taller than one row and would be clipped by
+ * that panel's `overflow: hidden`.
+ *
+ * Centered over the grid rather than tethered to the row-header pencil button:
+ * the button sits at the far-left edge, so hanging a 260px form off it pushed
+ * the popup into the corner, half-covering the rows it edits. `position: fixed`
+ * plus viewport-relative {@link DOMRect}s keeps that correct however deeply the
+ * grid is nested or whichever ancestor scrolls.
+ *
  * Closes on outside click, Escape, or scroll; any of those (or the Cancel
  * button) discards the edit, matching {@link CollectionView.cancelEdit}.
  */
@@ -25,7 +33,8 @@ export class EditPopup<T = Record<string, unknown>> {
     return this.el != null;
   }
 
-  open(anchor: DOMRect, opts: EditPopupOptions<T>): void {
+  /** `bounds` is the grid's viewport rect; the form is centered inside it. */
+  open(bounds: DOMRect, opts: EditPopupOptions<T>): void {
     this.close();
     this.onCancel = opts.onCancel;
 
@@ -72,12 +81,12 @@ export class EditPopup<T = Record<string, unknown>> {
 
     document.body.appendChild(dialog);
     const r = dialog.getBoundingClientRect();
-    const left = Math.max(4, Math.min(anchor.left, window.innerWidth - r.width - 8));
-    const spaceBelow = window.innerHeight - anchor.bottom;
-    const top =
-      spaceBelow >= r.height + 8 ? anchor.bottom + 4 : Math.max(4, anchor.top - r.height - 4);
-    dialog.style.left = `${left}px`;
-    dialog.style.top = `${top}px`;
+    // Center on the grid, then clamp so a grid taller/wider than the window —
+    // or scrolled partly out of view — can never push the form off-screen.
+    const left = bounds.left + (bounds.width - r.width) / 2;
+    const top = bounds.top + (bounds.height - r.height) / 2;
+    dialog.style.left = `${clamp(left, 8, Math.max(8, window.innerWidth - r.width - 8))}px`;
+    dialog.style.top = `${clamp(top, 8, Math.max(8, window.innerHeight - r.height - 8))}px`;
     this.el = dialog;
 
     dialog.querySelector<HTMLElement>('input, select')?.focus();

@@ -25,6 +25,19 @@ export interface CellEditor<T = Record<string, unknown>> {
    * implement it; a custom editor that wants the same treatment can too.
    */
   setInvalid?(message: string | null): void;
+  /**
+   * Finish the edit as if the user had confirmed it, used when the edit has to
+   * settle because focus is moving to another cell. Implement it by calling the
+   * same `commit` callback the factory received (it's named `finishEdit` rather
+   * than `commit` so it can't collide with an editor that stores that callback
+   * on itself). Optional — an editor without it is cancelled instead, since
+   * there's no way to ask it for its value.
+   *
+   * Don't rely on a blur handler for this: focus is not always inside the
+   * editor when the next cell opens (a toolbar click, a programmatic move, or
+   * a window that lost focus all leave it elsewhere).
+   */
+  finishEdit?(): void;
 }
 
 /** Builds a column's custom editor, given the commit/cancel callbacks EditorManager wires to every editor. */

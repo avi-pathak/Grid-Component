@@ -438,6 +438,62 @@ describe('always editing', () => {
     expect(host.querySelector('.apg-editor')).toBeNull();
   });
 
+  it('moves on to the next cell when the open editor has no blur-to-commit', () => {
+    // Regression: begin() settled the previous edit by blurring
+    // document.activeElement, which only ever worked because the built-in
+    // editors happen to commit on their input's blur. An editor that doesn't
+    // (any custom CellEditor, or a built-in whose input never took focus
+    // because the window was inactive) stayed open, and begin() then bailed
+    // out — so the next cell silently never entered edit mode at all.
+    let opens = 0;
+    const held: CellEditor = {
+      open: () => {
+        opens++;
+      },
+      close: () => {},
+    };
+    const grid = new Grid(host, {
+      columns: [
+        { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+        { binding: 'name', header: 'Name', width: 160, editable: true, editor: () => held },
+        { binding: 'extra', header: 'Extra', width: 120, editable: true, editor: () => held },
+      ],
+      itemsSource: makeRows(3).map((r) => ({ ...r, extra: 'e' })),
+      alwaysEdit: true,
+    });
+
+    grid.select(0, 1);
+    expect(opens).toBe(1);
+
+    grid.select(0, 2); // the stuck editor must not block this
+    expect(opens).toBe(2);
+  });
+
+  it('arrow keys commit and move on to the next cell instead of moving the caret', () => {
+    // Regression: always-edit opened in 'full' mode, so the editor swallowed
+    // arrow keys for caret movement and the selection could never leave the
+    // cell — making the mode unusable with the keyboard.
+    const grid = new Grid(host, {
+      columns: [
+        { binding: 'id', header: 'ID', width: 80, dataType: 'Number' as const },
+        { binding: 'name', header: 'Name', width: 160, editable: true },
+      ],
+      itemsSource: makeRows(3),
+      alwaysEdit: true,
+    });
+
+    grid.select(0, 1);
+    let input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    input.value = 'edited';
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+
+    expect(grid.collectionView.items[0].name).toBe('edited'); // committed
+    expect(grid.selectedCell).toEqual({ row: 1, col: 1 }); // and moved
+    input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input).not.toBeNull(); // new cell is editing too
+    expect(input.value).toBe('n1');
+  });
+
   it('re-opens the editor at the new cell after moving again', () => {
     const grid = new Grid(host, {
       columns: [
@@ -979,6 +1035,34 @@ describe('popup editors', () => {
     const btn = host.querySelector(`.apg-rowheader-edit[data-popup-row="${row}"]`) as HTMLElement;
     btn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
   }
+
+  it('centers the popup on the grid, not on the row-header pencil button', () => {
+    // Regression: the popup was anchored to the pencil button, which sits at
+    // the grid's far-left edge — so a 260px form opened in the corner, half
+    // covering the rows it edits.
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    host.getBoundingClientRect = () => new DOMRect(100, 50, 800, 400);
+
+    openPopup(host, 0);
+    const dialog = document.querySelector('.apg-edit-popup') as HTMLElement;
+    // jsdom gives the dialog a 0x0 rect, so the centered position collapses to
+    // the midpoint of the bounds — enough to prove it centers on the grid
+    // rather than tracking the button's left edge.
+    expect(dialog.style.left).toBe('500px'); // 100 + 800 / 2
+    expect(dialog.style.top).toBe('250px'); // 50 + 400 / 2
+    void grid;
+  });
+
+  it('keeps the popup on screen when the grid is larger than the window', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });
+    host.getBoundingClientRect = () => new DOMRect(-4000, -3000, 9000, 9000);
+
+    openPopup(host, 0);
+    const dialog = document.querySelector('.apg-edit-popup') as HTMLElement;
+    expect(parseFloat(dialog.style.left)).toBeGreaterThanOrEqual(8);
+    expect(parseFloat(dialog.style.top)).toBeGreaterThanOrEqual(8);
+    void grid;
+  });
 
   it('shows a pencil button per data row only when popupEditors is on', () => {
     const grid = new Grid(host, { columns, itemsSource: makeRows(3), popupEditors: true });

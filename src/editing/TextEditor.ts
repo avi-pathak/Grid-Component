@@ -97,6 +97,10 @@ export class TextEditor {
     this.input.remove();
   }
 
+  finishEdit(): void {
+    this.onCommit(this.input.value);
+  }
+
   setInvalid(message: string | null): void {
     this.input.classList.toggle('apg-editor-invalid', message != null);
     if (message) this.input.title = message;

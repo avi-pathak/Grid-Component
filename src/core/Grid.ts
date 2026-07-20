@@ -1381,9 +1381,12 @@ export class Grid {
       if (isPress) this.toggleGroupAt(cell.row);
       return;
     }
+    // mousedown preventDefault blocks the default focus, so do it here — and
+    // before applyMove, because alwaysEdit opens an editor there and focusing
+    // the host afterwards would blur (and immediately commit/close) it.
+    if (isPress) this.host.focus();
     this.applyMove(cell, extend);
     if (isPress) {
-      this.host.focus(); // mousedown preventDefault blocks the default focus, so do it here
       this.events.emit('cellClick', cell);
       this.editor.toggleBoolean(cell); // checkbox cells flip on click
     }
@@ -1412,17 +1415,17 @@ export class Grid {
 
   private readonly onRowHeaderClick = (e: MouseEvent): void => {
     const btn = (e.target as HTMLElement).closest('.apg-rowheader-edit') as HTMLElement | null;
-    if (btn) this.openEditPopup(Number(btn.dataset.popupRow), btn.getBoundingClientRect());
+    if (btn) this.openEditPopup(Number(btn.dataset.popupRow), this.host.getBoundingClientRect());
   };
 
-  // Open the row popup editor, anchored to its row-header pencil button.
-  private openEditPopup(row: number, anchor: DOMRect): void {
+  // Open the row popup editor, centered over the grid.
+  private openEditPopup(row: number, bounds: DOMRect): void {
     if (!this.editPopup || this.data.rowType(row) !== 'data') return;
     if (this.emitCancel('rowEditStarting', { row })) return;
     const item = this.data.item(row);
     this.data.collectionView.editItem(item);
     this.events.emit('rowEditStarted', { row });
-    this.editPopup.open(anchor, {
+    this.editPopup.open(bounds, {
       columns: this.columns,
       item,
       onSave: (changes) => this.saveEditPopup(row, item, changes),
@@ -1522,8 +1525,12 @@ export class Grid {
     this.draw();
     const active = this.selectionModel.getActive();
     this.events.emit('selectionChanged', active);
-    // toggleBoolean/isReadOnly/rowReadOnly/editable are all re-checked inside begin().
-    if (this.alwaysEdit && active) this.editor.begin(active);
+    // toggleBoolean/isReadOnly/rowReadOnly/editable are all re-checked inside
+    // begin(). Quick mode (no initialChar) keeps the existing value but makes
+    // arrow keys commit and move on to the next cell — without it the open
+    // editor swallows arrows for caret movement and the selection can never
+    // leave the cell, which is the whole point of always-edit.
+    if (this.alwaysEdit && active) this.editor.begin(active, { mode: 'quick' });
   }
 
   private syncSelectionState(): void {

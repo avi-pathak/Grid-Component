@@ -27,11 +27,21 @@ const producedPath = path.join(examplesDir, filename);
 fs.rmSync(tarballPath, { force: true });
 fs.renameSync(producedPath, tarballPath);
 
-// npm workspaces hoist @avi-pathak/apgrid to the root node_modules. Remove it
-// before reinstalling — npm can otherwise skip re-extracting a `file:`
-// dependency whose path didn't change, even though its contents did.
-fs.rmSync(path.join(root, 'node_modules', '@avi-pathak'), { recursive: true, force: true });
-
-execFileSync('npm', ['install'], { cwd: root, stdio: 'inherit' });
+// Extract the tarball into node_modules ourselves instead of running
+// `npm install`.
+//
+// npm cannot be trusted to refresh this: package-lock.json pins an integrity
+// hash for the `file:` dependency, and npm will happily restore the *cached*
+// tarball matching that old hash rather than the new one on disk — even after
+// deleting node_modules/@avi-pathak first. That silently serves a stale build
+// to the demo app, so source changes appear not to take effect at all.
+//
+// Extracting is also exactly what npm itself would do with the tarball (it
+// unpacks the `package/` prefix), so the demo still consumes the package
+// through its own package.json `exports`/`main`, not monorepo source.
+const installDir = path.join(root, 'node_modules', '@avi-pathak', 'apgrid');
+fs.rmSync(installDir, { recursive: true, force: true });
+fs.mkdirSync(installDir, { recursive: true });
+execFileSync('tar', ['-xzf', tarballPath, '-C', installDir, '--strip-components=1']);
 
 console.log(`\nPacked and installed ${filename} as examples/${tarballName}`);

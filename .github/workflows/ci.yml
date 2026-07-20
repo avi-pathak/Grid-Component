@@ -15,6 +15,12 @@ jobs:
         with:
           node-version: 20
           cache: npm
+      # The examples workspace depends on examples/apgrid-local.tgz, a generated
+      # (gitignored) artifact. It doesn't exist on a fresh checkout, so a plain
+      # `npm ci` fails to resolve the `file:` dependency. Install the root only,
+      # build, and pack to produce the tarball, then do the full workspace install.
+      - run: npm ci --workspaces=false
+      - run: npm run pack:examples
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck

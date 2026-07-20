@@ -59,7 +59,7 @@ export class RadioEditor {
     const focusTarget =
       this.root.querySelector<HTMLElement>('input:checked') ??
       this.root.querySelector<HTMLElement>('input');
-    focusTarget?.focus();
+    focusTarget?.focus({ preventScroll: true }); // the grid owns scrolling; see TextEditor.open
   }
 
   close(): void {

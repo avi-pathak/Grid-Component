@@ -62,6 +62,50 @@ describe('editing position', () => {
     expect(input.style.transform).toContain('translate3d(80px, 0px, 0)');
   });
 
+  it('scrolls one row at a time when arrowing past the last visible row', () => {
+    // Regression: opening the editor focuses its input, and the browser then
+    // scrolls that input into view on its own. The editor is transform-placed
+    // inside a pinned panel, so the browser's reckoning of where it sits is
+    // wrong and the viewport jumped instead of advancing a single row. The
+    // grid does its own minimal scrollIntoView, so the editors must focus with
+    // preventScroll and leave scrolling alone.
+    const focused: Array<FocusOptions | undefined> = [];
+    const realFocus = HTMLElement.prototype.focus;
+    HTMLElement.prototype.focus = function (opts?: FocusOptions) {
+      focused.push(opts);
+      return realFocus.call(this, opts);
+    };
+    try {
+      const grid = new Grid(host, {
+        columns,
+        itemsSource: makeRows(1000),
+        rowHeight: 24,
+        alwaysEdit: true,
+      });
+      grid.select(10, 1);
+      expect(focused.some((o) => o?.preventScroll === true)).toBe(true);
+      void grid;
+    } finally {
+      HTMLElement.prototype.focus = realFocus;
+    }
+  });
+
+  it('advances the scroll by exactly one row at the bottom edge', () => {
+    const grid = new Grid(host, { columns, itemsSource: makeRows(1000), rowHeight: 24 });
+    const vp = host.querySelector('.apg-viewport') as HTMLElement;
+    // jsdom reports clientHeight 0, so stub the metric the scroll math reads.
+    // The 28px column header sits inside the viewport, so 268 leaves exactly
+    // ten 24px rows of data area.
+    Object.defineProperty(vp, 'clientHeight', { value: 268, configurable: true });
+    vp.scrollTop = 0;
+
+    grid.select(9, 1); // last fully visible row — already in view, no scroll
+    expect(vp.scrollTop).toBe(0);
+
+    grid.select(10, 1); // one past it
+    expect(vp.scrollTop).toBe(24); // exactly one row, not a jump
+  });
+
   it('edits a cell value through the editor', () => {
     const grid = new Grid(host, { columns, itemsSource: makeRows(20), rowHeight: 24 });
     grid.editCell(2, 1);

@@ -351,7 +351,7 @@ export class Grid {
           this.editor.begin(active, { mode: 'quick' });
         }
       },
-      restoreFocus: () => this.host.focus(),
+      restoreFocus: () => this.host.focus({ preventScroll: true }),
     });
     this.undoStack.onStateChanged = () =>
       this.events.emit('undoStackChanged', { canUndo: this.canUndo, canRedo: this.canRedo });

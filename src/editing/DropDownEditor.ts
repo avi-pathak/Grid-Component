@@ -76,7 +76,7 @@ export class DropDownEditor {
     this.setInvalid(null); // clear any leftover invalid state from a prior edit
     this.reposition(rect);
     parent.appendChild(this.root);
-    this.input.focus();
+    this.input.focus({ preventScroll: true }); // the grid owns scrolling; see TextEditor.open
 
     if (opts?.mode === 'quick' && opts.initialChar && !this.input.readOnly) {
       // Quick edit: seed the typed character and filter the list by it.

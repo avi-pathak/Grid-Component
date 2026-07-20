@@ -75,7 +75,11 @@ export class TextEditor {
     this.input.placeholder = column.placeholder ?? (this.showPlaceholders ? column.header : '');
     this.reposition(rect);
     parent.appendChild(this.input);
-    this.input.focus();
+    // preventScroll: the editor is transform-positioned inside a pinned panel,
+    // so letting the browser scroll it into view yanks the viewport by its own
+    // (wrong) reckoning. The grid scrolls the active cell into view itself,
+    // one row at a time.
+    this.input.focus({ preventScroll: true });
 
     if (opts?.mode === 'quick' && opts.initialChar) {
       // Quick edit: the typed character replaces the value outright, cursor after it.

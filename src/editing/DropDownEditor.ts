@@ -1,5 +1,6 @@
 import { Column } from '../models/Column';
 import { DataMapEditor } from '../models/DataMapEditor';
+import { EditorOpenOptions } from './EditorOpenOptions';
 
 /**
  * An in-cell editable dropdown for data-mapped columns. The input sits exactly
@@ -20,6 +21,7 @@ export class DropDownEditor {
   private options: string[] = [];
   private highlight = -1;
   private editable = false;
+  private composing = false;
 
   constructor(
     private onCommit: (value: string) => void,
@@ -42,6 +44,8 @@ export class DropDownEditor {
     this.root.append(this.input, this.arrow, this.listEl);
 
     this.input.addEventListener('input', () => this.filter(this.input.value));
+    this.input.addEventListener('compositionstart', () => (this.composing = true));
+    this.input.addEventListener('compositionend', () => (this.composing = false));
     this.input.addEventListener('keydown', (e) => this.onKeyDown(e));
     this.input.addEventListener('blur', () => this.commitInput());
     // Commit on mousedown (before the input blurs) so the click isn't lost.
@@ -58,23 +62,58 @@ export class DropDownEditor {
     });
   }
 
-  open(parent: HTMLElement, column: Column, item: Record<string, unknown>, rect: DOMRect): void {
+  open(
+    parent: HTMLElement,
+    column: Column,
+    item: Record<string, unknown>,
+    rect: DOMRect,
+    opts?: EditorOpenOptions,
+  ): void {
     const map = column.dataMap;
     this.editable = map?.isEditable ?? false;
     this.options = map ? map.getDisplayValues(item) : [];
     this.input.readOnly = column.dataMapEditor === DataMapEditor.Menu;
-    this.input.value = map ? map.getDisplayValue(column.getValue(item)) : '';
-    this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
-    this.root.style.width = `${rect.width}px`;
-    this.root.style.height = `${rect.height}px`;
+    this.setInvalid(null); // clear any leftover invalid state from a prior edit
+    this.reposition(rect);
     parent.appendChild(this.root);
-    this.renderList(this.options);
-    this.input.focus();
-    if (!this.input.readOnly) this.input.select();
+    this.input.focus({ preventScroll: true }); // the grid owns scrolling; see TextEditor.open
+
+    if (opts?.mode === 'quick' && opts.initialChar && !this.input.readOnly) {
+      // Quick edit: seed the typed character and filter the list by it.
+      this.input.value = opts.initialChar;
+      const pos = this.input.value.length;
+      this.input.setSelectionRange(pos, pos);
+      this.filter(this.input.value);
+    } else {
+      this.input.value = map ? map.getDisplayValue(column.getValue(item)) : '';
+      this.renderList(this.options);
+      if (!this.input.readOnly) this.input.select();
+    }
   }
 
   close(): void {
     this.root.remove();
+  }
+
+  focus(): void {
+    this.input.focus({ preventScroll: true });
+  }
+
+  reposition(rect: DOMRect): void {
+    this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+    this.root.style.width = `${rect.width}px`;
+    this.root.style.height = `${rect.height}px`;
+    this.positionList(); // the flip-above decision depends on where the cell now sits
+  }
+
+  finishEdit(): void {
+    this.onCommit(this.input.value);
+  }
+
+  setInvalid(message: string | null): void {
+    this.input.classList.toggle('apg-editor-invalid', message != null);
+    if (message) this.input.title = message;
+    else this.input.removeAttribute('title');
   }
 
   private filter(text: string): void {
@@ -115,6 +154,13 @@ export class DropDownEditor {
   }
 
   private onKeyDown(e: KeyboardEvent): void {
+    // Same IME-safety rule as TextEditor: don't let a composition-confirming
+    // Enter/Escape commit or cancel the cell, but still keep the keystroke
+    // from leaking to the grid's own keyboard nav.
+    if (this.composing || e.isComposing || e.keyCode === 229) {
+      e.stopPropagation();
+      return;
+    }
     const options = [...this.listEl.children] as HTMLElement[];
     if (e.key === 'ArrowDown') {
       e.preventDefault();

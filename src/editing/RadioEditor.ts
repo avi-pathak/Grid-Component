@@ -1,4 +1,5 @@
 import { Column } from '../models/Column';
+import { EditorOpenOptions } from './EditorOpenOptions';
 
 let nextId = 0;
 
@@ -31,7 +32,13 @@ export class RadioEditor {
     });
   }
 
-  open(parent: HTMLElement, column: Column, item: Record<string, unknown>, rect: DOMRect): void {
+  open(
+    parent: HTMLElement,
+    column: Column,
+    item: Record<string, unknown>,
+    rect: DOMRect,
+    _opts?: EditorOpenOptions,
+  ): void {
     const map = column.dataMap;
     const current = map ? map.getDisplayValue(column.getValue(item)) : '';
     this.root.innerHTML = '';
@@ -47,16 +54,27 @@ export class RadioEditor {
       label.append(radio, document.createTextNode(` ${display}`));
       this.root.appendChild(label);
     }
-    this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
-    this.root.style.minWidth = `${rect.width}px`;
+    this.reposition(rect);
     parent.appendChild(this.root);
     const focusTarget =
       this.root.querySelector<HTMLElement>('input:checked') ??
       this.root.querySelector<HTMLElement>('input');
-    focusTarget?.focus();
+    focusTarget?.focus({ preventScroll: true }); // the grid owns scrolling; see TextEditor.open
   }
 
   close(): void {
     this.root.remove();
+  }
+
+  focus(): void {
+    const target =
+      this.root.querySelector<HTMLElement>('input:checked') ??
+      this.root.querySelector<HTMLElement>('input');
+    target?.focus({ preventScroll: true });
+  }
+
+  reposition(rect: DOMRect): void {
+    this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+    this.root.style.minWidth = `${rect.width}px`;
   }
 }

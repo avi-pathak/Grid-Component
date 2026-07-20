@@ -33,6 +33,13 @@
   overflow: visible;
 }
 
+// Rejected value (event-based cellEditEnding.stayInEditMode or
+// GridOptions.getError), shown while the editor stays open with the
+// rejected text. The error message itself is a native tooltip via `title`.
+.apg-editor-invalid {
+  border-color: var(--apg-error-border);
+}
+
 .apg-dd-input {
   box-sizing: border-box;
   width: 100%;

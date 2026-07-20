@@ -1,5 +1,6 @@
 import { CellAddress, CellRange } from '../models/Cell';
 import { ChangeAction } from '../data/CollectionView';
+import { Column } from '../models/Column';
 
 export interface GridEvents {
   cellClick: CellAddress;
@@ -12,12 +13,34 @@ export interface GridEvents {
   beginningEdit: { row: number; col: number; cancel: boolean };
   /** After the editor opened for a cell. */
   cellEditStart: CellAddress;
-  /** Before the edited value is committed. Set `cancel` to true to reject it (validation). */
-  cellEditEnding: { row: number; col: number; value: unknown; cancel: boolean };
+  /** After the editor is positioned and ready. Informational only — not cancelable. */
+  cellEditPreparing: { row: number; col: number; column: Column };
+  /**
+   * Before the edited value is committed. Set `cancel` to true to reject it
+   * (validation). With `cancel` also set `stayInEditMode` to true to keep the
+   * editor open with the rejected text instead of reverting and closing it,
+   * optionally with `errorMessage` shown as a tooltip on the still-open editor.
+   */
+  cellEditEnding: {
+    row: number;
+    col: number;
+    value: unknown;
+    cancel: boolean;
+    stayInEditMode?: boolean;
+    errorMessage?: string;
+  };
   /** After an edited value was committed to the row. */
   cellEditEnded: { row: number; col: number; value: unknown };
   /** After the editor closed (whether or not a value was committed). */
   cellEditEnd: CellAddress;
+  /** Before a row's popup editor opens. Set `cancel` to true to prevent it. */
+  rowEditStarting: { row: number; cancel: boolean };
+  /** After a row's popup editor opened. */
+  rowEditStarted: { row: number };
+  /** Before a row's popup-edited changes are committed. Set `cancel` to true to reject them. */
+  rowEditEnding: { row: number; cancel: boolean };
+  /** After a row's popup editor closed (whether saved or cancelled). */
+  rowEditEnded: { row: number };
   undoStackChanged: { canUndo: boolean; canRedo: boolean };
   /** Before a column is sorted. `ascending` is the target direction (null = clearing). Cancelable. */
   sortingColumn: { col: number; binding: string; ascending: boolean | null; cancel: boolean };

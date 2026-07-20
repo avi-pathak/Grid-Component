@@ -134,12 +134,23 @@ describe('Grid', () => {
     expect(grid.selection).toBeNull();
   });
 
-  it('shows row headers with 1-based numbers by default', () => {
+  it('shows row headers by default, but leaves them blank', () => {
+    // Row numbers are opt-in, matching FlexGrid (row headers are empty until
+    // templated) and AG Grid's rowNumbers. The header column itself is still
+    // there — that's headersVisibility's job, not rowNumbers'.
     new Grid(host, { columns, itemsSource: makeRows(100) });
     expect(host.querySelector('.apg-rowheader-inner')).not.toBeNull();
     expect(host.querySelector('.apg-corner')).not.toBeNull();
+    const cells = [...host.querySelectorAll('.apg-rowheader-cell')];
+    expect(cells.length).toBeGreaterThan(0);
+    expect(cells.every((c) => c.textContent === '')).toBe(true);
+  });
+
+  it('numbers the row headers when rowNumbers is on', () => {
+    new Grid(host, { columns, itemsSource: makeRows(100), rowNumbers: true });
     const nums = [...host.querySelectorAll('.apg-rowheader-cell')].map((c) => c.textContent);
     expect(nums).toContain('1');
+    expect(nums).toContain('2');
   });
 
   it('hides headers per headersVisibility', () => {

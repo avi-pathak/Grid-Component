@@ -42,6 +42,26 @@ describe('freeze', () => {
     expect(band.querySelectorAll('.apg-frozen-cell-row').length).toBe(2);
   });
 
+  it('leaves pinned row headers blank, and numbers them, in step with the scrolling ones', () => {
+    // Regression: rowNumbers gated the scrolling row headers but the pinned
+    // rows have their own renderer, which kept numbering unconditionally — so
+    // a frozen row showed "1" while every row under it was blank.
+    const numbersOf = (el: HTMLElement): string[] =>
+      [...el.querySelectorAll('.apg-rowheader-cell')].map((c) => c.textContent ?? '');
+
+    new Grid(host, { columns, itemsSource: makeRows(50), frozenRows: 2 });
+    expect(numbersOf(host).every((t) => t === '')).toBe(true);
+
+    document.body.innerHTML = '';
+    const host2 = document.createElement('div');
+    document.body.appendChild(host2);
+    new Grid(host2, { columns, itemsSource: makeRows(50), frozenRows: 2, rowNumbers: true });
+    const shown = numbersOf(host2);
+    expect(shown).toContain('1'); // the pinned rows
+    expect(shown).toContain('2');
+    expect(shown).toContain('3'); // and the scrolling ones below them
+  });
+
   it('shows the corner when rows and columns are both frozen', () => {
     new Grid(host, { columns, itemsSource: makeRows(50), frozenColumns: 1, frozenRows: 1 });
     const corner = host.querySelector('.apg-frozen-corner') as HTMLElement;

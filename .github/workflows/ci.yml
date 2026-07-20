@@ -15,7 +15,13 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      # The examples workspace depends on examples/apgrid-local.tgz, a generated
+      # (gitignored) tarball. It's absent on a fresh checkout, and each `npm pack`
+      # produces a different hash than the one pinned in package-lock.json, so a
+      # full `npm ci` fails (ENOENT or EINTEGRITY). None of the CI steps below
+      # touch the examples app — they lint/typecheck/test/build the library
+      # source only — so install the root workspace alone and skip the tarball.
+      - run: npm ci --workspaces=false
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test

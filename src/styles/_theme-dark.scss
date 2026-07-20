@@ -6,7 +6,7 @@
 @use 'tokens' as *;
 
 // Roots that carry tokens: the grid host and the body-mounted overlays.
-$roots: '.apg, .apg-drag-ghost, .apg-context-menu, .apg-filter-dialog';
+$roots: '.apg, .apg-drag-ghost, .apg-context-menu, .apg-filter-dialog, .apg-edit-popup';
 
 // On the root itself…
 #{$roots} {
@@ -20,7 +20,8 @@ $roots: '.apg, .apg-drag-ghost, .apg-context-menu, .apg-filter-dialog';
   .apg,
   .apg-drag-ghost,
   .apg-context-menu,
-  .apg-filter-dialog {
+  .apg-filter-dialog,
+  .apg-edit-popup {
     @include tokens($dark);
   }
 }
@@ -36,7 +37,8 @@ $roots: '.apg, .apg-drag-ghost, .apg-context-menu, .apg-filter-dialog';
     .apg,
     .apg-drag-ghost,
     .apg-context-menu,
-    .apg-filter-dialog {
+    .apg-filter-dialog,
+    .apg-edit-popup {
       @include tokens($dark);
     }
   }

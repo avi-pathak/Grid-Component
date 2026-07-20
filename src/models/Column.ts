@@ -1,5 +1,6 @@
 import { DataMap } from './DataMap';
 import { DataMapEditor } from './DataMapEditor';
+import type { CellEditorFactory } from '../editing/CellEditor';
 
 export type DataType = 'String' | 'Number' | 'Boolean' | 'Date';
 export type CellAlign = 'left' | 'center' | 'right';
@@ -63,6 +64,15 @@ export interface ColumnDef<T = Record<string, unknown>> {
   cellClassRules?: CellClassRules<T>;
   /** Return custom cell HTML. Overrides the default text/checkbox rendering. */
   cellTemplate?: (ctx: CellTemplateContext<T>) => string;
+  /** Placeholder text shown in the built-in text editor when the cell is empty. */
+  placeholder?: string;
+  /**
+   * A custom editor for this column, replacing the built-in text/dropdown/
+   * radio editors. Called once (lazily, on first edit) with the same
+   * commit/cancel callbacks the built-in editors receive; the returned
+   * instance is then reused across every edit on this column.
+   */
+  editor?: CellEditorFactory<T>;
 }
 
 const DEFAULT_WIDTH = 100;
@@ -97,6 +107,8 @@ export class Column<T = Record<string, unknown>> {
   /** Excluded from layout/rendering/selection when true. Driven by collapsed column groups. */
   hidden = false;
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
+  readonly placeholder?: string;
+  readonly editorFactory?: CellEditorFactory<T>;
 
   private readonly valueGetter?: (item: T) => unknown;
   private readonly valueFormatter?: (value: unknown, item: T) => string;
@@ -114,6 +126,8 @@ export class Column<T = Record<string, unknown>> {
     this.valueGetter = def.valueGetter;
     this.valueFormatter = def.valueFormatter;
     this.cellTemplate = def.cellTemplate;
+    this.placeholder = def.placeholder;
+    this.editorFactory = def.editor;
     this.map = def.dataMap ? toDataMap(def.dataMap) : undefined;
     this.dataMapEditor = def.dataMapEditor ?? DataMapEditor.DropDownList;
     this.aggregate = def.aggregate;
@@ -162,6 +176,35 @@ export class Column<T = Record<string, unknown>> {
       }
       default:
         return text;
+    }
+  }
+
+  /**
+   * Like {@link parse}, but reports whether the text failed type coercion
+   * (`ok: false`) rather than just returning `null` — which `parse` also
+   * returns for an intentionally cleared cell. Lets a validation hook tell
+   * "invalid input" apart from "the user cleared this".
+   */
+  tryParse(text: string): { value: unknown; ok: boolean } {
+    if (this.map) {
+      const key = this.map.getKeyValue(text);
+      return { value: key != null ? key : text, ok: true };
+    }
+    switch (this.dataType) {
+      case 'Number': {
+        if (text.trim() === '') return { value: null, ok: true };
+        const n = Number(text);
+        return Number.isNaN(n) ? { value: null, ok: false } : { value: n, ok: true };
+      }
+      case 'Boolean':
+        return { value: text === 'true' || text === '1', ok: true };
+      case 'Date': {
+        if (text.trim() === '') return { value: null, ok: true };
+        const d = new Date(text);
+        return Number.isNaN(d.getTime()) ? { value: null, ok: false } : { value: d, ok: true };
+      }
+      default:
+        return { value: text, ok: true };
     }
   }
 

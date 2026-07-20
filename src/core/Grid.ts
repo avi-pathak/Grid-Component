@@ -33,6 +33,7 @@ import { GroupPanel, GroupChip } from '../rendering/GroupPanel';
 import { GroupHeaderTemplate } from '../rendering/GroupHeader';
 import { FilterModel } from '../data/FilterModel';
 import { FilterEditor } from '../rendering/FilterEditor';
+import { EditPopup } from '../rendering/EditPopup';
 import { UndoStack } from '../commands/UndoStack';
 import { ResizeColumnAction } from '../commands/ResizeColumnAction';
 import { EditAction } from '../commands/EditAction';
@@ -130,10 +131,23 @@ export class Grid {
   private groupHeaderRowHeight: number;
   private rowClass?: RenderContext['rowClass'];
   private rowStyle?: RenderContext['rowStyle'];
+  private rowReadOnlyFn?: (ctx: { item: Row; row: number }) => boolean;
+  private _isReadOnly = false;
+  private alwaysEdit = false;
+  private highlightEdits = false;
+  /** Per-item snapshot of a binding's value the first time it's edited, keyed by item reference. */
+  private editSnapshots = new WeakMap<Row, Record<string, unknown>>();
+  // Set by the onEnding closure just before EditorManager.commit() consults
+  // stayOpenOnReject — both calls happen synchronously within the same commit.
+  private pendingStayInEditMode = false;
+  private pendingErrorMessage: string | undefined;
   private mergeManager?: MergeManager;
   private anyMergeable = false;
   private filterModel?: FilterModel;
   private filterEditor?: FilterEditor;
+  private editPopup?: EditPopup;
+  private popupEditors = false;
+  private rowNumbers = false;
   private maxGroups: number;
   private allowSorting: boolean;
   private headerDownX = -1;
@@ -158,6 +172,12 @@ export class Grid {
     this.groupHeaderTemplate = resolved.groupHeaderTemplate;
     this.rowClass = resolved.rowClass;
     this.rowStyle = resolved.rowStyle;
+    this.rowReadOnlyFn = resolved.rowReadOnly;
+    this._isReadOnly = resolved.isReadOnly;
+    this.alwaysEdit = resolved.alwaysEdit;
+    this.highlightEdits = resolved.highlightEdits;
+    this.popupEditors = resolved.popupEditors;
+    this.rowNumbers = resolved.rowNumbers;
     this.mergeManager = resolved.mergeManager;
     this.anyMergeable = this.allColumns.some((c) => c.allowMerging);
     this.selectionModel = new SelectionModel(resolved.selectionMode);
@@ -226,6 +246,7 @@ export class Grid {
       (action, extend) => this.onNav(action, extend),
       (action) => (action === 'undo' ? this.undo() : this.redo()),
       () => this.onActivate(),
+      (key) => this.onType(key),
     );
     this.resizer = new ColumnResizer(
       this.viewportRenderer.headerInner,
@@ -275,6 +296,11 @@ export class Grid {
       this.filterEditor = new FilterEditor();
     }
 
+    if (this.popupEditors) {
+      this.editPopup = new EditPopup();
+      this.viewportRenderer.rowHeaderInner.addEventListener('click', this.onRowHeaderClick);
+    }
+
     this.editor = new EditorManager({
       cells: this.viewportRenderer.cells,
       layout: this.layout,
@@ -282,14 +308,52 @@ export class Grid {
       data: this.data,
       columns: this.columns,
       undo: this.undoStack,
+      isReadOnly: () => this._isReadOnly,
+      isRowReadOnly: (row) => this.rowReadOnlyFn?.({ item: this.data.item(row), row }) ?? false,
+      showPlaceholders: resolved.showPlaceholders,
       onApplied: () => this.draw(),
-      onBeginning: (cell) => !this.emitCancel('beginningEdit', { row: cell.row, col: cell.col }),
-      onStart: (cell) => this.events.emit('cellEditStart', cell),
-      onEnding: (cell, value) =>
-        !this.emitCancel('cellEditEnding', { row: cell.row, col: cell.col, value }),
+      onBeginning: (cell) => {
+        if (this.emitCancel('beginningEdit', { row: cell.row, col: cell.col })) return false;
+        if (this.highlightEdits) this.captureEditSnapshot(cell);
+        return true;
+      },
+      onStart: (cell) => {
+        this.events.emit('cellEditStart', cell);
+        this.events.emit('cellEditPreparing', {
+          row: cell.row,
+          col: cell.col,
+          column: this.columns[cell.col],
+        });
+      },
+      onEnding: (cell, value) => {
+        const e: GridEvents['cellEditEnding'] = {
+          row: cell.row,
+          col: cell.col,
+          value,
+          cancel: false,
+        };
+        this.events.emit('cellEditEnding', e);
+        this.pendingStayInEditMode = e.cancel && !!e.stayInEditMode;
+        this.pendingErrorMessage = e.errorMessage;
+        return !e.cancel;
+      },
+      stayOpenOnReject: () => this.pendingStayInEditMode,
+      rejectMessage: () => this.pendingErrorMessage,
+      getError: resolved.getError,
       onEnded: (cell, value) =>
         this.events.emit('cellEditEnded', { row: cell.row, col: cell.col, value }),
       onEnd: (cell) => this.events.emit('cellEditEnd', cell),
+      onMove: (direction) => {
+        this.onNav(direction, false);
+        // At the first/last row or column the move clamps to the same cell, so
+        // applyMove bails out before re-opening the editor. Restore always-edit's
+        // invariant here instead of leaving the cell stranded out of edit mode.
+        const active = this.selectionModel.getActive();
+        if (this.alwaysEdit && active && !this.editor.isEditing) {
+          this.editor.begin(active, { mode: 'quick' });
+        }
+      },
+      restoreFocus: () => this.host.focus({ preventScroll: true }),
     });
     this.undoStack.onStateChanged = () =>
       this.events.emit('undoStackChanged', { canUndo: this.canUndo, canRedo: this.canRedo });
@@ -369,6 +433,15 @@ export class Grid {
     this.syncSelectionState();
     this.draw();
     this.events.emit('selectionChanged', this.selectionModel.getActive());
+  }
+
+  /** Blocks all editing grid-wide when true, regardless of column/row settings. */
+  get isReadOnly(): boolean {
+    return this._isReadOnly;
+  }
+
+  set isReadOnly(value: boolean) {
+    this._isReadOnly = value;
   }
 
   select(row: number, col: number, extend = false): void {
@@ -1220,6 +1293,7 @@ export class Grid {
     const header = this.viewportRenderer.headerInner;
     header.removeEventListener('mousedown', this.onHeaderMouseDown);
     header.removeEventListener('click', this.onHeaderClick);
+    this.viewportRenderer.rowHeaderInner.removeEventListener('click', this.onRowHeaderClick);
     this.scroll.dispose();
     this.mouse.dispose();
     this.keyboard.dispose();
@@ -1229,6 +1303,7 @@ export class Grid {
     this.exportManager.dispose();
     this.groupPanel?.dispose();
     this.filterEditor?.close();
+    this.editPopup?.close();
     this.events.clear();
     this.undoStack.clear();
     this.resizeObserver?.disconnect();
@@ -1254,6 +1329,9 @@ export class Grid {
       rowStyle: this.rowStyle,
       merge: this.mergeLookup(),
       columnGroups: this.columnGroupList,
+      isCellEdited: this.highlightEdits ? (row, col) => this.isCellEdited(row, col) : undefined,
+      popupEditors: this.popupEditors,
+      rowNumbers: this.rowNumbers,
     };
   }
 
@@ -1308,6 +1386,9 @@ export class Grid {
     // its rows — not only the scrolls that change the row/column range.
     this.viewport.update(vp.scrollTop, vp.scrollLeft);
     this.renderer.render(this.context());
+    // Rows are redrawn at their new offsets above; an open editor is a separate
+    // element the renderer never sees, so move it with them.
+    this.editor?.reposition();
     this.events.emit('scrollChanged', { scrollTop: vp.scrollTop, scrollLeft: vp.scrollLeft });
   }
 
@@ -1316,9 +1397,12 @@ export class Grid {
       if (isPress) this.toggleGroupAt(cell.row);
       return;
     }
+    // mousedown preventDefault blocks the default focus, so do it here — and
+    // before applyMove, because alwaysEdit opens an editor there and focusing
+    // the host afterwards would blur (and immediately commit/close) it.
+    if (isPress) this.host.focus();
     this.applyMove(cell, extend);
     if (isPress) {
-      this.host.focus(); // mousedown preventDefault blocks the default focus, so do it here
       this.events.emit('cellClick', cell);
       this.editor.toggleBoolean(cell); // checkbox cells flip on click
     }
@@ -1345,6 +1429,50 @@ export class Grid {
     this.sortByColumn(col);
   };
 
+  private readonly onRowHeaderClick = (e: MouseEvent): void => {
+    const btn = (e.target as HTMLElement).closest('.apg-rowheader-edit') as HTMLElement | null;
+    if (btn) this.openEditPopup(Number(btn.dataset.popupRow), this.host.getBoundingClientRect());
+  };
+
+  // Open the row popup editor, centered over the grid.
+  private openEditPopup(row: number, bounds: DOMRect): void {
+    if (!this.editPopup || this.data.rowType(row) !== 'data') return;
+    if (this.emitCancel('rowEditStarting', { row })) return;
+    const item = this.data.item(row);
+    this.data.collectionView.editItem(item);
+    this.events.emit('rowEditStarted', { row });
+    this.editPopup.open(bounds, {
+      columns: this.columns,
+      item,
+      onSave: (changes) => this.saveEditPopup(row, item, changes),
+      onCancel: () => this.cancelEditPopup(row),
+    });
+  }
+
+  private saveEditPopup(row: number, item: Row, changes: Map<Column, unknown>): void {
+    if (this.emitCancel('rowEditEnding', { row })) {
+      this.data.collectionView.cancelEdit();
+      this.events.emit('rowEditEnded', { row });
+      return;
+    }
+    if (changes.size > 0) {
+      const edits: EditAction[] = [];
+      for (const [column, value] of changes) {
+        edits.push(new EditAction(this.data, column, row, column.getValue(item), value, () => {}));
+      }
+      const batch = new BatchAction(edits, () => this.draw());
+      this.undoStack.push(batch);
+      batch.redo(); // apply every field change and redraw once
+    }
+    this.data.collectionView.commitEdit();
+    this.events.emit('rowEditEnded', { row });
+  }
+
+  private cancelEditPopup(row: number): void {
+    this.data.collectionView.cancelEdit();
+    this.events.emit('rowEditEnded', { row });
+  }
+
   private onDoubleClick(cell: CellAddress): void {
     if (this.data.rowType(cell.row) === 'group') return;
     this.events.emit('cellDoubleClick', cell);
@@ -1358,18 +1486,74 @@ export class Grid {
     this.editor.begin(cell);
   }
 
+  /** True when highlightEdits is on and the cell's value differs from its pre-edit snapshot. */
+  isCellEdited(row: number, col: number): boolean {
+    if (!this.highlightEdits) return false;
+    const column = this.columns[col];
+    const item = this.data.item(row) as Row;
+    const snap = this.editSnapshots.get(item);
+    if (!snap || !(column.binding in snap)) return false;
+    return column.getValue(item) !== snap[column.binding];
+  }
+
+  /** Drop all highlightEdits tracking, clearing every `.apg-cell-edited` mark. */
+  clearEditHighlights(): void {
+    this.editSnapshots = new WeakMap();
+    this.draw();
+  }
+
+  // Record a binding's value the first time it's edited, so isCellEdited can
+  // compare against the original later. Recomputed from this snapshot on
+  // every render (not a sticky flag), so undoing an edit — or typing the
+  // original value back in — clears the highlight for free.
+  private captureEditSnapshot(cell: CellAddress): void {
+    const column = this.columns[cell.col];
+    const item = this.data.item(cell.row) as Row;
+    let snap = this.editSnapshots.get(item);
+    if (!snap) {
+      snap = {};
+      this.editSnapshots.set(item, snap);
+    }
+    if (!(column.binding in snap)) snap[column.binding] = column.getValue(item);
+  }
+
+  // Typing a printable character over a selected cell starts a quick edit
+  // seeded with that character (Excel-style), unless already editing.
+  private onType(key: string): void {
+    if (this.editor.isEditing) return;
+    const cell = this.selectionModel.getActive();
+    if (!cell || this.data.rowType(cell.row) === 'group') return;
+    const column = this.columns[cell.col];
+    if (!column || column.dataType === 'Boolean') return; // Boolean toggles via Space, not typing
+    this.editor.begin(cell, { mode: 'quick', initialChar: key });
+  }
+
   private bounds(): GridBounds {
     return { rowCount: this.layout.rowCount, colCount: this.layout.colCount };
   }
 
   private applyMove(cell: CellAddress, extend: boolean): void {
     if (this.data.rowType(cell.row) === 'group') return;
+    // A value the app rejected keeps its editor open; the selection must not
+    // wander off to another cell (leaving the invalid editor stranded behind
+    // it) or start editing elsewhere. Escape still discards and frees it.
+    if (this.editor.isBlocking) {
+      this.editor.refocus();
+      return;
+    }
     if (this.emitCancel('selectionChanging', { row: cell.row, col: cell.col })) return;
     if (!this.selectionModel.moveTo(cell, extend)) return;
     this.data.collectionView.moveCurrentToPosition(this.data.dataIndexAt(cell.row)); // currency follows selection
     this.syncSelectionState();
     this.draw();
-    this.events.emit('selectionChanged', this.selectionModel.getActive());
+    const active = this.selectionModel.getActive();
+    this.events.emit('selectionChanged', active);
+    // toggleBoolean/isReadOnly/rowReadOnly/editable are all re-checked inside
+    // begin(). Quick mode (no initialChar) keeps the existing value but makes
+    // arrow keys commit and move on to the next cell — without it the open
+    // editor swallows arrows for caret movement and the selection can never
+    // leave the cell, which is the whole point of always-edit.
+    if (this.alwaysEdit && active) this.editor.begin(active, { mode: 'quick' });
   }
 
   private syncSelectionState(): void {

@@ -36,6 +36,8 @@ export const icons = {
   // Funnel filled — shown when the column has an active filter.
   filterActive:
     '<svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor" aria-hidden="true" focusable="false"><path d="M2.5 3.5h11l-4.2 5v4l-2.6 1.3V8.5z"/></svg>',
+  // Pencil outline — opens a row's popup editor.
+  edit: '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true" focusable="false"><path d="M10.5 2.5 13.5 5.5 5 14H2v-3z"/></svg>',
 } as const;
 
 export type IconName = keyof typeof icons;

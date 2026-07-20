@@ -7,7 +7,7 @@ const options: HeadersVisibility[] = ['All', 'Column', 'Row', 'None'];
 export const layout: Demo = {
   id: 'layout',
   title: 'Headers & layout',
-  tagline: 'Toggle row and column headers via the headersVisibility option.',
+  tagline: 'Toggle row and column headers, and opt into numbered row headers.',
   mount(host) {
     const toolbar = document.createElement('div');
     toolbar.className = 'apg-demo-toolbar';
@@ -21,7 +21,17 @@ export const layout: Demo = {
       select.appendChild(opt);
     }
     label.appendChild(select);
-    toolbar.appendChild(label);
+
+    const numbersLabel = document.createElement('label');
+    const numbers = document.createElement('input');
+    numbers.type = 'checkbox';
+    numbersLabel.append(numbers, ' Number the rows (rowNumbers)');
+
+    const hint = document.createElement('span');
+    hint.className = 'apg-demo-readout';
+    hint.textContent = 'Row headers are blank by default, like FlexGrid — numbering is opt-in.';
+
+    toolbar.append(label, numbersLabel, hint);
     host.appendChild(toolbar);
 
     const gridHost = document.createElement('div');
@@ -38,17 +48,20 @@ export const layout: Demo = {
 
     let grid = new Grid(gridHost, { columns, itemsSource: data, headersVisibility: 'All' });
 
-    select.addEventListener('change', () => {
+    const rebuild = (): void => {
       grid.dispose();
       grid = new Grid(gridHost, {
         columns,
         itemsSource: data,
         headersVisibility: select.value as HeadersVisibility,
+        rowNumbers: numbers.checked,
       });
-    });
+    };
+    select.addEventListener('change', rebuild);
+    numbers.addEventListener('change', rebuild);
 
     return {
-      grid,
+      grid: () => grid, // rebuilt on every toggle, so hand the shell a getter
       dispose: () => {
         grid.dispose();
         toolbar.remove();

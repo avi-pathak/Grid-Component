@@ -55,6 +55,27 @@ describe('Column', () => {
     expect(d).toBeInstanceOf(Date);
   });
 
+  it('tryParse reports ok:false only for genuine coercion failure, not an intentional clear', () => {
+    const num = new Column({ binding: 'n', dataType: 'Number' });
+    expect(num.tryParse('42')).toEqual({ value: 42, ok: true });
+    expect(num.tryParse('abc')).toEqual({ value: null, ok: false });
+    expect(num.tryParse('')).toEqual({ value: null, ok: true }); // cleared, not invalid
+
+    const date = new Column({ binding: 'd', dataType: 'Date' });
+    expect(date.tryParse('not a date')).toEqual({ value: null, ok: false });
+    expect(date.tryParse('')).toEqual({ value: null, ok: true });
+    expect(date.tryParse('2024-03-15').ok).toBe(true);
+
+    expect(new Column({ binding: 'b', dataType: 'Boolean' }).tryParse('true')).toEqual({
+      value: true,
+      ok: true,
+    });
+    expect(new Column({ binding: 's' }).tryParse('anything')).toEqual({
+      value: 'anything',
+      ok: true,
+    });
+  });
+
   it('formats Booleans as empty (rendered as a checkbox) and Dates with locale', () => {
     expect(new Column({ binding: 'b', dataType: 'Boolean' }).format({ b: true })).toBe('');
     const formatted = new Column({ binding: 'd', dataType: 'Date' }).format({

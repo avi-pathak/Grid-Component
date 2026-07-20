@@ -1,8 +1,9 @@
 import { RenderContext } from './RenderContext';
 import { createEl, setTransform } from '../utils/DOM';
+import { iconEl } from '../utils/icons';
 import { ObjectPool } from '../utils/ObjectPool';
 
-/** Renders the row-header cells (1-based row numbers) for the visible rows, pooled. */
+/** Renders the row-header cells for the visible rows, pooled. Blank unless `rowNumbers` is on. */
 export class RowHeaderRenderer {
   private active = new Map<number, HTMLElement>();
   private pool = new ObjectPool<HTMLElement>(
@@ -39,7 +40,17 @@ export class RowHeaderRenderer {
       setTransform(el, 0, ctx.layout.getRowTop(row) - ctx.state.scrollTop);
       const isGroup = ctx.data.rowType(row) === 'group';
       el.className = isGroup ? 'apg-rowheader-cell apg-rowheader-group' : 'apg-rowheader-cell';
-      el.textContent = isGroup ? '' : String(row + 1);
+      // Blank unless asked for: FlexGrid's row headers are empty until you
+      // template them, and AG Grid's rowNumbers is opt-in too.
+      el.textContent = isGroup || !ctx.rowNumbers ? '' : String(row + 1);
+      if (ctx.popupEditors && !isGroup) {
+        const btn = createEl('button', 'apg-rowheader-edit');
+        btn.type = 'button';
+        btn.dataset.popupRow = String(row);
+        btn.title = 'Edit row';
+        btn.appendChild(iconEl('edit'));
+        el.appendChild(btn);
+      }
     }
   }
 

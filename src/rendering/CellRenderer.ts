@@ -30,12 +30,14 @@ export class CellRenderer {
     width: number,
     selected: boolean,
     active: boolean,
+    edited: boolean,
   ): void {
     el.style.left = `${left}px`;
     el.style.width = `${width}px`;
     el.className = `apg-cell apg-align-${column.align}`;
     if (selected) el.classList.add('apg-cell-selected');
     if (active) el.classList.add('apg-cell-active');
+    if (edited) el.classList.add('apg-cell-edited');
 
     // Conditional styling (rebuilt every pass, so it tracks edits and never leaks
     // onto recycled cells).

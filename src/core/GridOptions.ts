@@ -1,4 +1,4 @@
-import { Column, ColumnDef, CellStyle } from '../models/Column';
+import { Column, ColumnDef, CellStyle, CellTemplateContext } from '../models/Column';
 import { ColumnGroupDef } from '../models/ColumnGroup';
 import { SelectionMode } from '../selection/SelectionModel';
 import { CollectionView } from '../data/CollectionView';
@@ -72,6 +72,48 @@ export interface GridOptions<T = Record<string, unknown>> {
   rowStyle?: RowStyle<T>;
   /** Track added/removed/edited rows on the collection view. Default false. */
   trackChanges?: boolean;
+  /** Block all editing grid-wide, regardless of column/row settings. Default false. */
+  isReadOnly?: boolean;
+  /** Block editing for rows matching this predicate. Column `editable` still applies. */
+  rowReadOnly?: (ctx: RowStyleContext<T>) => boolean;
+  /**
+   * Fall back to a column's header text as its editor placeholder when the
+   * column doesn't set its own `placeholder`. Default false.
+   */
+  showPlaceholders?: boolean;
+  /**
+   * Open an editor at the active cell automatically after every selection
+   * move (Boolean/read-only/non-editable columns excluded). Default false.
+   */
+  alwaysEdit?: boolean;
+  /**
+   * Track each edited cell's original value and apply `.apg-cell-edited`
+   * while its current value differs from it. Default false.
+   */
+  highlightEdits?: boolean;
+  /**
+   * Validate a committed edit. `parsing` is true when the typed text failed
+   * to coerce to the column's type (e.g. "abc" in a Number column) — `ctx.value`
+   * is the raw text in that case. Return an error message to reject the value
+   * (the editor stays open with the rejected text), or null/undefined if valid.
+   */
+  getError?: (ctx: CellTemplateContext<T>, parsing: boolean) => string | null | undefined;
+  /**
+   * Show a pencil button in the row header that opens a floating form with
+   * one field per editable column, editing the whole row as one transaction
+   * (Save/Cancel) instead of one cell at a time. Default false.
+   */
+  popupEditors?: boolean;
+  /**
+   * Number the row headers 1, 2, 3… Default false, leaving them blank — the
+   * row header is still shown (that's `headersVisibility`), it just carries no
+   * text. Matches FlexGrid, whose row headers are empty until you template
+   * them, and AG Grid's opt-in `rowNumbers`.
+   *
+   * The number is the row's position in the current view, so it renumbers as
+   * sorting, filtering, and paging change what's on screen.
+   */
+  rowNumbers?: boolean;
 }
 
 export interface ResolvedOptions<T> {
@@ -100,6 +142,14 @@ export interface ResolvedOptions<T> {
   groupHeaderTemplate?: GroupHeaderTemplate<T>;
   rowClass?: RowClass<T>;
   rowStyle?: RowStyle<T>;
+  isReadOnly: boolean;
+  rowReadOnly?: (ctx: RowStyleContext<T>) => boolean;
+  showPlaceholders: boolean;
+  alwaysEdit: boolean;
+  highlightEdits: boolean;
+  getError?: (ctx: CellTemplateContext<T>, parsing: boolean) => string | null | undefined;
+  popupEditors: boolean;
+  rowNumbers: boolean;
 }
 
 const DEFAULT_ROW_HEIGHT = 24;
@@ -152,6 +202,14 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     groupHeaderTemplate: options.groupHeaderTemplate,
     rowClass: options.rowClass,
     rowStyle: options.rowStyle,
+    isReadOnly: options.isReadOnly ?? false,
+    rowReadOnly: options.rowReadOnly,
+    showPlaceholders: options.showPlaceholders ?? false,
+    alwaysEdit: options.alwaysEdit ?? false,
+    highlightEdits: options.highlightEdits ?? false,
+    getError: options.getError,
+    popupEditors: options.popupEditors ?? false,
+    rowNumbers: options.rowNumbers ?? false,
   };
 }
 

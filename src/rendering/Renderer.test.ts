@@ -68,6 +68,8 @@ describe('Renderer', () => {
     const corner = host.querySelector('.apg-corner') as HTMLElement;
     expect(corner.style.transform).toBe('');
 
+    ctx.rowNumbers = true; // opt-in; blank otherwise
+    renderer.render(ctx);
     const nums = [...host.querySelectorAll('.apg-rowheader-cell')].map((c) =>
       Number(c.textContent),
     );

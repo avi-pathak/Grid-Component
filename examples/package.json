@@ -2,14 +2,14 @@
   "name": "apgrid-demos",
   "version": "0.0.0",
   "private": true,
-  "description": "Demo app that consumes @avi-pathak/apgrid as a real npm package.",
+  "description": "Demo app that consumes @avi-pathak/apgrid as a real npm package, installed from a local `npm pack` tarball (see `npm run pack:examples` at the repo root) rather than the registry — so it always reflects the current source, not the last published version.",
   "scripts": {
     "dev": "webpack serve --config webpack.config.js",
     "build": "webpack --config webpack.config.js --mode production",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@avi-pathak/apgrid": "^0.1.4"
+    "@avi-pathak/apgrid": "file:./apgrid-local.tgz"
   },
   "devDependencies": {
     "css-loader": "^6.10.0",

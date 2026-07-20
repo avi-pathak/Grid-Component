@@ -203,7 +203,9 @@ class RowHeaderBand {
       setTransform(el, 0, ctx.layout.getRowTop(row));
       const isGroup = ctx.data.rowType(row) === 'group';
       el.className = isGroup ? 'apg-rowheader-cell apg-rowheader-group' : 'apg-rowheader-cell';
-      el.textContent = isGroup ? '' : String(row + 1);
+      // Same opt-in rule as the scrolling row headers; the pinned rows must not
+      // disagree with the ones below them.
+      el.textContent = isGroup || !ctx.rowNumbers ? '' : String(row + 1);
     }
   }
 

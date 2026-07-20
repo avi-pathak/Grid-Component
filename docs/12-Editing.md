@@ -179,6 +179,14 @@ stay-open path as `stayInEditMode`; apps can also surface the message
 however else they like from inside `getError` itself or a `cellEditEnding`
 handler — see "Validation feedback" below for the built-in visual treatment.
 
+Staying open is enforced, not advisory. While a value is rejected the grid
+refuses to move the selection or start an edit elsewhere, so a cell can't be
+left holding a value the app already said is invalid — the equivalent of AG
+Grid's `invalidEditValueMode: 'block'`. An attempt to move away puts focus
+back in the editor instead. **Escape is always the way out**: it discards the
+rejected value, reverts the cell, and frees the selection, so a rule that no
+input can satisfy can never trap the user permanently.
+
 One real-world caveat surfaced while testing this: a native `<input
 type="number">` (or `type="date"`) sanitizes non-numeric/non-date text to
 `''` before it's ever read — by the browser and by jsdom alike — so

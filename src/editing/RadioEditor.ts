@@ -66,6 +66,13 @@ export class RadioEditor {
     this.root.remove();
   }
 
+  focus(): void {
+    const target =
+      this.root.querySelector<HTMLElement>('input:checked') ??
+      this.root.querySelector<HTMLElement>('input');
+    target?.focus({ preventScroll: true });
+  }
+
   reposition(rect: DOMRect): void {
     this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.root.style.minWidth = `${rect.width}px`;

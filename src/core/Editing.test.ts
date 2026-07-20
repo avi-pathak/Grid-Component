@@ -952,6 +952,84 @@ describe('CollectionView-style validation (getError)', () => {
     expect(host.querySelector('.apg-editor')).toBeNull();
   });
 
+  it('traps the selection on the cell until the value is valid', () => {
+    // Regression: a rejected value kept its editor open, but nothing stopped
+    // the selection moving — clicking or arrowing to another cell walked the
+    // active cell away and left the invalid editor stranded on the old one.
+    const rows = [
+      { id: 0, sales: 10 },
+      { id: 1, sales: 20 },
+    ];
+    const grid = new Grid(host, {
+      columns: numberColumns,
+      itemsSource: rows,
+      getError: (ctx) =>
+        typeof ctx.value === 'number' && ctx.value < 0 ? 'Sales cannot be negative' : null,
+    });
+
+    grid.select(0, 1);
+    grid.editCell(0, 1);
+    commit(host.querySelector('.apg-cells input') as HTMLInputElement, '-5');
+    expect(host.querySelector('.apg-editor')).not.toBeNull(); // held open
+
+    grid.select(1, 1); // try to walk away
+    expect(grid.selectedCell).toEqual({ row: 0, col: 1 }); // refused
+    expect(host.querySelector('.apg-editor')).not.toBeNull(); // still on the bad cell
+    expect(rows[0].sales).toBe(10); // nothing committed
+  });
+
+  it('frees the selection once the value is fixed', () => {
+    const rows = [
+      { id: 0, sales: 10 },
+      { id: 1, sales: 20 },
+    ];
+    const grid = new Grid(host, {
+      columns: numberColumns,
+      itemsSource: rows,
+      getError: (ctx) =>
+        typeof ctx.value === 'number' && ctx.value < 0 ? 'Sales cannot be negative' : null,
+    });
+
+    grid.select(0, 1);
+    grid.editCell(0, 1);
+    commit(host.querySelector('.apg-cells input') as HTMLInputElement, '-5');
+    grid.select(1, 1);
+    expect(grid.selectedCell).toEqual({ row: 0, col: 1 }); // trapped
+
+    commit(host.querySelector('.apg-cells input') as HTMLInputElement, '99'); // fix it
+    expect(rows[0].sales).toBe(99);
+
+    grid.select(1, 1);
+    expect(grid.selectedCell).toEqual({ row: 1, col: 1 }); // free to move now
+  });
+
+  it('lets Escape discard a rejected value and move on', () => {
+    // Without this the user would be permanently stuck on a cell they cannot
+    // satisfy (a rule no input can pass, say).
+    const rows = [
+      { id: 0, sales: 10 },
+      { id: 1, sales: 20 },
+    ];
+    const grid = new Grid(host, {
+      columns: numberColumns,
+      itemsSource: rows,
+      getError: () => 'never valid',
+    });
+
+    grid.select(0, 1);
+    grid.editCell(0, 1);
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    commit(input, '-5');
+    expect(host.querySelector('.apg-editor')).not.toBeNull();
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(host.querySelector('.apg-editor')).toBeNull();
+    expect(rows[0].sales).toBe(10); // reverted
+
+    grid.select(1, 1);
+    expect(grid.selectedCell).toEqual({ row: 1, col: 1 }); // no longer trapped
+  });
+
   it('marks the editor invalid with the getError message as a tooltip', () => {
     const grid = new Grid(host, {
       columns: numberColumns,

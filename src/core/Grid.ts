@@ -1531,6 +1531,13 @@ export class Grid {
 
   private applyMove(cell: CellAddress, extend: boolean): void {
     if (this.data.rowType(cell.row) === 'group') return;
+    // A value the app rejected keeps its editor open; the selection must not
+    // wander off to another cell (leaving the invalid editor stranded behind
+    // it) or start editing elsewhere. Escape still discards and frees it.
+    if (this.editor.isBlocking) {
+      this.editor.refocus();
+      return;
+    }
     if (this.emitCancel('selectionChanging', { row: cell.row, col: cell.col })) return;
     if (!this.selectionModel.moveTo(cell, extend)) return;
     this.data.collectionView.moveCurrentToPosition(this.data.dataIndexAt(cell.row)); // currency follows selection

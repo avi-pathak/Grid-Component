@@ -28,6 +28,11 @@ export interface CellEditor<T = Record<string, unknown>> {
    */
   reposition?(rect: DOMRect): void;
   /**
+   * Put focus back inside the editor — used when a rejected value blocked an
+   * attempt to move away, so the user lands back on the field to fix. Optional.
+   */
+  focus?(): void;
+  /**
    * Mark the editor invalid with a message (shown as a native tooltip), or
    * clear it with `null`. Optional — only the built-in text/dropdown editors
    * implement it; a custom editor that wants the same treatment can too.

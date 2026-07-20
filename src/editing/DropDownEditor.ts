@@ -95,6 +95,10 @@ export class DropDownEditor {
     this.root.remove();
   }
 
+  focus(): void {
+    this.input.focus({ preventScroll: true });
+  }
+
   reposition(rect: DOMRect): void {
     this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.root.style.width = `${rect.width}px`;

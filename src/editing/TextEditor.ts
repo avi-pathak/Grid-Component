@@ -99,6 +99,10 @@ export class TextEditor {
     this.input.remove();
   }
 
+  focus(): void {
+    this.input.focus({ preventScroll: true });
+  }
+
   reposition(rect: DOMRect): void {
     this.input.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
     this.input.style.width = `${rect.width}px`;

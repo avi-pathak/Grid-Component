@@ -14,7 +14,8 @@ export const validation: Demo = {
       'Sales is validated with getError: try a negative number. Expenses is validated with ' +
       'a cellEditEnding handler: try a value greater than that row’s Sales. Either way the ' +
       'editor stays open with a red border and a tooltip explaining why, instead of silently ' +
-      'reverting — fix the value and commit again.';
+      'reverting. While a value is rejected the selection is trapped on that cell — clicking or ' +
+      'arrowing elsewhere is refused — so fix it and commit, or press Escape to discard.';
     host.appendChild(hint);
 
     const gridHost = document.createElement('div');

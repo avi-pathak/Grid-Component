@@ -57,6 +57,7 @@ export class EditorManager {
   private cancel: () => void;
   private active: CellEditor | null = null;
   private editing: CellAddress | null = null;
+  private invalid = false;
 
   constructor(private deps: EditorDeps) {
     this.commit = (value: string) => this.commitValue(value);
@@ -70,6 +71,20 @@ export class EditorManager {
 
   get isEditing(): boolean {
     return this.editing != null;
+  }
+
+  /**
+   * True while an editor is held open by a rejected value. The grid refuses to
+   * move the selection or start another edit in this state, so a cell can't be
+   * left in a form the app already said is invalid — Escape still discards it.
+   */
+  get isBlocking(): boolean {
+    return this.editing != null && this.invalid;
+  }
+
+  /** Return focus to the open editor after a blocked attempt to move away. */
+  refocus(): void {
+    this.active?.focus?.();
   }
 
   /** Re-place an open editor over its cell; call after the grid scrolls. */
@@ -131,6 +146,7 @@ export class EditorManager {
       // like any other rejection; stayOpenOnReject lets it keep the editor
       // open with the rejected text instead, so the user can fix it in place.
       if (this.deps.stayOpenOnReject?.(cell, newValue)) {
+        this.invalid = true;
         this.active?.setInvalid?.(this.deps.rejectMessage?.() ?? null);
         return;
       }
@@ -147,10 +163,12 @@ export class EditorManager {
       };
       const error = this.deps.getError(ctx, parsing);
       if (error != null) {
+        this.invalid = true;
         this.active?.setInvalid?.(error); // stays open, like stayOpenOnReject
         return;
       }
     }
+    this.invalid = false;
     this.active?.setInvalid?.(null);
     this.deps.undo.push(
       new EditAction(this.deps.data, column, cell.row, oldValue, newValue, this.deps.onApplied),
@@ -174,6 +192,7 @@ export class EditorManager {
 
   private closeEditing(cell: CellAddress): void {
     this.editing = null;
+    this.invalid = false;
     this.active?.close();
     this.active = null;
     this.deps.onEnd(cell);
@@ -197,6 +216,7 @@ export class EditorManager {
     const cell = this.editing;
     if (!cell) return;
     this.editing = null;
+    this.invalid = false; // Escape is always a way out of a rejected value
     this.active?.close();
     this.active = null;
     this.deps.onEnd(cell);

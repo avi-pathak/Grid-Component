@@ -21,7 +21,10 @@ jobs:
           node-version: 20
           cache: npm
           registry-url: https://registry.npmjs.org
-      - run: npm ci
+      # Install the root workspace only. The examples app depends on a generated,
+      # gitignored tarball whose hash never matches package-lock.json, which breaks
+      # a full `npm ci` (EINTEGRITY). Publishing only needs the library source.
+      - run: npm ci --workspaces=false
       - name: Bump patch version
         run: npm version patch --no-git-tag-version
       - name: Check if version is already published

@@ -72,6 +72,11 @@ export class EditorManager {
     return this.editing != null;
   }
 
+  /** Re-place an open editor over its cell; call after the grid scrolls. */
+  reposition(): void {
+    if (this.editing) this.active?.reposition?.(this.cellRect(this.editing));
+  }
+
   /** Flip a Boolean cell's value through the undo stack. Returns true if handled. */
   toggleBoolean(cell: CellAddress): boolean {
     const column = this.deps.columns[cell.col];

@@ -20,6 +20,14 @@ export interface CellEditor<T = Record<string, unknown>> {
   ): void;
   close(): void;
   /**
+   * Re-place the editor over its cell after the grid scrolled. Rows are laid
+   * out as `rowTop - scrollTop` and redrawn on every scroll, but the editor is
+   * a separate element the renderer never touches — without this it keeps the
+   * offset it was opened with and drifts away from its cell. Optional; an
+   * editor that positions itself some other way can skip it.
+   */
+  reposition?(rect: DOMRect): void;
+  /**
    * Mark the editor invalid with a message (shown as a native tooltip), or
    * clear it with `null`. Optional — only the built-in text/dropdown editors
    * implement it; a custom editor that wants the same treatment can too.

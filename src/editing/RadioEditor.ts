@@ -54,8 +54,7 @@ export class RadioEditor {
       label.append(radio, document.createTextNode(` ${display}`));
       this.root.appendChild(label);
     }
-    this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
-    this.root.style.minWidth = `${rect.width}px`;
+    this.reposition(rect);
     parent.appendChild(this.root);
     const focusTarget =
       this.root.querySelector<HTMLElement>('input:checked') ??
@@ -65,5 +64,10 @@ export class RadioEditor {
 
   close(): void {
     this.root.remove();
+  }
+
+  reposition(rect: DOMRect): void {
+    this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+    this.root.style.minWidth = `${rect.width}px`;
   }
 }

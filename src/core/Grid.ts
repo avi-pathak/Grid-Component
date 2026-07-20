@@ -1383,6 +1383,9 @@ export class Grid {
     // its rows — not only the scrolls that change the row/column range.
     this.viewport.update(vp.scrollTop, vp.scrollLeft);
     this.renderer.render(this.context());
+    // Rows are redrawn at their new offsets above; an open editor is a separate
+    // element the renderer never sees, so move it with them.
+    this.editor?.reposition();
     this.events.emit('scrollChanged', { scrollTop: vp.scrollTop, scrollLeft: vp.scrollLeft });
   }
 

@@ -74,9 +74,7 @@ export class DropDownEditor {
     this.options = map ? map.getDisplayValues(item) : [];
     this.input.readOnly = column.dataMapEditor === DataMapEditor.Menu;
     this.setInvalid(null); // clear any leftover invalid state from a prior edit
-    this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
-    this.root.style.width = `${rect.width}px`;
-    this.root.style.height = `${rect.height}px`;
+    this.reposition(rect);
     parent.appendChild(this.root);
     this.input.focus();
 
@@ -95,6 +93,13 @@ export class DropDownEditor {
 
   close(): void {
     this.root.remove();
+  }
+
+  reposition(rect: DOMRect): void {
+    this.root.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+    this.root.style.width = `${rect.width}px`;
+    this.root.style.height = `${rect.height}px`;
+    this.positionList(); // the flip-above decision depends on where the cell now sits
   }
 
   finishEdit(): void {

@@ -43,6 +43,25 @@ describe('editing position', () => {
     expect(input.style.transform).toContain('translate3d(80px, 48px, 0)');
   });
 
+  it('keeps an open editor over its cell when the grid scrolls', () => {
+    // Regression: the editor was placed once at open time and never moved
+    // again, while the rows around it are redrawn at new offsets on every
+    // scroll. It drifted a full scroll delta away from its own cell —
+    // visible when an arrow key at the viewport edge scrolls the grid, since
+    // select() opens the editor before scrollIntoView runs.
+    const grid = new Grid(host, { columns, itemsSource: makeRows(1000), rowHeight: 24 });
+    const vp = host.querySelector('.apg-viewport') as HTMLElement;
+    vp.scrollTop = 24 * 100;
+    grid.editCell(102, 1);
+
+    const input = host.querySelector('.apg-cells input') as HTMLInputElement;
+    expect(input.style.transform).toContain('translate3d(80px, 48px, 0)');
+
+    vp.scrollTop = 24 * 102; // rowTop(102) is now exactly the scroll offset
+    vp.dispatchEvent(new Event('scroll'));
+    expect(input.style.transform).toContain('translate3d(80px, 0px, 0)');
+  });
+
   it('edits a cell value through the editor', () => {
     const grid = new Grid(host, { columns, itemsSource: makeRows(20), rowHeight: 24 });
     grid.editCell(2, 1);

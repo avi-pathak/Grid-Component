@@ -73,9 +73,7 @@ export class TextEditor {
     this.input.className = `apg-editor apg-align-${column.align}`;
     this.input.removeAttribute('title'); // clear any leftover invalid tooltip from a prior edit
     this.input.placeholder = column.placeholder ?? (this.showPlaceholders ? column.header : '');
-    this.input.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
-    this.input.style.width = `${rect.width}px`;
-    this.input.style.height = `${rect.height}px`;
+    this.reposition(rect);
     parent.appendChild(this.input);
     this.input.focus();
 
@@ -95,6 +93,12 @@ export class TextEditor {
 
   close(): void {
     this.input.remove();
+  }
+
+  reposition(rect: DOMRect): void {
+    this.input.style.transform = `translate3d(${rect.left}px, ${rect.top}px, 0)`;
+    this.input.style.width = `${rect.width}px`;
+    this.input.style.height = `${rect.height}px`;
   }
 
   finishEdit(): void {

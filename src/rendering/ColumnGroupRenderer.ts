@@ -35,6 +35,11 @@ export class ColumnGroupRenderer {
     this.inner.addEventListener('click', this.onClick);
   }
 
+  /** Height of one group-header row. Changed live by `Grid.setGeometry`. */
+  setRowHeight(rowHeight: number): void {
+    this.rowHeight = rowHeight;
+  }
+
   render(ctx: RenderContext): void {
     const groups = ctx.columnGroups ?? [];
     const { cells } = buildColumnGroupLayout(ctx.columns, groups);

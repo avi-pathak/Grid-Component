@@ -1,44 +1,46 @@
-// Dark theme. Opt in explicitly with the `apg-theme-dark` class — either on the
-// grid host / overlay root itself, or on any ancestor (so a page wrapper can
-// theme every grid inside it). Use `apg-theme-auto` to follow the OS via
-// prefers-color-scheme. Only token VALUES change — every rule in the other
-// partials reads the same custom properties, so nothing else needs a dark copy.
+// Dark theme. Opt in explicitly with the `apg-theme-dark` class — on the grid
+// host itself, or on any ancestor (a page wrapper, or `<body>` to also cover the
+// body-mounted overlays). Use `apg-theme-auto` to follow the OS. Only token
+// VALUES change; every rule reads the same custom properties.
 @use 'tokens' as *;
 
-// Roots that carry tokens: the grid host and the body-mounted overlays.
-$roots: '.apg, .apg-drag-ghost, .apg-context-menu, .apg-filter-dialog, .apg-edit-popup';
-
-// On the root itself…
-#{$roots} {
+// Grid hosts and overlays that carry the class directly.
+.apg,
+.apg-drag-ghost,
+.apg-context-menu,
+.apg-filter-dialog,
+.apg-edit-popup {
   &.apg-theme-dark {
     @include tokens($dark);
   }
 }
 
-// …or inherited from an ancestor container.
+// The class on a container: put the dark palette on the container itself so any
+// body-mounted overlay beneath it inherits, and on descendant grid hosts (which
+// re-declare the light palette and so need the values applied directly).
 .apg-theme-dark {
-  .apg,
-  .apg-drag-ghost,
-  .apg-context-menu,
-  .apg-filter-dialog,
-  .apg-edit-popup {
+  @include tokens($dark);
+
+  .apg {
     @include tokens($dark);
   }
 }
 
 @media (prefers-color-scheme: dark) {
-  #{$roots} {
+  .apg,
+  .apg-drag-ghost,
+  .apg-context-menu,
+  .apg-filter-dialog,
+  .apg-edit-popup {
     &.apg-theme-auto {
       @include tokens($dark);
     }
   }
 
   .apg-theme-auto {
-    .apg,
-    .apg-drag-ghost,
-    .apg-context-menu,
-    .apg-filter-dialog,
-    .apg-edit-popup {
+    @include tokens($dark);
+
+    .apg {
       @include tokens($dark);
     }
   }

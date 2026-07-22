@@ -26,6 +26,15 @@ export class LayoutEngine {
     this.colLefts = buildColLefts(columns);
   }
 
+  /**
+   * Change the uniform row height. All row maths (`totalHeight`, `getRowTop`,
+   * `getVisibleRows`, `hitTestRow`, …) reads this single field, so a live density
+   * change stays O(1) and consistent — no per-row state to migrate.
+   */
+  setRowHeight(rowHeight: number): void {
+    this.rowHeight = rowHeight;
+  }
+
   get rowCount(): number {
     return this._rowCount;
   }

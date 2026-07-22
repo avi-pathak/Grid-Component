@@ -287,17 +287,20 @@ export class Grid {
       );
     }
     this.allowSorting = resolved.allowSorting;
-    const header = this.viewportRenderer.headerInner;
-    header.addEventListener('mousedown', this.onHeaderMouseDown);
-    header.addEventListener('click', this.onHeaderClick);
+    // Both the scrolling header and the pinned (frozen) column header carry sort
+    // and filter controls, so both need the same click/drag handling.
+    for (const header of this.headerElements()) {
+      header.addEventListener('mousedown', this.onHeaderMouseDown);
+      header.addEventListener('click', this.onHeaderClick);
+    }
 
     if (this.columns.some((c) => c.filterable)) {
       this.filterModel = new FilterModel(this.data.collectionView);
-      this.filterEditor = new FilterEditor();
+      this.filterEditor = new FilterEditor(this.host);
     }
 
     if (this.popupEditors) {
-      this.editPopup = new EditPopup();
+      this.editPopup = new EditPopup(this.host);
       this.viewportRenderer.rowHeaderInner.addEventListener('click', this.onRowHeaderClick);
     }
 
@@ -470,6 +473,45 @@ export class Grid {
   /** Redraw the current window without recomputing totals. */
   invalidate(): void {
     this.draw();
+  }
+
+  /**
+   * Change row and header heights live, without re-creating the grid. This is the
+   * one part of a theme that virtualization depends on, so it can't ride on CSS
+   * alone: the layout engine, the sticky scaffold, and the group-band renderer all
+   * need the new numbers, after which the grid re-measures and redraws.
+   */
+  setGeometry(opts: {
+    rowHeight?: number;
+    headerHeight?: number;
+    groupHeaderRowHeight?: number;
+  }): void {
+    if (opts.rowHeight != null) {
+      this.rowHeight = opts.rowHeight;
+      this.layout.setRowHeight(this.rowHeight);
+      this.host.style.setProperty('--apg-row-height', `${this.rowHeight}px`);
+    }
+    if (opts.headerHeight != null) {
+      this.headerHeight = opts.headerHeight;
+      this.host.style.setProperty('--apg-header-height', `${this.headerHeight}px`);
+    }
+    if (opts.groupHeaderRowHeight != null) {
+      this.groupHeaderRowHeight = opts.groupHeaderRowHeight;
+      this.host.style.setProperty('--apg-group-header-height', `${this.groupHeaderRowHeight}px`);
+      this.columnGroupRenderer?.setRowHeight(this.groupHeaderRowHeight);
+    }
+
+    this.viewportRenderer.setGeometry({
+      headerHeight: this.headerHeight,
+      columnGroupHeight: this.columnGroupDepth * this.groupHeaderRowHeight,
+    });
+
+    // Canvas totals and the frozen bands depend on the new heights; then re-measure
+    // the viewport (its usable height is client height minus the changed gutter)
+    // and redraw.
+    this.renderer.resize(this.context());
+    this.syncFrozen();
+    this.measure();
   }
 
   /** Number of columns pinned to the left. */
@@ -1290,9 +1332,10 @@ export class Grid {
 
   dispose(): void {
     this.unsubscribeData();
-    const header = this.viewportRenderer.headerInner;
-    header.removeEventListener('mousedown', this.onHeaderMouseDown);
-    header.removeEventListener('click', this.onHeaderClick);
+    for (const header of this.headerElements()) {
+      header.removeEventListener('mousedown', this.onHeaderMouseDown);
+      header.removeEventListener('click', this.onHeaderClick);
+    }
     this.viewportRenderer.rowHeaderInner.removeEventListener('click', this.onRowHeaderClick);
     this.scroll.dispose();
     this.mouse.dispose();
@@ -1421,13 +1464,22 @@ export class Grid {
       return;
     }
     if (!this.allowSorting) return;
-    const header = this.viewportRenderer.headerInner;
+    // Use the header that was actually clicked (scrolling or frozen), so the
+    // column maths lines up for both — both lay their cells out at the same
+    // column offsets, just in different pinned/scrolling containers.
+    const header = e.currentTarget as HTMLElement;
     const x = e.clientX - header.getBoundingClientRect().left;
     const col = this.layout.colAtX(x);
     const right = this.layout.getColLeft(col) + this.layout.getColWidth(col);
     if (Math.abs(x - right) <= 5) return; // resize edge belongs to the resizer
     this.sortByColumn(col);
   };
+
+  // The header containers that carry sort/filter controls: the scrolling leaf
+  // header, and the pinned frozen-column header when a freeze is present.
+  private headerElements(): HTMLElement[] {
+    return [this.viewportRenderer.headerInner, this.viewportRenderer.frozenColsHeader];
+  }
 
   private readonly onRowHeaderClick = (e: MouseEvent): void => {
     const btn = (e.target as HTMLElement).closest('.apg-rowheader-edit') as HTMLElement | null;

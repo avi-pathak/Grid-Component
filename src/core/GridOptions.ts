@@ -152,8 +152,10 @@ export interface ResolvedOptions<T> {
   rowNumbers: boolean;
 }
 
-const DEFAULT_ROW_HEIGHT = 24;
-const DEFAULT_HEADER_HEIGHT = 28;
+// Comfortable, modern defaults (in the spirit of ag-Grid Quartz): rows and the
+// header get real breathing room rather than the tight 24/28 of a legacy grid.
+const DEFAULT_ROW_HEIGHT = 40;
+const DEFAULT_HEADER_HEIGHT = 46;
 const DEFAULT_ROW_HEADER_WIDTH = 48;
 const DEFAULT_MAX_GROUPS = 6;
 const DEFAULT_GROUP_PLACEHOLDER = 'Drag a column header here to group by that column';

@@ -85,3 +85,29 @@ describe('point lookups', () => {
     expect(layout.colAtX(200)).toBe(2); // clamped to the last column
   });
 });
+
+describe('setRowHeight', () => {
+  // A live density change must keep totals, offsets, visible-range and hit-testing
+  // all on the same pitch — a mismatch is exactly what desynchronises scroll math
+  // from click-to-cell mapping.
+  it('rescales every row measurement consistently', () => {
+    const layout = new LayoutEngine(1000, 24, columns);
+    layout.setRowHeight(40);
+
+    expect(layout.totalHeight).toBe(40000);
+    expect(layout.getRowTop(10)).toBe(400);
+    expect(layout.getRowHeight(0)).toBe(40);
+    expect(layout.frozenRowsHeight(3)).toBe(120);
+  });
+
+  it('keeps rowAtY and getVisibleRows on the new pitch', () => {
+    const layout = new LayoutEngine(1000, 24, columns);
+    layout.setRowHeight(40);
+
+    // At 40px rows, y=100 is row 2 and y=850 is row 21.
+    expect(layout.rowAtY(100)).toBe(2);
+    expect(layout.rowAtY(850)).toBe(21);
+    // A 400px viewport scrolled to 800px shows rows 20–29.
+    expect(layout.getVisibleRows(800, 400)).toEqual({ first: 20, last: 29 });
+  });
+});

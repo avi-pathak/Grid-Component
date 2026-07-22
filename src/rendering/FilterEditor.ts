@@ -1,5 +1,6 @@
 import { createEl } from '../utils/DOM';
 import { iconEl } from '../utils/icons';
+import { applyThemeScope } from '../utils/theme-scope';
 import { Column } from '../models/Column';
 import {
   ColumnFilter,
@@ -37,6 +38,10 @@ const VALUELESS: FilterOperator[] = ['empty', 'notEmpty'];
  */
 export class FilterEditor<T = Record<string, unknown>> {
   private el?: HTMLElement;
+
+  /** `themeSource` is any element inside the owning grid, used to carry its
+   *  theme classes onto the body-mounted dialog. */
+  constructor(private themeSource?: HTMLElement) {}
 
   get isOpen(): boolean {
     return this.el != null;
@@ -186,6 +191,7 @@ export class FilterEditor<T = Record<string, unknown>> {
       opts.onApply(draft);
     });
 
+    applyThemeScope(dialog, this.themeSource ?? null);
     document.body.appendChild(dialog);
     const r = dialog.getBoundingClientRect();
     const left = Math.max(4, Math.min(anchor.left, window.innerWidth - r.width - 8));

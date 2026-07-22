@@ -6,8 +6,8 @@
   left: 0;
   z-index: 10;
   margin: 0;
-  border: 2px solid var(--apg-active-border);
-  border-radius: 2px;
+  border: var(--apg-accent-ring-width) solid var(--apg-active-border);
+  border-radius: var(--apg-radius-sm);
   padding: var(--apg-cell-padding);
   font: inherit;
   color: var(--apg-cell-fg);
@@ -45,8 +45,8 @@
   width: 100%;
   height: 100%;
   margin: 0;
-  border: 2px solid var(--apg-active-border);
-  border-radius: 2px;
+  border: var(--apg-accent-ring-width) solid var(--apg-active-border);
+  border-radius: var(--apg-radius-sm);
   padding: var(--apg-cell-padding);
   padding-right: 22px;
   font: inherit;
@@ -114,7 +114,7 @@
   max-height: 180px;
   padding: 4px 6px;
   overflow-y: auto;
-  border: 1px solid var(--apg-active-border);
+  border: var(--apg-border-width) solid var(--apg-active-border);
   border-radius: var(--apg-radius);
   box-shadow: var(--apg-shadow-md);
   cursor: default;

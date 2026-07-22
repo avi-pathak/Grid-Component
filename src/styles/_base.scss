@@ -1,6 +1,15 @@
 // Root: emit the light tokens and the grid's own box model + scroll structure.
 @use 'tokens' as *;
 
+// Baseline tokens on :root so body-mounted overlays (context menu, filter dialog,
+// edit popup, drag ghost) inherit a full palette without each re-declaring one.
+// A theme applied to a shared ancestor (a wrapper, <body>, or :root) then flows
+// to those overlays by inheritance — which is what lets `applyTheme(document.body)`
+// and a `.apg-theme-*` class on <body> reach the pop-ups, not just the grid.
+:root {
+  @include tokens($light);
+}
+
 .apg {
   @include tokens($light);
 
@@ -86,8 +95,8 @@
 }
 
 .apg:focus-visible {
-  outline: 2px solid var(--apg-focus-ring);
-  outline-offset: -2px;
+  outline: var(--apg-accent-ring-width) solid var(--apg-focus-ring);
+  outline-offset: calc(-1 * var(--apg-accent-ring-width));
 }
 
 // Inline SVG icon wrapper. Size/color come from the element it's placed on.

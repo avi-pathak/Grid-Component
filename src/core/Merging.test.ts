@@ -30,7 +30,7 @@ describe('cell merging', () => {
   });
 
   it('merges adjacent equal values in a mergeable column', () => {
-    new Grid(host, { columns, itemsSource: rows(['A', 'A', 'A', 'B', 'B']) });
+    new Grid(host, { columns, itemsSource: rows(['A', 'A', 'A', 'B', 'B']), rowHeight: 24 });
     const merged = host.querySelectorAll('.apg-cell-merged');
     // Two spans: A (rows 0-2) and B (rows 3-4).
     expect(merged.length).toBe(2);

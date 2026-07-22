@@ -35,7 +35,7 @@ describe('Grid', () => {
   });
 
   it('sizes the scroll canvas from the data totals plus the header gutter', () => {
-    new Grid(host, { columns, itemsSource: makeRows(100), rowHeight: 24 });
+    new Grid(host, { columns, itemsSource: makeRows(100), rowHeight: 24, headerHeight: 28 });
     const canvas = host.querySelector('.apg-canvas') as HTMLElement;
     // gutter = headerHeight 28 + rows*24; width = rowHeaderWidth 48 + cols
     expect(canvas.style.height).toBe('2428px'); // 28 + 100 * 24
@@ -43,7 +43,12 @@ describe('Grid', () => {
   });
 
   it('resizes the canvas when data changes', () => {
-    const grid = new Grid(host, { columns, itemsSource: makeRows(100), rowHeight: 24 });
+    const grid = new Grid(host, {
+      columns,
+      itemsSource: makeRows(100),
+      rowHeight: 24,
+      headerHeight: 28,
+    });
     grid.setData(makeRows(10));
     const canvas = host.querySelector('.apg-canvas') as HTMLElement;
     expect(canvas.style.height).toBe('268px'); // 28 + 10 * 24
@@ -58,7 +63,7 @@ describe('Grid', () => {
   });
 
   it('accepts dataSource as an alias for itemsSource', () => {
-    new Grid(host, { columns, dataSource: makeRows(5), rowHeight: 24 });
+    new Grid(host, { columns, dataSource: makeRows(5), rowHeight: 24, headerHeight: 28 });
     const canvas = host.querySelector('.apg-canvas') as HTMLElement;
     expect(canvas.style.height).toBe('148px'); // 28 gutter + 5 * 24
   });
@@ -337,7 +342,12 @@ describe('Grid', () => {
       { binding: 'id', header: 'ID', width: 80 },
       { binding: 'name', header: 'Name', width: 120, editable: true },
     ];
-    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(100), rowHeight: 24 });
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: makeRows(100),
+      rowHeight: 24,
+      headerHeight: 28,
+    });
 
     grid.editCell(10, 1);
     const editor = host.querySelector('.apg-editor') as HTMLElement;
@@ -353,7 +363,12 @@ describe('Grid', () => {
       { binding: 'id', header: 'ID', width: 80 },
       { binding: 'name', header: 'Name', width: 120, editable: true },
     ];
-    const grid = new Grid(host, { columns: cols, itemsSource: makeRows(100), rowHeight: 24 });
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: makeRows(100),
+      rowHeight: 24,
+      headerHeight: 28,
+    });
 
     // Unscrolled: row 40 sits at its absolute top inside the pinned body.
     grid.editCell(40, 1);
@@ -470,7 +485,12 @@ describe('Grid', () => {
   });
 
   it('grows the grid when a row is added through the collection view', () => {
-    const grid = new Grid(host, { columns, itemsSource: makeRows(10), rowHeight: 24 });
+    const grid = new Grid(host, {
+      columns,
+      itemsSource: makeRows(10),
+      rowHeight: 24,
+      headerHeight: 28,
+    });
     grid.collectionView.addNew({ id: 99, name: 'new' }, true);
     const canvas = host.querySelector('.apg-canvas') as HTMLElement;
     expect(canvas.style.height).toBe('292px'); // 28 gutter + 11 * 24
@@ -726,7 +746,13 @@ describe('Grid', () => {
       { id: 2, kind: 'B' },
       { id: 3, kind: 'A' },
     ];
-    const grid = new Grid(host, { columns: cols, itemsSource: data, groupPanel: true });
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: data,
+      groupPanel: true,
+      rowHeight: 24,
+      headerHeight: 28,
+    });
     grid.groupBy('kind');
 
     const events: string[][] = [];
@@ -834,7 +860,13 @@ describe('Grid', () => {
       { id: 2, kind: 'A' },
       { id: 3, kind: 'B' },
     ];
-    const grid = new Grid(host, { columns: cols, itemsSource: data, groupPanel: true });
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: data,
+      groupPanel: true,
+      rowHeight: 24,
+      headerHeight: 28,
+    });
     grid.groupBy('kind');
     const canvas = host.querySelector('.apg-canvas') as HTMLElement;
     const before = canvas.style.height;
@@ -863,7 +895,13 @@ describe('Grid', () => {
       { kind: 'A', sales: 15 },
       { kind: 'B', sales: 100 },
     ];
-    const grid = new Grid(host, { columns: cols, itemsSource: data, groupPanel: true });
+    const grid = new Grid(host, {
+      columns: cols,
+      itemsSource: data,
+      groupPanel: true,
+      rowHeight: 24,
+      headerHeight: 28,
+    });
     grid.groupBy('kind');
     const aggs = [...host.querySelectorAll('.apg-group-agg')].map((a) => a.textContent);
     expect(aggs).toEqual(['25', '100']);
@@ -1120,6 +1158,31 @@ describe('Grid', () => {
       itemsSource: [{ a: '1' }],
     });
     expect(host.querySelector('.apg-filter-btn')).toBeNull(); // filtering off by default
+  });
+
+  it('opens the filter from a pinned (frozen) column header', () => {
+    // The frozen column header is a separate DOM band; its filter button must be
+    // wired up too, or filtering the first column silently does nothing.
+    const cols = [
+      { binding: 'kind', header: 'Kind', width: 120, filter: true },
+      { binding: 'id', header: 'ID', width: 60, dataType: 'Number' as const },
+    ];
+    new Grid(host, {
+      columns: cols,
+      itemsSource: [{ kind: 'a', id: 1 }],
+      allowFiltering: true,
+      frozenColumns: 1,
+    });
+    const frozenHeader = host.querySelector('.apg-frozen-cols-header') as HTMLElement;
+    const btn = frozenHeader.querySelector('.apg-filter-btn') as HTMLElement;
+    expect(btn).not.toBeNull();
+    btn.dispatchEvent(
+      new MouseEvent('mousedown', { bubbles: true, button: 0, clientX: 0, clientY: 0 }),
+    );
+    btn.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, button: 0, clientX: 0, clientY: 0 }),
+    );
+    expect(document.querySelector('.apg-filter-dialog')).not.toBeNull();
   });
 
   it('filters rows by a value checklist and clears them again', () => {
@@ -1436,5 +1499,46 @@ describe('Grid', () => {
     expect(rows[0].classList.contains('muted')).toBe(false);
     expect(rows[1].classList.contains('muted')).toBe(true);
     expect(rows[1].style.opacity).toBe('0.5');
+  });
+
+  describe('setGeometry', () => {
+    it('rescales the canvas and rewrites the geometry custom properties', () => {
+      const grid = new Grid(host, {
+        columns,
+        itemsSource: makeRows(100),
+        rowHeight: 24,
+        headerHeight: 28,
+      });
+      const canvas = host.querySelector('.apg-canvas') as HTMLElement;
+      expect(canvas.style.height).toBe('2428px'); // 28 + 100 * 24
+
+      grid.setGeometry({ rowHeight: 40, headerHeight: 50 });
+
+      // gutter 50 + 100 * 40
+      expect(canvas.style.height).toBe('4050px');
+      expect(host.style.getPropertyValue('--apg-row-height')).toBe('40px');
+      expect(host.style.getPropertyValue('--apg-header-height')).toBe('50px');
+    });
+
+    it('repositions the cells layer to the new top gutter', () => {
+      const grid = new Grid(host, { columns, itemsSource: makeRows(20), headerHeight: 28 });
+      const cells = host.querySelector('.apg-cells') as HTMLElement;
+      expect(cells.style.marginTop).toBe('28px');
+
+      grid.setGeometry({ headerHeight: 44 });
+      expect(cells.style.marginTop).toBe('44px');
+    });
+
+    it('rescales the row-header column height with the row height', () => {
+      const grid = new Grid(host, {
+        columns,
+        itemsSource: makeRows(10),
+        rowHeight: 24,
+        rowNumbers: true,
+      });
+      grid.setGeometry({ rowHeight: 36 });
+      // Row-header cells read --apg-row-height, which setGeometry rewrites.
+      expect(host.style.getPropertyValue('--apg-row-height')).toBe('36px');
+    });
   });
 });

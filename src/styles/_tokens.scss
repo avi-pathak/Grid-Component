@@ -14,14 +14,19 @@
 // A calm neutral surface with a single blue accent, soft hairline borders and
 // airy spacing — ag-Grid Quartz in spirit, with Wijmo's crisp header contrast.
 $light: (
-  // geometry
-  'row-height': 30px,
-  'header-height': 36px,
-  'group-header-height': 34px,
-  'col-width': 100px,
-  'cell-padding-x': 12px,
+  // geometry — comfortable, modern defaults (ag-Grid Quartz in spirit).
+  'row-height': 40px,
+  'header-height': 46px,
+  'group-header-height': 44px,
+  'cell-padding-x': 14px,
   'radius': 6px,
   'radius-sm': 4px,
+  'radius-lg': 10px,
+  // structural line weights — themeable so a builder's border/focus controls reach
+  // every element, not just the ones that happened to use the composite.
+  'border-width': 1px,
+  'border-width-strong': 2px,
+  'accent-ring-width': 1px,
   // typography
   'font-family': (
       -apple-system,
@@ -32,13 +37,16 @@ $light: (
       Arial,
       sans-serif
     ),
-  'font-size': 13px,
-  'line-height': 1.45,
+  'font-size': 14px,
+  'line-height': 1.5,
+  'font-weight-header': 600,
+  'font-weight-medium': 500,
+  // motion — one knob so a "reduced motion" theme can set it to 0s.
+  'transition': (0.12s ease),
   // surfaces
   'cell-bg': #ffffff,
   'cell-bg-alt': #f7f9fc,
   'cell-fg': #1f2933,
-  'surface-sunken': #eef1f6,
   'fg-muted': #5a6675,
   // borders
   'border-color': #e3e7ef,
@@ -112,7 +120,7 @@ $dark: (
     --apg-#{$name}: #{$value};
   }
   @if map.has-key($m, 'border-color') {
-    --apg-border: 1px solid var(--apg-border-color);
+    --apg-border: var(--apg-border-width) solid var(--apg-border-color);
   }
   @if map.has-key($m, 'cell-padding-x') {
     --apg-cell-padding: 0 var(--apg-cell-padding-x);

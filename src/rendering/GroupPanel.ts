@@ -72,7 +72,7 @@ export class GroupPanel {
   private list: HTMLElement;
   private placeholderEl: HTMLElement;
   private marker = createEl('div', 'apg-group-chip-marker');
-  private menu = new ContextMenu();
+  private menu: ContextMenu;
   private dragFrom = -1;
   private dragging = false;
   private startX = 0;
@@ -83,6 +83,8 @@ export class GroupPanel {
     private cb: GroupPanelCallbacks,
     private opts: ResolvedGroupPanel,
   ) {
+    // Menu inherits the grid's theme via the panel host (inside the `.apg` host).
+    this.menu = new ContextMenu(this.host);
     this.host.appendChild(iconEl('group', 'apg-grouppanel-icon'));
     this.placeholderEl = createEl('span', 'apg-group-placeholder');
     this.placeholderEl.textContent = opts.placeholder;

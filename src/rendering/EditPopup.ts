@@ -1,5 +1,6 @@
 import { createEl } from '../utils/DOM';
 import { clamp } from '../utils/Math';
+import { applyThemeScope } from '../utils/theme-scope';
 import { Column } from '../models/Column';
 
 export interface EditPopupOptions<T = Record<string, unknown>> {
@@ -28,6 +29,10 @@ export interface EditPopupOptions<T = Record<string, unknown>> {
 export class EditPopup<T = Record<string, unknown>> {
   private el?: HTMLElement;
   private onCancel?: () => void;
+
+  /** `themeSource` is any element inside the owning grid, used to carry its
+   *  theme classes onto the body-mounted dialog. */
+  constructor(private themeSource?: HTMLElement) {}
 
   get isOpen(): boolean {
     return this.el != null;
@@ -79,6 +84,7 @@ export class EditPopup<T = Record<string, unknown>> {
       opts.onSave(changes);
     });
 
+    applyThemeScope(dialog, this.themeSource ?? null);
     document.body.appendChild(dialog);
     const r = dialog.getBoundingClientRect();
     // Center on the grid, then clamp so a grid taller/wider than the window —

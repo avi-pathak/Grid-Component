@@ -1,15 +1,8 @@
-// Popups/overlays appended to <body>, outside the `.apg` scope, so the theme
-// variables aren't inherited. Re-emit the full token set on each overlay root so
-// they render correctly wherever they mount (and pick up dark mode via the
-// media query in the theme files).
-@use 'tokens' as *;
-
-.apg-drag-ghost,
-.apg-context-menu,
-.apg-filter-dialog,
-.apg-edit-popup {
-  @include tokens($light);
-}
+// Popups/overlays appended to <body>, outside the `.apg` scope. They do NOT
+// re-declare tokens: the baseline set lives on `:root` (see _base.scss) and a
+// theme on any ancestor (wrapper / <body> / :root) flows down by inheritance, so
+// a themed grid's pop-ups match without each overlay hard-coding a palette that
+// an applied theme could never override.
 
 // Floating label that follows the cursor while a header is being dragged.
 .apg-drag-ghost {
@@ -23,12 +16,12 @@
   height: 26px;
   padding: 0 10px;
   background: var(--apg-cell-bg);
-  border: 1px solid var(--apg-border-color);
+  border: var(--apg-border);
   border-radius: var(--apg-radius);
   box-shadow: var(--apg-shadow-lg);
   color: var(--apg-cell-fg);
   font: var(--apg-font);
-  font-weight: 500;
+  font-weight: var(--apg-font-weight-medium);
   pointer-events: none;
   opacity: 0.96;
 }
@@ -55,8 +48,8 @@
   min-width: 184px;
   padding: 5px;
   background: var(--apg-cell-bg);
-  border: 1px solid var(--apg-border-color);
-  border-radius: 8px;
+  border: var(--apg-border);
+  border-radius: var(--apg-radius-lg);
   box-shadow: var(--apg-shadow-lg);
   font: var(--apg-font);
   color: var(--apg-cell-fg);
@@ -70,7 +63,7 @@
   height: 30px;
   padding: 0 10px;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--apg-radius-sm);
   background: transparent;
   color: inherit;
   font: inherit;
@@ -111,8 +104,8 @@
   width: 240px;
   padding: 10px;
   background: var(--apg-cell-bg);
-  border: 1px solid var(--apg-border-color);
-  border-radius: 8px;
+  border: var(--apg-border);
+  border-radius: var(--apg-radius-lg);
   box-shadow: var(--apg-shadow-lg);
   font: var(--apg-font);
   color: var(--apg-cell-fg);
@@ -133,7 +126,7 @@
   height: 30px;
   padding: 0 8px;
   border: none;
-  border-radius: 5px;
+  border-radius: var(--apg-radius-sm);
   background: transparent;
   color: var(--apg-cell-fg);
   font: inherit;
@@ -154,7 +147,7 @@
 
 .apg-filter-sort-active {
   color: var(--apg-active-border);
-  font-weight: 600;
+  font-weight: var(--apg-font-weight-header);
 
   .apg-icon {
     color: var(--apg-active-border);
@@ -182,8 +175,8 @@
 .apg-filter-search {
   height: 28px;
   padding: 0 8px;
-  border: 1px solid var(--apg-border-color);
-  border-radius: 5px;
+  border: var(--apg-border);
+  border-radius: var(--apg-radius-sm);
   font: inherit;
   color: inherit;
   background: var(--apg-cell-bg);
@@ -211,7 +204,7 @@
   align-items: center;
   gap: 8px;
   padding: 4px 2px;
-  font-weight: 600;
+  font-weight: var(--apg-font-weight-header);
   cursor: pointer;
 }
 
@@ -219,8 +212,8 @@
   max-height: 180px;
   overflow-y: auto;
   margin: 2px 0 8px;
-  border: 1px solid var(--apg-border-color);
-  border-radius: 5px;
+  border: var(--apg-border);
+  border-radius: var(--apg-radius-sm);
 }
 
 .apg-filter-item {
@@ -257,7 +250,7 @@
 }
 
 .apg-filter-clear {
-  border: 1px solid var(--apg-border-color);
+  border: var(--apg-border);
   background: var(--apg-cell-bg);
   color: var(--apg-cell-fg);
 
@@ -272,7 +265,7 @@
   color: var(--apg-accent-contrast);
 
   &:hover {
-    filter: brightness(1.05);
+    background: color-mix(in srgb, var(--apg-active-border) 88%, var(--apg-cell-fg));
   }
 }
 
@@ -283,8 +276,8 @@
   width: 260px;
   padding: 10px;
   background: var(--apg-cell-bg);
-  border: 1px solid var(--apg-border-color);
-  border-radius: 8px;
+  border: var(--apg-border);
+  border-radius: var(--apg-radius-lg);
   box-shadow: var(--apg-shadow-lg);
   font: var(--apg-font);
   color: var(--apg-cell-fg);
@@ -299,7 +292,7 @@
 
 .apg-edit-popup-label {
   font-size: 0.85em;
-  font-weight: 600;
+  font-weight: var(--apg-font-weight-header);
   color: var(--apg-fg-muted);
 }
 
@@ -307,8 +300,8 @@
 .apg-edit-popup-field select {
   height: 28px;
   padding: 0 8px;
-  border: 1px solid var(--apg-border-color);
-  border-radius: 5px;
+  border: var(--apg-border);
+  border-radius: var(--apg-radius-sm);
   font: inherit;
   color: inherit;
   background: var(--apg-cell-bg);
@@ -343,7 +336,7 @@
 }
 
 .apg-edit-popup-cancel {
-  border: 1px solid var(--apg-border-color);
+  border: var(--apg-border);
   background: var(--apg-cell-bg);
   color: var(--apg-cell-fg);
 
@@ -358,6 +351,6 @@
   color: var(--apg-accent-contrast);
 
   &:hover {
-    filter: brightness(1.05);
+    background: color-mix(in srgb, var(--apg-active-border) 88%, var(--apg-cell-fg));
   }
 }

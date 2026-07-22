@@ -1,5 +1,6 @@
 import { createEl } from '../utils/DOM';
 import { IconName, iconEl } from '../utils/icons';
+import { applyThemeScope } from '../utils/theme-scope';
 
 export interface MenuItem {
   label: string;
@@ -17,6 +18,10 @@ export type MenuEntry = MenuItem | 'separator';
  */
 export class ContextMenu {
   private el?: HTMLElement;
+
+  /** `themeSource` is any element inside the owning grid, used to carry its
+   *  theme classes onto the body-mounted menu. */
+  constructor(private themeSource?: HTMLElement) {}
 
   get isOpen(): boolean {
     return this.el != null;
@@ -45,6 +50,7 @@ export class ContextMenu {
       }
       menu.appendChild(row);
     }
+    applyThemeScope(menu, this.themeSource ?? null);
     document.body.appendChild(menu);
 
     // Keep the menu inside the viewport.

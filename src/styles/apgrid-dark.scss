@@ -13,11 +13,9 @@
 @use 'grouping';
 @use 'overlays';
 
-// Apply the dark palette as the default on every token-carrying root.
-.apg,
-.apg-drag-ghost,
-.apg-context-menu,
-.apg-filter-dialog,
-.apg-edit-popup {
+// Apply the dark palette as the default: on :root (so body-mounted overlays
+// inherit it) and directly on the grid host (which re-declares light in _base).
+:root,
+.apg {
   @include tokens($dark);
 }

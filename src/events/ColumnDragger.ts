@@ -2,6 +2,7 @@ import { LayoutEngine } from '../virtualization/LayoutEngine';
 import { Column } from '../models/Column';
 import { createEl } from '../utils/DOM';
 import { iconEl } from '../utils/icons';
+import { applyThemeScope } from '../utils/theme-scope';
 
 const EDGE = 5; // resize zone — leave it to the ColumnResizer
 const THRESHOLD = 4; // pixels before a press becomes a drag
@@ -112,6 +113,7 @@ export class ColumnDragger {
     const label = createEl('span', 'apg-drag-ghost-label');
     label.textContent = header;
     this.ghost.appendChild(label);
+    applyThemeScope(this.ghost, this.header);
     document.body.appendChild(this.ghost);
   }
 

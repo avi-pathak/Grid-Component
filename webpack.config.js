@@ -5,6 +5,7 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
 
 const entry = path.resolve(__dirname, 'src/index.ts');
+const themingEntry = path.resolve(__dirname, 'src/theming/index.ts');
 const dist = path.resolve(__dirname, 'dist');
 
 const tsRule = {
@@ -77,5 +78,31 @@ module.exports = [
     },
     module: { rules: [tsRule] },
     plugins: [dropCss],
+  },
+  // Theming subpath (@avi-pathak/apgrid/theming) — a separate entry so the core
+  // grid bundle carries none of it. Pure TS, no styles.
+  {
+    ...base,
+    name: 'theming-esm',
+    entry: themingEntry,
+    experiments: { outputModule: true },
+    output: {
+      path: path.join(dist, 'theming'),
+      filename: 'apgrid-theming.mjs',
+      library: { type: 'module' },
+      module: true,
+    },
+    module: { rules: [tsRule] },
+  },
+  {
+    ...base,
+    name: 'theming-cjs',
+    entry: themingEntry,
+    output: {
+      path: path.join(dist, 'theming'),
+      filename: 'apgrid-theming.cjs',
+      library: { type: 'commonjs2' },
+    },
+    module: { rules: [tsRule] },
   },
 ];

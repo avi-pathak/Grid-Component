@@ -51,9 +51,15 @@
       "import": "./dist/esm/apgrid.mjs",
       "require": "./dist/cjs/apgrid.cjs"
     },
+    "./theming": {
+      "types": "./dist/types/theming/index.d.ts",
+      "import": "./dist/theming/apgrid-theming.mjs",
+      "require": "./dist/theming/apgrid-theming.cjs"
+    },
     "./styles.css": "./dist/apgrid.css",
     "./styles-light.css": "./dist/apgrid-light.css",
     "./styles-dark.css": "./dist/apgrid-dark.css",
+    "./themes.css": "./dist/apgrid-themes.css",
     "./scss/*": "./src/styles/*",
     "./package.json": "./package.json"
   },
@@ -75,7 +81,7 @@
     "clean": "rimraf dist",
     "build": "npm run clean && npm run build:js && npm run build:themes && npm run build:types",
     "build:js": "webpack --config webpack.config.js",
-    "build:themes": "sass --no-source-map --style=compressed src/styles/apgrid-light.scss:dist/apgrid-light.css src/styles/apgrid-dark.scss:dist/apgrid-dark.css",
+    "build:themes": "sass --no-source-map --style=compressed src/styles/apgrid-light.scss:dist/apgrid-light.css src/styles/apgrid-dark.scss:dist/apgrid-dark.css && node scripts/build-theme-css.mjs",
     "build:types": "tsc -p tsconfig.build.json",
     "pack:examples": "npm run build && node scripts/pack-examples.js",
     "dev": "npm run pack:examples && npm run dev --workspace apgrid-demos",

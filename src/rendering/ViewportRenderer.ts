@@ -31,9 +31,15 @@ export class ViewportRenderer {
   readonly columnGroupInner?: HTMLElement;
   readonly rowHeaderInner: HTMLElement;
   readonly gutterLeft: number;
-  readonly gutterTop: number;
+  // Mutable: `setGeometry` recomputes the top gutter when header height changes.
+  gutterTop: number;
   /** Host bar for the grouping panel, present only when it is enabled. */
   readonly groupPanel?: HTMLElement;
+
+  // The two bands that make up the top gutter, kept so `setGeometry` can adjust
+  // header height and group-band height independently.
+  private groupHeight: number;
+  private leafHeaderHeight: number;
 
   // Pinned bands. Each is a sticky panel the browser keeps on the compositor:
   // frozen columns pin left, frozen rows pin top, and the corner pins both.
@@ -53,17 +59,14 @@ export class ViewportRenderer {
     this.gutterLeft = config.showRowHeader ? config.rowHeaderWidth : 0;
     // The group band (when present) stacks above the leaf header, so both
     // heights make up the top gutter.
-    const groupHeight = config.showColumnHeader ? (config.columnGroupHeight ?? 0) : 0;
-    const leafHeaderHeight = config.showColumnHeader ? config.headerHeight : 0;
-    this.gutterTop = groupHeight + leafHeaderHeight;
+    this.groupHeight = config.showColumnHeader ? (config.columnGroupHeight ?? 0) : 0;
+    this.leafHeaderHeight = config.showColumnHeader ? config.headerHeight : 0;
+    this.gutterTop = this.groupHeight + this.leafHeaderHeight;
 
     this.viewport = createEl('div', 'apg-viewport');
     this.canvas = createEl('div', 'apg-canvas');
 
     this.cells = createEl('div', 'apg-cells');
-    this.cells.style.marginLeft = `${this.gutterLeft}px`;
-    this.cells.style.marginTop = `${this.gutterTop}px`;
-    this.cells.style.top = `${this.gutterTop}px`;
 
     // Spanning cells paint on top of the normal rows, so their layer lives inside
     // the cells container and is added last.
@@ -72,54 +75,29 @@ export class ViewportRenderer {
 
     // Optional multi-level column-group band, pinned to the very top. The leaf
     // header sits directly below it.
-    if (config.showColumnHeader && groupHeight > 0) {
-      const groupInner = createEl('div', 'apg-columngroup-inner');
-      groupInner.style.marginLeft = `${this.gutterLeft}px`;
-      groupInner.style.height = `${groupHeight}px`;
-      this.columnGroupInner = groupInner;
+    if (config.showColumnHeader && this.groupHeight > 0) {
+      this.columnGroupInner = createEl('div', 'apg-columngroup-inner');
     }
 
     this.headerInner = createEl('div', 'apg-header-inner');
-    this.headerInner.style.marginLeft = `${this.gutterLeft}px`;
-    this.headerInner.style.height = `${leafHeaderHeight}px`;
-    // Push the leaf header below the group band and pin it there while scrolling.
-    this.headerInner.style.marginTop = `${groupHeight}px`;
-    this.headerInner.style.top = `${groupHeight}px`;
     this.headerInner.style.display = config.showColumnHeader ? '' : 'none';
 
     this.rowHeaderInner = createEl('div', 'apg-rowheader-inner');
-    this.rowHeaderInner.style.marginTop = `${this.gutterTop}px`;
-    this.rowHeaderInner.style.top = `${this.gutterTop}px`;
-    this.rowHeaderInner.style.width = `${this.gutterLeft}px`;
     this.rowHeaderInner.style.display = config.showRowHeader ? '' : 'none';
 
     this.corner = createEl('div', 'apg-corner');
-    this.corner.style.width = `${this.gutterLeft}px`;
-    this.corner.style.height = `${this.gutterTop}px`;
     this.corner.style.display = config.showColumnHeader && config.showRowHeader ? '' : 'none';
 
     // Frozen bands start hidden; Grid sizes and shows them when a freeze is set.
     this.frozenCols = createEl('div', 'apg-frozen-cols');
-    this.frozenCols.style.left = `${this.gutterLeft}px`;
-    this.frozenCols.style.top = `${this.gutterTop}px`;
-    this.frozenCols.style.marginTop = `${this.gutterTop}px`;
-
     this.frozenColsHeader = createEl('div', 'apg-frozen-cols-header');
-    this.frozenColsHeader.style.left = `${this.gutterLeft}px`;
-    this.frozenColsHeader.style.marginLeft = `${this.gutterLeft}px`;
-    this.frozenColsHeader.style.height = `${this.gutterTop}px`;
-
     this.frozenRows = createEl('div', 'apg-frozen-rows');
-    this.frozenRows.style.top = `${this.gutterTop}px`;
-    this.frozenRows.style.marginLeft = `${this.gutterLeft}px`;
-
     this.frozenRowsHeader = createEl('div', 'apg-frozen-rows-header');
-    this.frozenRowsHeader.style.top = `${this.gutterTop}px`;
-    this.frozenRowsHeader.style.width = `${this.gutterLeft}px`;
-
     this.frozenCorner = createEl('div', 'apg-frozen-corner');
-    this.frozenCorner.style.top = `${this.gutterTop}px`;
-    this.frozenCorner.style.left = `${this.gutterLeft}px`;
+
+    // Position everything that depends on the gutter in one place, so a later
+    // `setGeometry` can re-run the exact same layout with new band heights.
+    this.applyGutter();
 
     for (const el of [
       this.frozenCols,
@@ -164,6 +142,70 @@ export class ViewportRenderer {
     if (this.columnGroupInner) this.columnGroupInner.style.width = `${totalWidth}px`;
     this.cells.style.width = `${totalWidth}px`;
     this.frozenRows.style.width = `${totalWidth}px`;
+  }
+
+  /**
+   * Change the header geometry live. `headerHeight` is the leaf column-header
+   * height; `columnGroupHeight` is the multi-level group band (0 when there are
+   * no groups). Recomputes the top gutter and re-lays the sticky scaffold; the
+   * caller still owns re-measuring the viewport and redrawing.
+   */
+  setGeometry(opts: { headerHeight?: number; columnGroupHeight?: number }): void {
+    const showCol = this.headerInner.style.display !== 'none';
+    if (opts.headerHeight != null) {
+      this.leafHeaderHeight = showCol ? opts.headerHeight : 0;
+    }
+    if (opts.columnGroupHeight != null && this.columnGroupInner) {
+      this.groupHeight = showCol ? opts.columnGroupHeight : 0;
+    }
+    this.gutterTop = this.groupHeight + this.leafHeaderHeight;
+    this.applyGutter();
+  }
+
+  // Apply every inline style that depends on the gutter dimensions. Called once
+  // at construction and again whenever `setGeometry` changes the band heights.
+  private applyGutter(): void {
+    const left = this.gutterLeft;
+    const top = this.gutterTop;
+
+    this.cells.style.marginLeft = `${left}px`;
+    this.cells.style.marginTop = `${top}px`;
+    this.cells.style.top = `${top}px`;
+
+    if (this.columnGroupInner) {
+      this.columnGroupInner.style.marginLeft = `${left}px`;
+      this.columnGroupInner.style.height = `${this.groupHeight}px`;
+    }
+
+    this.headerInner.style.marginLeft = `${left}px`;
+    this.headerInner.style.height = `${this.leafHeaderHeight}px`;
+    // Push the leaf header below the group band and pin it there while scrolling.
+    this.headerInner.style.marginTop = `${this.groupHeight}px`;
+    this.headerInner.style.top = `${this.groupHeight}px`;
+
+    this.rowHeaderInner.style.marginTop = `${top}px`;
+    this.rowHeaderInner.style.top = `${top}px`;
+    this.rowHeaderInner.style.width = `${left}px`;
+
+    this.corner.style.width = `${left}px`;
+    this.corner.style.height = `${top}px`;
+
+    this.frozenCols.style.left = `${left}px`;
+    this.frozenCols.style.top = `${top}px`;
+    this.frozenCols.style.marginTop = `${top}px`;
+
+    this.frozenColsHeader.style.left = `${left}px`;
+    this.frozenColsHeader.style.marginLeft = `${left}px`;
+    this.frozenColsHeader.style.height = `${top}px`;
+
+    this.frozenRows.style.top = `${top}px`;
+    this.frozenRows.style.marginLeft = `${left}px`;
+
+    this.frozenRowsHeader.style.top = `${top}px`;
+    this.frozenRowsHeader.style.width = `${left}px`;
+
+    this.frozenCorner.style.top = `${top}px`;
+    this.frozenCorner.style.left = `${left}px`;
   }
 
   /**

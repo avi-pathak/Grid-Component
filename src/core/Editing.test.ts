@@ -91,7 +91,12 @@ describe('editing position', () => {
   });
 
   it('advances the scroll by exactly one row at the bottom edge', () => {
-    const grid = new Grid(host, { columns, itemsSource: makeRows(1000), rowHeight: 24 });
+    const grid = new Grid(host, {
+      columns,
+      itemsSource: makeRows(1000),
+      rowHeight: 24,
+      headerHeight: 28,
+    });
     const vp = host.querySelector('.apg-viewport') as HTMLElement;
     // jsdom reports clientHeight 0, so stub the metric the scroll math reads.
     // The 28px column header sits inside the viewport, so 268 leaves exactly

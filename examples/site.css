@@ -1219,3 +1219,239 @@ a {
     transform: none;
   }
 }
+
+/* =============================================================================
+   Theme Builder page
+   ========================================================================== */
+
+.nav-pinned {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin: 0 0 var(--sp-3);
+  padding: 8px var(--sp-3);
+  font-weight: 600;
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.nav-pinned .icon {
+  color: var(--accent);
+}
+
+.nav-pinned:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--surface-2);
+}
+
+.nav-pinned.active {
+  color: var(--accent-fg);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.nav-pinned.active .icon {
+  color: var(--accent-fg);
+}
+
+.nav-pinned.active::before {
+  content: none;
+}
+
+/* Two-pane layout: a fixed control rail and a flexible stage. */
+.tb {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: var(--sp-6);
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: start;
+}
+
+.tb-controls {
+  position: sticky;
+  top: calc(var(--topbar-h) + var(--sp-4));
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  max-height: calc(100dvh - var(--topbar-h) - var(--sp-6));
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.tb-presets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.tb-presets-label,
+.tb-group-title {
+  font: 600 11px/1 var(--font-sans);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--fg-subtle);
+  margin: 0;
+}
+
+.tb-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tb-preset-chip {
+  padding: 5px 10px;
+  font: 500 12.5px var(--font-sans);
+  color: var(--fg-muted);
+  background: var(--surface-2);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+
+.tb-preset-chip:hover {
+  color: var(--fg);
+}
+
+.tb-preset-chip.active {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.tb-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--border);
+}
+
+.tb-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--sp-3);
+  font-size: 13px;
+  color: var(--fg);
+}
+
+.tb-control-label {
+  color: var(--fg-muted);
+}
+
+.tb-color {
+  width: 44px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+}
+
+.tb-color::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+.tb-color::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+.tb-range-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.tb-range {
+  width: 120px;
+  accent-color: var(--accent);
+}
+
+.tb-range-value {
+  min-width: 40px;
+  text-align: right;
+  font: 12px var(--font-mono);
+  color: var(--fg-muted);
+}
+
+.tb-select {
+  height: 30px;
+  max-width: 150px;
+  padding: 0 8px;
+  font: 13px var(--font-sans);
+  color: var(--fg);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+
+.tb-toggle {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.tb-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+  min-width: 0;
+}
+
+.tb-stage-head h1 {
+  margin: 2px 0 0;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.tb-stage-head p {
+  margin: var(--sp-2) 0 0;
+  color: var(--fg-muted);
+  font-size: 15px;
+}
+
+.tb-preview {
+  padding: var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.tb-preview-grid {
+  height: 440px;
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.tb-output {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .tb {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tb-controls {
+    position: static;
+    max-height: none;
+  }
+}

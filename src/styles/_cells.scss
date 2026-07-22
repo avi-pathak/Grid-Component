@@ -38,8 +38,8 @@
   }
 
   &.apg-cell-active {
-    box-shadow: inset 0 0 0 2px var(--apg-active-border);
-    border-radius: 1px;
+    box-shadow: inset 0 0 0 var(--apg-accent-ring-width) var(--apg-active-border);
+    border-radius: var(--apg-radius-sm);
   }
 
   // A cell whose value differs from what it held when GridOptions.highlightEdits
@@ -102,27 +102,60 @@
   justify-content: flex-end;
 }
 
+// The checkbox is two coincident layers anchored to the same spot: a bordered
+// box (::before) and, when checked, a tick (::after). The tick is a mask filled
+// with `--apg-accent-contrast`, so it stays legible against whatever accent a
+// theme picks — a colour baked into an SVG background could not adapt.
 .apg-cell-bool::before {
   content: '';
+  position: absolute;
+  left: var(--apg-cell-padding-x);
+  top: 50%;
+  transform: translateY(-50%);
   width: 16px;
   height: 16px;
   border: 1.5px solid var(--apg-checkbox-border);
   border-radius: var(--apg-radius-sm);
   background: var(--apg-cell-bg);
   transition:
-    border-color 0.12s ease,
-    background-color 0.12s ease;
+    border-color var(--apg-transition),
+    background-color var(--apg-transition);
 }
 
 .apg-cell-bool.apg-checked::before {
   border-color: var(--apg-active-border);
-  background: var(--apg-active-border)
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.5'><path d='M3 8.5l3.5 3.5L13 4.5'/></svg>")
-    center / 12px no-repeat;
+  background: var(--apg-active-border);
+}
+
+.apg-cell-bool.apg-checked::after {
+  content: '';
+  position: absolute;
+  left: var(--apg-cell-padding-x);
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  background: var(--apg-accent-contrast);
+  $check: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23000' stroke-width='2.5'%3E%3Cpath d='M3 8.5l3.5 3.5L13 4.5'/%3E%3C/svg%3E";
+  -webkit-mask: url($check) center / 12px no-repeat;
+  mask: url($check) center / 12px no-repeat;
+  pointer-events: none;
 }
 
 .apg-cell-template {
   overflow: hidden;
+}
+
+// Borders: 'horizontal' mode. Set by the theming layer (or authored directly on
+// a host/ancestor) to keep row dividers but drop the vertical column borders,
+// for a lighter, more spreadsheet-of-rows look. Placed here so it matches whether
+// the class sits on the `.apg` host itself or on any ancestor (e.g. <body>).
+.apg-borders-horizontal {
+  .apg-cell,
+  .apg-header-cell,
+  .apg-columngroup-cell {
+    border-right-width: 0;
+  }
 }
 
 // Drop marker shown while dragging a column to reorder.

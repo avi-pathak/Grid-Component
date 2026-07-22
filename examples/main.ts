@@ -10,7 +10,10 @@ import { Demo, DemoHandle } from './demos/types';
 import { createCodeView } from './codeView';
 import { openInStackBlitz, hasSandbox } from './stackblitz';
 import { mountExportBar } from './exportBar';
+import { renderThemeBuilder } from './theme-builder';
 import { icon } from './icons';
+
+const THEME_BUILDER_ROUTE = 'theme-builder';
 
 const el = <T extends HTMLElement>(id: string): T => document.getElementById(id) as T;
 
@@ -127,6 +130,12 @@ function withHighlight(title: string, query: string): string {
   );
 }
 
+// A pinned entry above the grouped demo nav, always visible regardless of search.
+const pinnedNav = `
+  <a class="nav-link nav-pinned" href="#${THEME_BUILDER_ROUTE}" data-id="${THEME_BUILDER_ROUTE}">
+    ${icon('sliders', 15)}<span>Theme Builder</span>
+  </a>`;
+
 function renderNav(): void {
   const query = search.value.trim().toLowerCase();
   const searching = query.length > 0;
@@ -146,25 +155,28 @@ function renderNav(): void {
     .filter((group) => group.entries.length > 0);
 
   if (groups.length === 0) {
-    nav.innerHTML = `<p class="nav-empty">No demos match “${escapeHtml(search.value)}”.</p>`;
+    nav.innerHTML = `${pinnedNav}<p class="nav-empty">No demos match “${escapeHtml(search.value)}”.</p>`;
+    markActive();
     return;
   }
 
-  nav.innerHTML = groups
-    .map(({ category, entries }) => {
-      // A search should always reveal its own results, whatever is collapsed.
-      const open = searching || !collapsed.has(category.id);
-      const items = entries
-        .map(
-          ({ demo }) =>
-            `<li><a class="nav-link" href="#${demo.id}" data-id="${demo.id}">${withHighlight(
-              demo.title,
-              query,
-            )}</a></li>`,
-        )
-        .join('');
+  nav.innerHTML =
+    pinnedNav +
+    groups
+      .map(({ category, entries }) => {
+        // A search should always reveal its own results, whatever is collapsed.
+        const open = searching || !collapsed.has(category.id);
+        const items = entries
+          .map(
+            ({ demo }) =>
+              `<li><a class="nav-link" href="#${demo.id}" data-id="${demo.id}">${withHighlight(
+                demo.title,
+                query,
+              )}</a></li>`,
+          )
+          .join('');
 
-      return `
+        return `
         <div class="nav-group" data-category="${category.id}" data-open="${open}">
           <button class="nav-group-btn" type="button" aria-expanded="${open}">
             ${icon('chevronDown', 12, 'chev')}
@@ -173,8 +185,8 @@ function renderNav(): void {
           </button>
           <ul class="nav-list">${items}</ul>
         </div>`;
-    })
-    .join('');
+      })
+      .join('');
 
   markActive();
 }
@@ -448,10 +460,16 @@ function route(): void {
   currentGrid = null;
 
   const id = location.hash.slice(1);
-  const demo = demos.find((d) => d.id === id);
 
-  if (demo) renderDemo(demo);
-  else renderHome();
+  if (id === THEME_BUILDER_ROUTE) {
+    crumbs.innerHTML = '<span class="crumb-current">Theme Builder</span>';
+    exportSlot.innerHTML = '';
+    dispose = renderThemeBuilder(main);
+  } else {
+    const demo = demos.find((d) => d.id === id);
+    if (demo) renderDemo(demo);
+    else renderHome();
+  }
 
   markActive();
   main.scrollTop = 0;

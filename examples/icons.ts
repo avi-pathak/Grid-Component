@@ -35,6 +35,8 @@ const paths: Record<string, string> = {
     '<path d="M6 13.2c-3 .9-3-1.5-4.2-1.8m8.4 3.1v-2.4a2 2 0 0 0-.6-1.6c1.9-.2 3.9-.9 3.9-4.2a3.3 3.3 0 0 0-.9-2.3 3 3 0 0 0-.1-2.3s-.7-.2-2.4.9a8.3 8.3 0 0 0-4.2 0C4.2 1.5 3.5 1.7 3.5 1.7a3 3 0 0 0-.1 2.3 3.3 3.3 0 0 0-.9 2.3c0 3.3 2 4 3.9 4.2a2 2 0 0 0-.6 1.5v2.5"/>',
   layers:
     '<path d="M8 1.8 14.2 5 8 8.2 1.8 5z"/><path d="m1.8 8 6.2 3.2L14.2 8"/><path d="m1.8 11 6.2 3.2L14.2 11"/>',
+  sliders:
+    '<path d="M2.5 5h6M11 5h2.5M2.5 11h2.5M8 11h5.5"/><circle cx="9.5" cy="5" r="1.6"/><circle cx="5.5" cy="11" r="1.6"/>',
 };
 
 /** Inline SVG markup for `name`, sized `size`px. Unknown names render nothing. */

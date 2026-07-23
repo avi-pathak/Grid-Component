@@ -1,8 +1,6 @@
-import { Grid } from '@avi-pathak/apgrid';
+import { Grid, format } from '@avi-pathak/apgrid';
 import { makeSales, SalesRow } from '../data';
 import { Demo } from './types';
-
-const money = (v: unknown): string => (v == null ? '' : `$${Number(v).toLocaleString()}`);
 
 export const grouping: Demo = {
   id: 'grouping',
@@ -36,7 +34,7 @@ export const grouping: Demo = {
           width: 130,
           dataType: 'Number',
           aggregate: 'sum',
-          valueFormatter: money,
+          format: '$#,##0',
         },
         {
           binding: 'expenses',
@@ -44,7 +42,7 @@ export const grouping: Demo = {
           width: 130,
           dataType: 'Number',
           aggregate: 'sum',
-          valueFormatter: money,
+          format: '$#,##0',
         },
         { binding: 'active', header: 'Active', width: 80, dataType: 'Boolean' },
         { binding: 'joined', header: 'Joined', width: 120, dataType: 'Date' },
@@ -57,7 +55,7 @@ export const grouping: Demo = {
         return (
           `<span class="apg-group-name">${group.name}</span>` +
           `<span class="apg-group-count">${itemCount}</span>` +
-          `<span class="demo-group-total">${money(total)} total sales</span>`
+          `<span class="demo-group-total">${format(total, '$#,##0')} total sales</span>`
         );
       },
     });

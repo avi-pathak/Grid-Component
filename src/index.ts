@@ -30,6 +30,10 @@ export { csvFormat } from './export/formats/csv';
 export { xlsxFormat } from './export/formats/xlsx';
 export { pdfFormat } from './export/formats/pdf';
 
+// Value formatting (Excel-style patterns + short codes), also used by ColumnDef.format.
+export { format, formatNumber, formatDate, formatDatePreset } from './formatting';
+export type { FormatOptions } from './formatting';
+
 export type { ColumnDef } from './models/Column';
 export type { ColumnGroupDef } from './models/ColumnGroup';
 export type { ColumnGroupNode } from './models/ColumnGroup';

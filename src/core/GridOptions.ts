@@ -25,6 +25,10 @@ export interface GridOptions<T = Record<string, unknown>> {
   itemsSource?: T[] | CollectionView<T>;
   /** Alias for `itemsSource`, kept for compatibility with the original grid. */
   dataSource?: T[] | CollectionView<T>;
+  /** Default BCP-47 locale for column `format` strings. A column may override with its own `locale`. */
+  locale?: string;
+  /** Default ISO currency code for the `c` format shortcut. A column may override with its own `currency`. */
+  currency?: string;
   rowHeight?: number;
   headerHeight?: number;
   rowHeaderWidth?: number;
@@ -175,6 +179,9 @@ export function resolveOptions<T>(options: GridOptions<T>): ResolvedOptions<T> {
     const col = new Column<T>(def);
     col.filterable = def.filter ?? allowFiltering;
     col.allowMerging = def.allowMerging ?? allowMerging;
+    // Column format locale/currency fall back to the grid-level defaults.
+    col.formatLocale = def.locale ?? options.locale;
+    col.formatCurrency = def.currency ?? options.currency;
     return col;
   });
   const headerHeight = options.headerHeight ?? DEFAULT_HEADER_HEIGHT;

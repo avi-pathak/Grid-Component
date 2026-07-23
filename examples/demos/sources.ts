@@ -1,6 +1,7 @@
 import alwaysEditing from './alwaysEditing.ts?raw';
 import calculated from './calculated.ts?raw';
 import cellTypes from './cellTypes.ts?raw';
+import formatting from './formatting.ts?raw';
 import changeTracking from './changeTracking.ts?raw';
 import clipboard from './clipboard.ts?raw';
 import collectionViewBasics from './collectionViewBasics.ts?raw';
@@ -50,6 +51,7 @@ export const demoSources: Record<string, string> = {
   'always-editing': alwaysEditing,
   calculated,
   'cell-types': cellTypes,
+  formatting,
   'change-tracking': changeTracking,
   clipboard,
   'collectionview-basics': collectionViewBasics,

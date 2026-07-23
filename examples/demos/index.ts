@@ -6,6 +6,7 @@ import { odata } from './odata';
 import { infiniteScroll } from './infiniteScroll';
 import { selection } from './selection';
 import { cellTypes } from './cellTypes';
+import { formatting } from './formatting';
 import { calculated } from './calculated';
 import { combo } from './combo';
 import { dataMaps } from './dataMaps';
@@ -47,6 +48,7 @@ export const demos: Demo[] = [
   infiniteScroll,
   selection,
   cellTypes,
+  formatting,
   calculated,
   combo,
   dataMaps,

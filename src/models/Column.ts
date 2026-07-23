@@ -1,5 +1,6 @@
 import { DataMap } from './DataMap';
 import { DataMapEditor } from './DataMapEditor';
+import { format } from '../formatting';
 import type { CellEditorFactory } from '../editing/CellEditor';
 
 export type DataType = 'String' | 'Number' | 'Boolean' | 'Date';
@@ -46,6 +47,16 @@ export interface ColumnDef<T = Record<string, unknown>> {
   /** Compute the value from the row. Makes the column calculated (read-only). */
   valueGetter?: (item: T) => unknown;
   valueFormatter?: (value: unknown, item: T) => string;
+  /**
+   * Excel-style format string applied to the cell value, e.g. `'#,##0.00'`,
+   * `'0.00%'`, `'$#,##0'`, `'MMM d, yyyy'`, or a short code like `'n2'`/`'c'`/`'d'`.
+   * A `valueFormatter` callback, if present, takes precedence.
+   */
+  format?: string;
+  /** BCP-47 locale for this column's `format` (separators, month names). Defaults to the grid's `locale`. */
+  locale?: string;
+  /** ISO currency code for the `c` shortcut / currency style. Defaults to the grid's `currency`. */
+  currency?: string;
   /** Choices for a combo-box cell. Accepts a simple list, value/text pairs, or a DataMap. */
   dataMap?: DataMapEntry[] | DataMap;
   /** Which editor a data-mapped cell uses. Default DropDownList. */
@@ -109,6 +120,11 @@ export class Column<T = Record<string, unknown>> {
   readonly cellTemplate?: (ctx: CellTemplateContext<T>) => string;
   readonly placeholder?: string;
   readonly editorFactory?: CellEditorFactory<T>;
+  /** Excel-style format string for cell values, or undefined for the default. */
+  readonly formatString?: string;
+  /** Effective locale/currency for `formatString`; resolved from column then grid options. */
+  formatLocale?: string;
+  formatCurrency?: string;
 
   private readonly valueGetter?: (item: T) => unknown;
   private readonly valueFormatter?: (value: unknown, item: T) => string;
@@ -128,6 +144,9 @@ export class Column<T = Record<string, unknown>> {
     this.cellTemplate = def.cellTemplate;
     this.placeholder = def.placeholder;
     this.editorFactory = def.editor;
+    this.formatString = def.format;
+    this.formatLocale = def.locale;
+    this.formatCurrency = def.currency;
     this.map = def.dataMap ? toDataMap(def.dataMap) : undefined;
     this.dataMapEditor = def.dataMapEditor ?? DataMapEditor.DropDownList;
     this.aggregate = def.aggregate;
@@ -221,6 +240,9 @@ export class Column<T = Record<string, unknown>> {
     }
     if (value == null) return '';
     if (this.dataType === 'Boolean') return ''; // rendered as a checkbox
+    if (this.formatString) {
+      return format(value, this.formatString, this.formatLocale, this.formatCurrency);
+    }
     if (this.dataType === 'Date' && value instanceof Date) return value.toLocaleDateString();
     return String(value);
   }

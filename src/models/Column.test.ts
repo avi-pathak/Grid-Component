@@ -119,4 +119,28 @@ describe('Column', () => {
     const col = new Column({ binding: 'sales', cellTemplate: (c) => `<b>${c.value}</b>` });
     expect(col.cellTemplate).toBeTypeOf('function');
   });
+
+  it('applies an Excel format string to cell values', () => {
+    const col = new Column({ binding: 'sales', dataType: 'Number', format: '$#,##0.00' });
+    expect(col.format({ sales: 1234.5 })).toBe('$1,234.50');
+  });
+
+  it('lets valueFormatter win over a format string', () => {
+    const col = new Column({
+      binding: 'sales',
+      format: '$#,##0.00',
+      valueFormatter: (v) => `raw:${v}`,
+    });
+    expect(col.format({ sales: 10 })).toBe('raw:10');
+  });
+
+  it('formats dates with a format string', () => {
+    const col = new Column({
+      binding: 'joined',
+      dataType: 'Date',
+      format: 'MMM d, yyyy',
+      locale: 'en-US',
+    });
+    expect(col.format({ joined: new Date(2024, 0, 5) })).toBe('Jan 5, 2024');
+  });
 });

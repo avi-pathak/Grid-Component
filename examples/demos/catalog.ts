@@ -48,6 +48,7 @@ export const categories: Category[] = [
     icon: 'grid',
     demoIds: [
       'cell-types',
+      'formatting',
       'custom-cell',
       'conditional-styling',
       'data-maps',
